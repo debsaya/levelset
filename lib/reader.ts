@@ -25,22 +25,20 @@ export function useReader() {
             })
           );
       const pc = s.prior[r.vendor.id];
-      let res: Response | null = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
+      const body = JSON.stringify({ vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null });
+      let j: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          res = await fetch("/api/extract", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null }),
-          });
-          break;
-        } catch (e) {
-          if (attempt) throw e;
-          await new Promise((ok) => setTimeout(ok, 2000));
+          const res = await fetch("/api/extract", { method: "POST", headers: { "Content-Type": "application/json" }, body });
+          j = JSON.parse(await res.text());
+        } catch (e: any) {
+          j = { error: e?.message || "Network error" };
         }
+        // retry when the model service is busy or the connection dropped
+        if (!j.error || !/high demand|overloaded|503|429|quota|fetch|network/i.test(j.error)) break;
+        await new Promise((ok) => setTimeout(ok, 5000 * (attempt + 1)));
       }
-      const j = await res!.json();
-      if (!res!.ok) throw new Error(j.error || "Extraction failed");
+      if (j.error) throw new Error(/high demand|503/i.test(j.error) ? "Google's AI service is busy right now. Try reading this quote again in a minute." : j.error);
       patch(r.vendor.id, { status: "done", extraction: j.extraction, model: j.model, ms: j.ms });
       log(`Read quote from ${r.vendor.name} (${j.extraction.lines?.length ?? 0} prices, ${(j.ms / 1000).toFixed(0)}s)`);
     } catch (e: any) {

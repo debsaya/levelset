@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { generate, parseJson } from "@/lib/gemini";
 import { toParts, type InFile } from "@/lib/fileText";
+import { heartbeatJson } from "@/lib/stream";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -165,8 +165,13 @@ const TRANSCRIBE_SCHEMA = {
 };
 
 export async function POST(req: Request) {
-  try {
-    const { vendor, files, rfx, prior } = (await req.json()) as {
+  const input = await req.json();
+  return heartbeatJson(() => extract(input));
+}
+
+async function extract(input: any) {
+  {
+    const { vendor, files, rfx, prior } = input as {
       vendor: { id: string; name: string; email: string; subject: string; body: string; received_at: string };
       files: InFile[];
       rfx: any;
@@ -222,8 +227,6 @@ export async function POST(req: Request) {
     }
     const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000 });
     const extraction = parseJson(out.text);
-    return NextResponse.json({ extraction, model: out.model, ms: Date.now() - t0 });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || String(e) }, { status: e?.status && e.status < 600 ? e.status : 500 });
+    return { extraction, model: out.model, ms: Date.now() - t0 };
   }
 }

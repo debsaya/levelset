@@ -5,7 +5,7 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export function modelChain(): string[] {
   const fromEnv = (process.env.GEMINI_MODEL || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const defaults = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest"];
+  const defaults = ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
   return Array.from(new Set([...fromEnv, ...defaults]));
 }
 
@@ -88,8 +88,8 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       if (res.status === 429 || res.status >= 500) {
         const m = errText.match(/retry in ([\d.]+)s/i);
         const wait = m ? Math.min(parseFloat(m[1]) * 1000, 20000) : 2500 * (attempt + 1);
-        if (attempt < 1) {
-          await sleep(wait);
+        if (attempt < 2) {
+          await sleep(res.status === 503 ? 2500 * (attempt + 1) : wait);
           continue;
         }
         break; // quota exhausted for this model: fall back to the next one
