@@ -36,7 +36,7 @@ const DEMO_ASSUMPTIONS: Assumptions = {
   default_freight_inr_per_kg: 1.0,
   apply_conditional_rebates: false,
   per_kg_band: [25, 90],
-  review_threshold: 0.75,
+  review_threshold: 0.8,
 };
 
 export function demoState(): State {

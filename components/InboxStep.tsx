@@ -139,7 +139,7 @@ function StatusBadge({ r }: { r: VendorResponse }) {
   if (r.status === "error") return <Badge tone="bad">error</Badge>;
   if (r.status === "done") {
     const ex = r.extraction!;
-    const low = (ex.lines || []).filter((l) => Math.min(l.match_confidence, l.read_confidence) < 0.75).length;
+    const low = (ex.lines || []).filter((l) => Math.min(l.match_confidence, l.read_confidence) < 0.8).length;
     return (
       <span className="flex gap-1">
         <Badge tone="good">{new Set(ex.lines.map((l) => l.rfx_line_id).filter(Boolean)).size} priced</Badge>
@@ -257,7 +257,7 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
                           {l.tax_included ? " incl. GST" : ""}
                         </td>
                         <td className="py-1 pr-2">
-                          <Badge tone={c >= 0.75 ? "good" : "warn"}>{Math.round(c * 100)}%</Badge>
+                          <Badge tone={c >= 0.8 ? "good" : "warn"}>{Math.round(c * 100)}%</Badge>
                         </td>
                         <td className="py-1 text-muted">
                           {l.source.location} · “{l.source.quote}”

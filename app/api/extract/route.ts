@@ -81,9 +81,17 @@ const SCHEMA = {
           match_confidence: N("0-1 confidence that this maps to the right RFx line"),
           read_confidence: N("0-1 confidence that the number was read correctly"),
           note: SN("Interpretation or assumption made, if any"),
+          vendor_size: {
+            type: "object",
+            nullable: true,
+            description: "The item's size exactly as the vendor wrote it (numbers and unit), or null if the vendor gave no size",
+            properties: { L: N(), W: N(), H: NN("null for flat items"), unit: { type: "string", enum: ["mm", "cm", "inch"] } },
+            required: ["L", "W", "H", "unit"],
+          },
+          vendor_ply: NN("Ply as the vendor wrote it, if stated"),
           source: SRC,
         },
-        required: ["rfx_line_id", "vendor_item_text", "price", "currency", "basis_unit", "basis_qty", "tax_included", "derived_from", "spec_deviation", "match_confidence", "read_confidence", "note", "source"],
+        required: ["rfx_line_id", "vendor_item_text", "price", "currency", "basis_unit", "basis_qty", "tax_included", "derived_from", "spec_deviation", "match_confidence", "read_confidence", "note", "vendor_size", "vendor_ply", "source"],
       },
     },
     not_quoted: {
@@ -133,7 +141,7 @@ const SYSTEM = `You are the extraction engine of a procurement quote-levelling s
 Rules:
 1. Record each price exactly as written. Do NOT convert currency, units, tax or freight. The system's code does all arithmetic.
 2. basis_unit/basis_qty describe what the price is for: "per 100 nos" -> piece/100; "per bundle (25)" -> piece/25; "per box"/"per pc"/"per set" -> piece/1; "Rs/kg" -> kg/1.
-3. Match vendor items to RFx lines by spec: item type, ply, dimensions, print. Vendors may use their own codes, a different order, or inches (1 inch = 25.4 mm; inch sizes are usually rounded to the nearest 0.5"). Lower match_confidence when matching on approximate dimensions or when two lines could fit. Omit vendor items that match no RFx line (mention them in unresolved).
+3. Match vendor items to RFx lines by spec: item type, ply, dimensions, print. Vendors may use their own codes, a different order, or inches (1 inch = 25.4 mm; inch sizes are usually rounded to the nearest 0.5"). Lower match_confidence when matching on approximate dimensions or when two lines could fit. Include EVERY priced item the vendor lists, even ones that match no RFx line (rfx_line_id null): the system re-checks every match against the size you record in vendor_size, so record sizes exactly as written, row by row.
 4. If a vendor states a pricing rule for a group ("Rs 42/kg for the 5-ply"), expand it to every RFx line it plausibly covers, derived_from "rule", same source quote, and note the interpretation (e.g. whether printed or die-cut items are included). Use match_confidence <= 0.75 where the scope of the rule is ambiguous.
 5. If the vendor refers to earlier prices ("rest same as last year", "as per current contract"), emit a line for each affected RFx line with derived_from "prior_contract", price null, currency INR, basis piece/1. Do this only for lines not already priced elsewhere.
 6. If a vendor offers a different spec than asked, still record the price and describe the difference in spec_deviation.

@@ -1,6 +1,6 @@
 // Deterministic normalisation: the model reads, this code calculates.
 // Every conversion is recorded as a step so the buyer can audit any number on screen.
-import type { Assumptions, CellOverride, ExtractedLine, PriorContracts, Rfx, SourceRef, VendorResponse, Adjustment } from "./types";
+import type { Assumptions, CellOverride, ExtractedLine, PriorContracts, Rfx, RfxLine, SourceRef, VendorResponse, Adjustment } from "./types";
 
 export type Sev = "info" | "warn" | "block";
 export type Flag = { code: string; sev: Sev; msg: string };
@@ -65,6 +65,30 @@ export type Normalized = {
 
 export const key = (v: string, l: string) => `${v}|${l}`;
 
+function toMm(sz: { L: number; W: number; H: number | null; unit: string }) {
+  const f = sz.unit === "inch" ? 25.4 : sz.unit === "cm" ? 10 : 1;
+  return [sz.L * f, sz.W * f, (sz.H || 0) * f];
+}
+
+/** Total size difference in mm if every dimension is within tolerance (half an inch + 3%), else null. */
+function sizeError(l: RfxLine, mm: number[]): number | null {
+  const want = [l.dimensions_mm.L, l.dimensions_mm.W, l.dimensions_mm.H];
+  let best: number | null = null;
+  for (const [a, b] of [[0, 1], [1, 0]]) {
+    const got = [mm[a], mm[b], mm[2]];
+    let err = 0, ok = true;
+    for (let i = 0; i < 3; i++) {
+      if (!want[i] && !got[i]) continue;
+      if (i === 2 && !got[i]) continue; // vendor gave only two dimensions (partitions, pads)
+      const d = Math.abs(got[i] - want[i]);
+      if (d > 13 + 0.03 * want[i]) { ok = false; break; }
+      err += d;
+    }
+    if (ok && (best === null || err < best)) best = err;
+  }
+  return best;
+}
+
 export function inr(n: number | null | undefined, digits = 2) {
   if (n === null || n === undefined || isNaN(n)) return "–";
   return "₹" + n.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -112,17 +136,47 @@ export function normalize(
       .reduce((s, d) => s + (d.pct || 0), 0);
 
     // pick one extracted line per RFx line (highest confidence), note duplicates
+    // Size check: code re-verifies every line match against the size the vendor wrote.
     const byLine: Record<string, ExtractedLine[]> = {};
+    const matchFlag = new Map<ExtractedLine, Flag>();
+    const dimErr = new Map<ExtractedLine, number>();
+    const unmatched: string[] = [];
     for (const el of ex.lines || []) {
-      if (!el.rfx_line_id || !lineById[el.rfx_line_id]) continue;
-      (byLine[el.rfx_line_id] ||= []).push(el);
+      let id = el.rfx_line_id && lineById[el.rfx_line_id] ? el.rfx_line_id : null;
+      const sz = el.vendor_size;
+      if (sz && sz.L && sz.W) {
+        const mm = toMm(sz);
+        const ranked = rfx.lines
+          .filter((l) => !el.vendor_ply || l.ply === el.vendor_ply)
+          .map((l) => ({ l, e: sizeError(l, mm) }))
+          .filter((x) => x.e !== null)
+          .sort((a, b) => a.e! - b.e!);
+        const best = ranked[0];
+        const fmtSz = `${sz.L}×${sz.W}${sz.H ? "×" + sz.H : ""} ${sz.unit}`;
+        if (best && best.l.id !== id) {
+          matchFlag.set(el, {
+            code: "REMATCHED",
+            sev: "warn",
+            msg: id
+              ? `Size check moved this price: vendor's ${fmtSz} (${mm.map((x) => Math.round(x)).filter(Boolean).join("×")} mm) fits ${best.l.id}, not ${id} as the model first read it.`
+              : `Matched by size: vendor's ${fmtSz} fits ${best.l.id}.`,
+          });
+          id = best.l.id;
+        } else if (!best && id) {
+          matchFlag.set(el, { code: "SIZE_MISMATCH", sev: "warn", msg: `Vendor's size ${fmtSz} doesn't fit ${id} (${lineById[id].description}). Check this is the same item.` });
+        }
+        if (best && best.l.id === id) dimErr.set(el, best.e!);
+        if (!id) unmatched.push(fmtSz);
+      }
+      if (!id) continue;
+      (byLine[id] ||= []).push(el);
     }
 
     for (const line of rfx.lines) {
       const k = key(vid, line.id);
       const ov = overrides[k];
       const cands = byLine[line.id] || [];
-      const el = [...cands].sort((x, y) => Math.min(y.match_confidence, y.read_confidence) - Math.min(x.match_confidence, x.read_confidence))[0];
+      const el = [...cands].sort((x, y) => (dimErr.get(x) ?? 999) - (dimErr.get(y) ?? 999) || Math.min(y.match_confidence, y.read_confidence) - Math.min(x.match_confidence, x.read_confidence))[0];
       const flags: Flag[] = [];
       const steps: Step[] = [];
       if (cands.length > 1) flags.push({ code: "DUPLICATE", sev: "warn", msg: `${cands.length} vendor items mapped to this line: ${cands.map((c) => `"${c.vendor_item_text}"`).join(", ")}. Kept the most confident.` });
@@ -221,7 +275,13 @@ export function normalize(
       if (perKg < a.per_kg_band[0] || perKg > a.per_kg_band[1]) flags.push({ code: "UNIT_SUSPECT", sev: "warn", msg: `Implies ₹${perKg.toFixed(1)}/kg, outside the ₹${a.per_kg_band[0]}–${a.per_kg_band[1]}/kg band for corrugated. Likely a unit or reading error (per piece vs per 100?).` });
       if (conf < a.review_threshold) flags.push({ code: "LOW_CONFIDENCE", sev: "warn", msg: `Model confidence ${Math.round(conf * 100)}% (match ${Math.round((el.match_confidence ?? 0) * 100)}%, read ${Math.round((el.read_confidence ?? 0) * 100)}%).${el.note ? " " + el.note : ""}` });
       else if (el.note) flags.push({ code: "NOTE", sev: "info", msg: el.note });
-      if (el.derived_from === "rule") flags.push({ code: "RULE", sev: "info", msg: `Derived from a group statement: "${el.source?.quote}".` });
+      if (el.derived_from === "rule") {
+        flags.push({ code: "RULE", sev: "info", msg: `Derived from a group statement: "${el.source?.quote}".` });
+        const alt = prior[vid]?.prices?.[line.id];
+        if (alt !== undefined) flags.push({ code: "RULE_VS_PRIOR", sev: line.type === "RSC" ? "info" : "warn", msg: `Ambiguous scope: does "${el.source?.quote}" cover this ${line.type.toLowerCase()}? Last year's contract price was ${inr(alt)}/pc. Confirm with the vendor.` });
+      }
+      const mf = matchFlag.get(el);
+      if (mf) flags.push(mf);
 
       steps.push({ label: "Landed, ex-GST", value: `${inr(v)} per ${line.uom}` });
 
@@ -270,6 +330,7 @@ export function normalize(
         vflags.push({ code: "TOTAL_MISMATCH", sev: "warn", msg: `Vendor's own total (${ex.stated_total.currency} ${ex.stated_total.amount.toLocaleString("en-IN")}) differs from their line prices × RFx quantities (${sum.toLocaleString("en-IN", { maximumFractionDigits: 0 })}) by ${diff.toLocaleString("en-IN", { maximumFractionDigits: 0 })}. We use line prices, not their total.` });
       else vflags.push({ code: "TOTAL_OK", sev: "info", msg: "Vendor's stated total reconciles with their line prices." });
     }
+    if (unmatched.length) vflags.push({ code: "UNMATCHED_ITEMS", sev: "info", msg: `${unmatched.length} priced item(s) match no RFx line by size and were left out: ${unmatched.slice(0, 6).join(", ")}${unmatched.length > 6 ? "…" : ""}.` });
     for (const u of ex.unresolved || []) vflags.push({ code: "MODEL_NOTE", sev: "info", msg: u });
 
     // questionnaire

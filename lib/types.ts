@@ -57,6 +57,8 @@ export type ExtractedLine = {
   match_confidence: number;
   read_confidence: number;
   note: string | null;
+  vendor_size?: { L: number; W: number; H: number | null; unit: "mm" | "cm" | "inch" } | null;
+  vendor_ply?: number | null;
   source: SourceRef;
 };
 
