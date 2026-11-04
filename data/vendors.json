@@ -1,0 +1,75 @@
+[
+ {
+  "id": "V1",
+  "name": "Kaveri Packwell Pvt Ltd",
+  "city": "Hosur, Tamil Nadu",
+  "contact": "Suresh Natarajan",
+  "email": "suresh.n@kaveripackwell.co.in",
+  "format": "Excel",
+  "subject": "Re: RFX-2026-PKG-014 – Kaveri Packwell offer",
+  "received_at": "2026-11-13T11:05:00+05:30",
+  "body": "Dear Ananya, please find attached our best offer in our standard format along with ISO certificate. Rates for 3 ply are per 100 nos as per our practice. Regards, Suresh",
+  "attachments": [
+   "demo/V1/Kaveri_Quotation_SFPL_FY27.xlsx",
+   "demo/V1/Kaveri_ISO9001_Certificate.pdf"
+  ]
+ },
+ {
+  "id": "V2",
+  "name": "Deccan Corrugated Industries",
+  "city": "Medchal, Hyderabad",
+  "contact": "Farhan Siddiqui",
+  "email": "sales@deccancorrugated.in",
+  "format": "PDF on letterhead",
+  "subject": "Quotation DCI/Q/2026-27/0418 – Saffronleaf",
+  "received_at": "2026-11-14T16:20:00+05:30",
+  "body": "Madam, please find enclosed our quotation ref 0418 and ISO certificate. Kindly consider us favourably. Farhan Siddiqui",
+  "attachments": [
+   "demo/V2/DCI_Quotation_0418.pdf",
+   "demo/V2/DCI_ISO9001_Certificate.pdf"
+  ]
+ },
+ {
+  "id": "V3",
+  "name": "Coastal Packaging Solutions LLP",
+  "city": "Sri City SEZ, Andhra Pradesh",
+  "contact": "Meera Iyer",
+  "email": "meera.iyer@coastalpack.co",
+  "format": "Word document",
+  "subject": "Coastal Packaging – Offer for FY27 corrugated packaging",
+  "received_at": "2026-11-17T10:12:00+05:30",
+  "body": "Dear Ananya, attached is our techno-commercial offer along with our ISO certificate. Happy to discuss. Best, Meera",
+  "attachments": [
+   "demo/V3/Coastal_Offer_Saffronleaf_FY27.docx",
+   "demo/V3/Coastal_ISO9001_Certificate.pdf"
+  ]
+ },
+ {
+  "id": "V4",
+  "name": "Nandi Box Works",
+  "city": "Peenya, Bengaluru",
+  "contact": "Manjunath G",
+  "email": "nandiboxworks@gmail.com",
+  "format": "Photo of rate card",
+  "subject": "rate card",
+  "received_at": "2026-11-12T19:47:00+05:30",
+  "body": "sir pls find rate card. all sizes avilable. Manjunath 98450xxxxx",
+  "attachments": [
+   "demo/V4/IMG_20261112_194512.jpg"
+  ]
+ },
+ {
+  "id": "V5",
+  "name": "Tungabhadra Packaging Co.",
+  "city": "Tumakuru, Karnataka",
+  "contact": "Ravi Kumar",
+  "email": "ravi@tungabhadrapack.in",
+  "format": "Email (incumbent)",
+  "subject": "RE: RFX-2026-PKG-014 FY27 corrugated boxes - quotation",
+  "received_at": "2026-11-18T21:42:00+05:30",
+  "body": "Hi Ananya madam,\n\n₹42/kg for the 5-ply, 38 for the 3-ply, rest same as last year, freight extra.\n\nQuestionnaire attached. Pls confirm by Friday so we can block paper.\n\nRegards\nRavi\nTungabhadra Packaging Co., Tumakuru\nSent from my phone\n",
+  "attachments": [
+   "demo/V5/TP_Supplier_Questionnaire_2026.pdf"
+  ]
+ }
+]

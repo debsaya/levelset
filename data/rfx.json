@@ -1,0 +1,680 @@
+{
+ "id": "RFX-2026-PKG-014",
+ "title": "FY27 Annual Rate Contract \u2014 Corrugated Packaging",
+ "buyer": {
+  "company": "Saffronleaf Foods Pvt Ltd",
+  "name": "Ananya Rao",
+  "role": "Category Buyer, Packaging",
+  "plant": "Bidadi Plant, Ramanagara, Karnataka 562109"
+ },
+ "scope": "Annual rate contract (Apr 2027 to Mar 2028) for 30 corrugated packaging items used across spices, snacks, staples and ready-to-eat lines at the Bidadi plant. Award may be split by line. Volumes are forecasts, not commitments.",
+ "currency": "INR",
+ "due_date": "2026-11-18",
+ "lines": [
+  {
+   "id": "L01",
+   "description": "3-ply RSC 200 x 150 x 100 mm, B-flute, Plain",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 200,
+    "W": 150,
+    "H": 100
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "Spice pouch shipper (100 g x 24)",
+   "annual_qty": 260000,
+   "uom": "piece",
+   "est_weight_kg": 0.083,
+   "is_new": false
+  },
+  {
+   "id": "L02",
+   "description": "3-ply RSC 250 x 200 x 150 mm, B-flute, Plain",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 250,
+    "W": 200,
+    "H": 150
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "Spice pouch shipper (200 g x 24)",
+   "annual_qty": 190000,
+   "uom": "piece",
+   "est_weight_kg": 0.148,
+   "is_new": false
+  },
+  {
+   "id": "L03",
+   "description": "3-ply RSC 300 x 200 x 200 mm, B-flute, 1 colour",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 300,
+    "W": 200,
+    "H": 200
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "1 colour",
+   "end_use": "Namkeen shipper (150 g x 30)",
+   "annual_qty": 150000,
+   "uom": "piece",
+   "est_weight_kg": 0.187,
+   "is_new": false
+  },
+  {
+   "id": "L04",
+   "description": "3-ply RSC 300 x 250 x 150 mm, B-flute, 1 colour",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 300,
+    "W": 250,
+    "H": 150
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "1 colour",
+   "end_use": "Masala box shipper",
+   "annual_qty": 125000,
+   "uom": "piece",
+   "est_weight_kg": 0.205,
+   "is_new": false
+  },
+  {
+   "id": "L05",
+   "description": "3-ply RSC 350 x 250 x 200 mm, B-flute, Plain",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 350,
+    "W": 250,
+    "H": 200
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "Bulk pouch shipper (1 kg x 10)",
+   "annual_qty": 95000,
+   "uom": "piece",
+   "est_weight_kg": 0.251,
+   "is_new": false
+  },
+  {
+   "id": "L06",
+   "description": "3-ply RSC 220 x 160 x 120 mm, B-flute, 2 colour",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 220,
+    "W": 160,
+    "H": 120
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "2 colour",
+   "end_use": "Retail-ready spice carton",
+   "annual_qty": 165000,
+   "uom": "piece",
+   "est_weight_kg": 0.101,
+   "is_new": false
+  },
+  {
+   "id": "L07",
+   "description": "3-ply RSC 250 x 180 x 80 mm, B-flute, 2 colour",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 250,
+    "W": 180,
+    "H": 80
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "2 colour",
+   "end_use": "Gift pack outer",
+   "annual_qty": 80000,
+   "uom": "piece",
+   "est_weight_kg": 0.105,
+   "is_new": false
+  },
+  {
+   "id": "L08",
+   "description": "3-ply RSC 180 x 120 x 90 mm, B-flute, Plain",
+   "type": "RSC",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 180,
+    "W": 120,
+    "H": 90
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "Sachet shipper",
+   "annual_qty": 210000,
+   "uom": "piece",
+   "est_weight_kg": 0.06,
+   "is_new": false
+  },
+  {
+   "id": "L09",
+   "description": "5-ply RSC 400 x 300 x 300 mm, BC-flute, Plain",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 400,
+    "W": 300,
+    "H": 300
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "Plain",
+   "end_use": "Biscuit shipper (12 x 400 g)",
+   "annual_qty": 115000,
+   "uom": "piece",
+   "est_weight_kg": 0.648,
+   "is_new": false
+  },
+  {
+   "id": "L10",
+   "description": "5-ply RSC 450 x 300 x 250 mm, BC-flute, 1 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 450,
+    "W": 300,
+    "H": 250
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "Cookie tin shipper",
+   "annual_qty": 95000,
+   "uom": "piece",
+   "est_weight_kg": 0.635,
+   "is_new": false
+  },
+  {
+   "id": "L11",
+   "description": "5-ply RSC 400 x 350 x 250 mm, BC-flute, 1 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 400,
+    "W": 350,
+    "H": 250
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "RTE meal shipper",
+   "annual_qty": 85000,
+   "uom": "piece",
+   "est_weight_kg": 0.693,
+   "is_new": false
+  },
+  {
+   "id": "L12",
+   "description": "5-ply RSC 500 x 350 x 300 mm, BC-flute, Plain",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 500,
+    "W": 350,
+    "H": 300
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "Plain",
+   "end_use": "Atta 5 kg x 4 shipper",
+   "annual_qty": 70000,
+   "uom": "piece",
+   "est_weight_kg": 0.848,
+   "is_new": false
+  },
+  {
+   "id": "L13",
+   "description": "5-ply RSC 380 x 280 x 240 mm, BC-flute, 2 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 380,
+    "W": 280,
+    "H": 240
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "2 colour",
+   "end_use": "Modern-trade display shipper",
+   "annual_qty": 90000,
+   "uom": "piece",
+   "est_weight_kg": 0.53,
+   "is_new": false
+  },
+  {
+   "id": "L14",
+   "description": "5-ply RSC 420 x 320 x 280 mm, BC-flute, 1 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 420,
+    "W": 320,
+    "H": 280
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "Pickle jar shipper (12 x 500 g)",
+   "annual_qty": 80000,
+   "uom": "piece",
+   "est_weight_kg": 0.684,
+   "is_new": false
+  },
+  {
+   "id": "L15",
+   "description": "5-ply RSC 350 x 300 x 300 mm, BC-flute, Plain",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 350,
+    "W": 300,
+    "H": 300
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "Plain",
+   "end_use": "Ghee jar shipper",
+   "annual_qty": 100000,
+   "uom": "piece",
+   "est_weight_kg": 0.603,
+   "is_new": false
+  },
+  {
+   "id": "L16",
+   "description": "5-ply RSC 480 x 320 x 320 mm, BC-flute, 2 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 480,
+    "W": 320,
+    "H": 320
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "2 colour",
+   "end_use": "Festive combo shipper",
+   "annual_qty": 60000,
+   "uom": "piece",
+   "est_weight_kg": 0.787,
+   "is_new": false
+  },
+  {
+   "id": "L17",
+   "description": "5-ply RSC 300 x 300 x 250 mm, BC-flute, 1 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 300,
+    "W": 300,
+    "H": 250
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "Sauce bottle shipper",
+   "annual_qty": 85000,
+   "uom": "piece",
+   "est_weight_kg": 0.512,
+   "is_new": false
+  },
+  {
+   "id": "L18",
+   "description": "5-ply RSC 550 x 400 x 300 mm, BC-flute, Plain",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 550,
+    "W": 400,
+    "H": 300
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "Plain",
+   "end_use": "Rice 10 kg x 2 shipper",
+   "annual_qty": 45000,
+   "uom": "piece",
+   "est_weight_kg": 1.019,
+   "is_new": false
+  },
+  {
+   "id": "L19",
+   "description": "7-ply RSC 600 x 400 x 400 mm, BCB-flute, Plain",
+   "type": "RSC",
+   "ply": 7,
+   "dimensions_mm": {
+    "L": 600,
+    "W": 400,
+    "H": 400
+   },
+   "flute": "BCB",
+   "board_gsm": "180/120/150/120/150/120/180",
+   "bursting_factor": "22 BF",
+   "print": "Plain",
+   "end_use": "Bulk ingredient carton (25 kg)",
+   "annual_qty": 25000,
+   "uom": "piece",
+   "est_weight_kg": 1.714,
+   "is_new": false
+  },
+  {
+   "id": "L20",
+   "description": "7-ply RSC 550 x 450 x 400 mm, BCB-flute, 1 colour",
+   "type": "RSC",
+   "ply": 7,
+   "dimensions_mm": {
+    "L": 550,
+    "W": 450,
+    "H": 400
+   },
+   "flute": "BCB",
+   "board_gsm": "180/120/150/120/150/120/180",
+   "bursting_factor": "22 BF",
+   "print": "1 colour",
+   "end_use": "Institutional pack carton",
+   "annual_qty": 20000,
+   "uom": "piece",
+   "est_weight_kg": 1.821,
+   "is_new": false
+  },
+  {
+   "id": "L21",
+   "description": "7-ply RSC 650 x 450 x 450 mm, BCB-flute, Plain",
+   "type": "RSC",
+   "ply": 7,
+   "dimensions_mm": {
+    "L": 650,
+    "W": 450,
+    "H": 450
+   },
+   "flute": "BCB",
+   "board_gsm": "180/120/150/120/150/120/180",
+   "bursting_factor": "22 BF",
+   "print": "Plain",
+   "end_use": "Bulk dry-fruit carton (30 kg)",
+   "annual_qty": 15000,
+   "uom": "piece",
+   "est_weight_kg": 2.117,
+   "is_new": false
+  },
+  {
+   "id": "L22",
+   "description": "7-ply RSC 500 x 500 x 450 mm, BCB-flute, Plain",
+   "type": "RSC",
+   "ply": 7,
+   "dimensions_mm": {
+    "L": 500,
+    "W": 500,
+    "H": 450
+   },
+   "flute": "BCB",
+   "board_gsm": "180/120/150/120/150/120/180",
+   "bursting_factor": "22 BF",
+   "print": "Plain",
+   "end_use": "Oil tin carton (4 x 5 L)",
+   "annual_qty": 18000,
+   "uom": "piece",
+   "est_weight_kg": 2.035,
+   "is_new": false
+  },
+  {
+   "id": "L23",
+   "description": "3-ply Partition 400 x 300 x 280 mm, B-flute, Plain",
+   "type": "Partition",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 400,
+    "W": 300,
+    "H": 280
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "9-cell partition set for L14",
+   "annual_qty": 120000,
+   "uom": "set",
+   "est_weight_kg": 0.176,
+   "is_new": false
+  },
+  {
+   "id": "L24",
+   "description": "3-ply Partition 350 x 300 x 300 mm, B-flute, Plain",
+   "type": "Partition",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 350,
+    "W": 300,
+    "H": 300
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "12-cell partition set for L15",
+   "annual_qty": 80000,
+   "uom": "set",
+   "est_weight_kg": 0.223,
+   "is_new": false
+  },
+  {
+   "id": "L25",
+   "description": "3-ply Layer pad 1200 x 1000 mm, B-flute, Plain",
+   "type": "Layer pad",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 1200,
+    "W": 1000,
+    "H": 0
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "Plain",
+   "end_use": "Pallet layer pad",
+   "annual_qty": 40000,
+   "uom": "piece",
+   "est_weight_kg": 0.54,
+   "is_new": false
+  },
+  {
+   "id": "L26",
+   "description": "3-ply Die-cut tray 380 x 280 x 60 mm, B-flute, 2 colour",
+   "type": "Die-cut tray",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 380,
+    "W": 280,
+    "H": 60
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "2 colour",
+   "end_use": "Shelf-ready tray",
+   "annual_qty": 150000,
+   "uom": "piece",
+   "est_weight_kg": 0.103,
+   "is_new": false
+  },
+  {
+   "id": "L27",
+   "description": "5-ply Die-cut tray 400 x 300 x 80 mm, BC-flute, 1 colour",
+   "type": "Die-cut tray",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 400,
+    "W": 300,
+    "H": 80
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "Heavy shelf-ready tray",
+   "annual_qty": 90000,
+   "uom": "piece",
+   "est_weight_kg": 0.217,
+   "is_new": false
+  },
+  {
+   "id": "L28",
+   "description": "3-ply Die-cut crash-lock 250 x 200 x 120 mm, B-flute, 2 colour",
+   "type": "Die-cut crash-lock",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 250,
+    "W": 200,
+    "H": 120
+   },
+   "flute": "B",
+   "board_gsm": "150/120/150",
+   "bursting_factor": "18 BF",
+   "print": "2 colour",
+   "end_use": "E-commerce crash-lock box",
+   "annual_qty": 70000,
+   "uom": "piece",
+   "est_weight_kg": 0.152,
+   "is_new": false
+  },
+  {
+   "id": "L29",
+   "description": "3-ply Printed sleeve 300 x 200 x 100 mm, E-flute, 4 colour",
+   "type": "Printed sleeve",
+   "ply": 3,
+   "dimensions_mm": {
+    "L": 300,
+    "W": 200,
+    "H": 100
+   },
+   "flute": "E",
+   "board_gsm": "E-flute 120/100/120 + 250 GSM duplex top",
+   "bursting_factor": "18 BF",
+   "print": "4 colour",
+   "end_use": "Festive gift sleeve (NEW)",
+   "annual_qty": 60000,
+   "uom": "piece",
+   "est_weight_kg": 0.076,
+   "is_new": true
+  },
+  {
+   "id": "L30",
+   "description": "5-ply RSC 600 x 400 x 300 mm, BC-flute, 1 colour",
+   "type": "RSC",
+   "ply": 5,
+   "dimensions_mm": {
+    "L": 600,
+    "W": 400,
+    "H": 300
+   },
+   "flute": "BC",
+   "board_gsm": "150/120/120/120/150",
+   "bursting_factor": "20 BF",
+   "print": "1 colour",
+   "end_use": "Export carton, moisture-resistant (NEW)",
+   "annual_qty": 30000,
+   "uom": "piece",
+   "est_weight_kg": 1.071,
+   "is_new": true
+  }
+ ],
+ "questionnaire": [
+  {
+   "id": "Q1",
+   "text": "Are you ISO 9001:2015 certified? Attach a valid certificate.",
+   "kind": "yes_no",
+   "must_have": true
+  },
+  {
+   "id": "Q2",
+   "text": "Do you use food-safe, low-migration inks and adhesives suitable for secondary food packaging?",
+   "kind": "yes_no",
+   "must_have": true
+  },
+  {
+   "id": "Q3",
+   "text": "Do you have an in-house lab for BCT, ECT, burst strength and moisture testing?",
+   "kind": "yes_no",
+   "must_have": true
+  },
+  {
+   "id": "Q4",
+   "text": "Monthly converting capacity (tonnes)?",
+   "kind": "number",
+   "must_have": false
+  },
+  {
+   "id": "Q5",
+   "text": "Standard lead time from PO (days)?",
+   "kind": "number",
+   "must_have": false
+  },
+  {
+   "id": "Q6",
+   "text": "Do you accept 60-day payment terms?",
+   "kind": "yes_no",
+   "must_have": false
+  },
+  {
+   "id": "Q7",
+   "text": "Do you hold FSC or recycled-content certification?",
+   "kind": "yes_no",
+   "must_have": false
+  },
+  {
+   "id": "Q8",
+   "text": "Price validity (days) and kraft paper price escalation clause, if any?",
+   "kind": "text",
+   "must_have": false
+  },
+  {
+   "id": "Q9",
+   "text": "Quality rejections or complaints from any FMCG customer in the last 12 months?",
+   "kind": "text",
+   "must_have": false
+  }
+ ],
+ "terms": {
+  "delivery": "DAP Saffronleaf Bidadi plant (freight included in price)",
+  "payment": "60 days from receipt of goods and invoice",
+  "taxes": "Quote prices exclusive of GST; state GST rate separately",
+  "validity": "Prices valid 90 days from submission",
+  "price_review": "Quarterly review linked to kraft paper index; +/-5% band",
+  "quality": "Lot-wise COA with BCT and burst results; AQL 1.5",
+  "format": "Quote per piece (per set for partitions) in INR. Any format accepted."
+ }
+}
