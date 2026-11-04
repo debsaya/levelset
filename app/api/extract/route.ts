@@ -153,6 +153,17 @@ Rules:
 12. read_confidence below 0.7 when text is blurry, angled, handwritten, or a row/column alignment is uncertain.
 13. Put anything the buyer should double-check in unresolved. Never invent a price. If you cannot read something, say so.`;
 
+const TRANSCRIBE = `You transcribe photos of printed or handwritten price lists exactly. Output every table row in order, top to bottom, one array per row, cells left to right, exactly as printed (keep units, 'x' separators, currency words). The photo may be angled: follow each row along its slant so the values stay on the right row. Never skip a row, never merge rows, never correct numbers. Put footnotes and terms printed outside the table in notes.`;
+const TRANSCRIBE_SCHEMA = {
+  type: "object",
+  properties: {
+    header: { type: "array", items: { type: "string" } },
+    rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+    notes: { type: "array", items: { type: "string" } },
+  },
+  required: ["header", "rows", "notes"],
+};
+
 export async function POST(req: Request) {
   try {
     const { vendor, files, rfx, prior } = (await req.json()) as {
@@ -191,6 +202,24 @@ export async function POST(req: Request) {
       { text: "Extract this vendor's response now, following the rules." },
     ];
     const t0 = Date.now();
+    // Photos get a transcription pass first: read every row before mapping anything.
+    const images = files.filter((f) => f.mime.startsWith("image/"));
+    for (const img of images) {
+      try {
+        const tr = await generate({
+          system: TRANSCRIBE,
+          contents: [{ role: "user", parts: [{ text: `Transcribe ${img.name}.` }, { inlineData: { mimeType: img.mime, data: img.data } }] }],
+          responseSchema: TRANSCRIBE_SCHEMA,
+          thinking: "low",
+          maxOutputTokens: 12000,
+        });
+        const t = parseJson<{ header: string[]; rows: string[][]; notes: string[] }>(tr.text);
+        const table = [t.header.join(" | "), ...t.rows.map((r, i) => `row ${i + 1}: ${r.join(" | ")}`)].join("\n");
+        parts.splice(parts.length - 1, 0, { text: `--- MACHINE TRANSCRIPTION of ${img.name} (${t.rows.length} rows; check it against the image and use it so no row is skipped) ---\n${table}\nNotes on the card: ${t.notes.join(" / ")}` });
+      } catch {
+        /* fall back to the image alone */
+      }
+    }
     const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000 });
     const extraction = parseJson(out.text);
     return NextResponse.json({ extraction, model: out.model, ms: Date.now() - t0 });

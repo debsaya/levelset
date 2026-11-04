@@ -10,9 +10,9 @@ export function Button({ variant = "default", className, ...p }: React.ButtonHTM
     <button
       {...p}
       className={cx(
-        "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium transition disabled:opacity-50 disabled:cursor-not-allowed",
-        variant === "primary" && "bg-brand text-white hover:bg-[#2449c4]",
-        variant === "default" && "border border-line bg-white hover:bg-panel",
+        "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium transition disabled:opacity-40 disabled:cursor-not-allowed",
+        variant === "primary" && "bg-ink text-white hover:bg-black shadow-sm",
+        variant === "default" && "border border-line bg-white hover:border-[#cfd3da] hover:bg-panel",
         variant === "ghost" && "hover:bg-panel text-muted",
         variant === "danger" && "border border-bad/30 text-bad bg-white hover:bg-bad-soft",
         className
@@ -26,12 +26,12 @@ export function Badge({ tone = "neutral", children, className, title }: { tone?:
     <span
       title={title}
       className={cx(
-        "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap",
-        tone === "neutral" && "bg-panel text-muted border border-line",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap",
+        tone === "neutral" && "bg-panel text-muted",
         tone === "good" && "bg-good-soft text-good",
         tone === "warn" && "bg-warn-soft text-warn",
         tone === "bad" && "bg-bad-soft text-bad",
-        tone === "brand" && "bg-brand-soft text-brand",
+        tone === "brand" && "bg-kraft-soft text-kraft",
         className
       )}
     >
@@ -41,7 +41,7 @@ export function Badge({ tone = "neutral", children, className, title }: { tone?:
 }
 
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cx("rounded-lg border border-line bg-white", className)}>{children}</div>;
+  return <div className={cx("rounded-xl border border-line bg-white", className)}>{children}</div>;
 }
 
 export function Spinner({ className }: { className?: string }) {

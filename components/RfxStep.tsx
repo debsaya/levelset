@@ -88,7 +88,7 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
             }}
             className="flex gap-2"
           >
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. add a die-cut tray for the new cookie SKU…" className="flex-1 rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-brand" />
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. add a die-cut tray for the new cookie SKU…" className="flex-1 rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-kraft" />
             <Button variant="primary" disabled={busy || !input.trim()}>
               Send
             </Button>
@@ -138,7 +138,7 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
               </thead>
               <tbody>
                 {r.lines.map((l) => (
-                  <tr key={l.id} className={cx("border-t border-line", flash.includes(l.id) && "bg-brand-soft")}>
+                  <tr key={l.id} className={cx("border-t border-line", flash.includes(l.id) && "bg-kraft-soft")}>
                     <td className="px-3 py-1.5 font-medium">
                       {l.id} {l.is_new && <Badge tone="brand">new</Badge>}
                     </td>

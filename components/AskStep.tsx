@@ -19,7 +19,7 @@ const SUGGESTED = [
 
 const COLORS = ["#2f5bea", "#12a07a", "#e08a00", "#c2417a", "#6b5bd6", "#3b8fbf"];
 
-export default function AskStep({ n }: { n: Normalized }) {
+export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?: string }) {
   const { s, set } = useStore();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,6 +39,14 @@ export default function AskStep({ n }: { n: Normalized }) {
       alive = false;
     };
   }, [n, s.rfx, s.responses, s.prior]);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (initialAsk && !asked.current) {
+      asked.current = true;
+      setTimeout(() => ask(initialAsk), 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAsk]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [s.analyst.length, live.length]);
@@ -164,7 +172,7 @@ export default function AskStep({ n }: { n: Normalized }) {
             }}
             className="flex gap-2"
           >
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything about the bids…" className="flex-1 rounded-md border border-line px-3 py-2 outline-none focus:border-brand" />
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything about the bids…" className="flex-1 rounded-md border border-line px-3 py-2 outline-none focus:border-kraft" />
             <Button variant="primary" disabled={busy || !input.trim()}>
               Ask
             </Button>
@@ -227,12 +235,12 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
             <Badge tone="good">✓ all {m.grounding.checked} figures trace to query results</Badge>
           ) : null)}
         {m.trace.length > 0 && (
-          <button className="text-brand" onClick={() => setShowSql(!showSql)}>
+          <button className="text-kraft" onClick={() => setShowSql(!showSql)}>
             {showSql ? "Hide" : "Show"} {m.trace.length} queries
           </button>
         )}
         {m.text && (
-          <button className="text-brand" onClick={() => navigator.clipboard.writeText(m.text)}>
+          <button className="text-kraft" onClick={() => navigator.clipboard.writeText(m.text)}>
             Copy text
           </button>
         )}

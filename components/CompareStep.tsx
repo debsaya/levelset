@@ -12,10 +12,10 @@ const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
   not_qualified: { tone: "bad", label: "Not qualified" },
 };
 
-export default function CompareStep({ n, onAsk }: { n: Normalized; onAsk: () => void }) {
+export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized; onAsk: () => void; initialReview?: boolean }) {
   const { s, set, log } = useStore();
   const [tab, setTab] = useState<"prices" | "questionnaire" | "audit">("prices");
-  const [onlyReview, setOnlyReview] = useState(false);
+  const [onlyReview, setOnlyReview] = useState(!!initialReview);
   const [sel, setSel] = useState<{ v: string; l: string } | null>(null);
   const [selQ, setSelQ] = useState<{ v: string; q: string } | null>(null);
   const [clarify, setClarify] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function CompareStep({ n, onAsk }: { n: Normalized; onAsk: () => 
           Count conditional rebates
         </label>
         <div className="ml-auto flex gap-2">
-          <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>⬇ Export workbook</Button>
+          <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>
           <Button variant="primary" onClick={onAsk}>
             Ask the data →
           </Button>
@@ -128,7 +128,6 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
         <Badge tone={q.tone} title={v.qual_reasons.join("\n") || "All must-haves met"}>
           {q.label}
         </Badge>
-        <Badge>{v.format}</Badge>
       </div>
       <div className="text-[11px] text-muted">
         {v.quoted}/{n.cells.filter((c) => c.vendor_id === v.vendor_id).length} priced · {v.terms.currency} · {v.terms.freight}
@@ -136,11 +135,11 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
       {v.review > 0 && <div className="text-[11px] text-warn">{v.review} need review</div>}
       {warn.map((f, i) => (
         <div key={i} className="text-[11px] leading-snug text-warn" title={f.msg}>
-          ⚠ {f.code === "TOTAL_MISMATCH" ? "Their total ≠ their lines" : f.msg.slice(0, 60)}
+          {f.code === "TOTAL_MISMATCH" ? "Their total ≠ their lines" : f.msg.slice(0, 60)}
         </div>
       ))}
-      <button onClick={onClarify} className="text-[11px] font-medium text-brand hover:underline">
-        ✉ Draft clarification
+      <button onClick={onClarify} className="text-[11px] font-medium text-kraft hover:underline">
+        Draft clarification email
       </button>
     </div>
   );
@@ -176,7 +175,7 @@ function PriceGrid({ n, rows, sel, onSel, onClarify }: { n: Normalized; rows: an
                 <div className="text-[11.5px] text-muted">{l.description}</div>
               </td>
               {cs.map((c, i) => (
-                <td key={i} onClick={() => c && onSel(c.vendor_id, c.line_id)} className={cx("cursor-pointer border-b border-l border-line px-3 py-1.5 align-top hover:bg-panel", sel?.v === c?.vendor_id && sel?.l === l.id && "outline outline-2 -outline-offset-2 outline-brand")}>
+                <td key={i} onClick={() => c && onSel(c.vendor_id, c.line_id)} className={cx("cursor-pointer border-b border-l border-line px-3 py-1.5 align-top hover:bg-panel", sel?.v === c?.vendor_id && sel?.l === l.id && "outline outline-2 -outline-offset-2 outline-kraft")}>
                   {c && <CellView c={c} best={best} bestQ={bestQ} />}
                 </td>
               ))}
@@ -227,14 +226,14 @@ function CellView({ c, best, bestQ }: { c: Cell; best: number | null; bestQ: num
   const isBest = best !== null && c.unit_inr === best;
   const isBestQ = bestQ !== null && c.unit_inr === bestQ;
   return (
-    <div className={cx("-mx-1.5 rounded px-1.5 py-0.5", c.status === "review" && "bg-warn-soft", c.status === "deviation" && "bg-panel")}>
+    <div className={cx("-mx-1.5 rounded px-1.5 py-0.5", c.status === "review" && "bg-warn-soft/60", c.status === "deviation" && "bg-panel")}>
       <div className="flex items-center justify-between gap-1">
         <span className={cx("font-semibold", isBest && "text-good", c.status === "deviation" && "text-muted line-through decoration-1")}>{inr(c.unit_inr)}</span>
         <span className="flex gap-0.5">
-          {isBestQ && <span title="Lowest among qualified vendors">★</span>}
-          {c.status === "review" && <span title="Needs review">⚠</span>}
+          {isBestQ && <span title="Lowest among qualified vendors" className="h-1.5 w-1.5 self-center rounded-full bg-good" />}
+          {c.status === "review" && <span title="Needs review" className="h-1.5 w-1.5 self-center rounded-full bg-warn" />}
           {c.status === "deviation" && <Badge tone="warn">alt spec</Badge>}
-          {c.override && <span title="Buyer action">✔</span>}
+          {c.override && <span title="Buyer decided" className="text-[10px] font-medium text-good">checked</span>}
           {c.derived_from === "prior_contract" && <Badge>FY26</Badge>}
           {c.derived_from === "rule" && <Badge>₹/kg</Badge>}
         </span>
@@ -305,7 +304,7 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
           <div className="space-y-1.5">
             {c.flags.map((f, i) => (
               <div key={i} className={cx("rounded px-2 py-1.5", f.sev === "info" ? "bg-panel" : f.sev === "warn" ? "bg-warn-soft text-warn" : "bg-bad-soft text-bad")}>
-                {f.sev !== "info" && "⚠ "}
+
                 {f.msg}
               </div>
             ))}
@@ -318,7 +317,7 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
               <div className="font-mono text-[11.5px]">“{c.source.quote}”</div>
               <div className="mt-1 text-[11px] text-muted">
                 {srcUrl ? (
-                  <a className="text-brand hover:underline" href={srcUrl} target="_blank">
+                  <a className="text-kraft hover:underline" href={srcUrl} target="_blank">
                     {c.source.file}
                   </a>
                 ) : (
@@ -338,7 +337,7 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
           )}
           <input className="w-full rounded border border-line px-2 py-1.5" placeholder="Note (why) — goes to the audit log" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex flex-wrap gap-2">
-            {c.unit_inr !== null && <Button onClick={() => act("accept")}>✔ Accept as read</Button>}
+            {c.unit_inr !== null && <Button onClick={() => act("accept")}>Looks right</Button>}
             <Button variant="danger" onClick={() => act("exclude")}>
               Exclude
             </Button>
@@ -387,12 +386,12 @@ function QGrid({ n, onSel, sel }: { n: Normalized; onSel: (v: string, q: string)
             {vs.map((v) => {
               const qc = n.q.find((x) => x.vendor_id === v.vendor_id && x.question_id === q.id);
               return (
-                <td key={v.vendor_id} onClick={() => onSel(v.vendor_id, q.id)} className={cx("cursor-pointer border-b border-l border-line px-3 py-2 align-top hover:bg-panel", sel?.v === v.vendor_id && sel?.q === q.id && "outline outline-2 -outline-offset-2 outline-brand")}>
+                <td key={v.vendor_id} onClick={() => onSel(v.vendor_id, q.id)} className={cx("cursor-pointer border-b border-l border-line px-3 py-2 align-top hover:bg-panel", sel?.v === v.vendor_id && sel?.q === q.id && "outline outline-2 -outline-offset-2 outline-kraft")}>
                   {qc && (
                     <>
                       <Badge tone={QTONE[qc.assessment]}>
                         {qc.assessment}
-                        {qc.overridden ? " ✔" : ""}
+                        {qc.overridden ? " (you)" : ""}
                       </Badge>
                       <div className="mt-1 line-clamp-3 text-[11.5px] text-muted">{qc.answer}</div>
                       {qc.auto_note && <div className="mt-1 text-[11px] text-bad">⚑ {qc.auto_note}</div>}

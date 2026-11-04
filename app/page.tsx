@@ -2,79 +2,116 @@
 import { useMemo, useState } from "react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { normalize } from "@/lib/normalize";
+import OverviewStep from "@/components/OverviewStep";
 import RfxStep from "@/components/RfxStep";
 import SendStep from "@/components/SendStep";
 import InboxStep from "@/components/InboxStep";
 import CompareStep from "@/components/CompareStep";
 import AskStep from "@/components/AskStep";
-import { Badge, Button, cx } from "@/components/ui";
+import { cx } from "@/components/ui";
 
-type StepId = "rfx" | "send" | "inbox" | "compare" | "ask";
+type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
 function App() {
   const { s, reset } = useStore();
-  const [step, setStep] = useState<StepId>("rfx");
+  const [page, setPage] = useState<Page>("overview");
+  const [opts, setOpts] = useState<{ review?: boolean; ask?: string; nonce: number }>({ nonce: 0 });
+  const [menu, setMenu] = useState(false);
+  const [confirm, setConfirm] = useState<null | "demo" | "blank">(null);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
-  const read = s.responses.filter((r) => r.status === "done").length;
   const review = n.cells.filter((c) => c.status === "review").length;
+  const read = s.responses.filter((r) => r.status === "done").length;
+  const go = (p: Page, o?: { review?: boolean; ask?: string }) => {
+    setOpts({ ...o, nonce: Date.now() });
+    setPage(p);
+  };
 
-  const steps: { id: StepId; label: string; hint: string; badge?: React.ReactNode }[] = [
-    { id: "rfx", label: "Draft RFx", hint: "AI co-pilot", badge: <Badge>{s.rfx.lines.length} lines</Badge> },
-    { id: "send", label: "Send", hint: "Email to vendors", badge: s.sentAt ? <Badge tone="good">sent</Badge> : undefined },
-    { id: "inbox", label: "Responses", hint: "Read anything", badge: s.responses.length ? <Badge tone={read === s.responses.length ? "good" : "neutral"}>{read}/{s.responses.length} read</Badge> : undefined },
-    { id: "compare", label: "Compare", hint: "Normalised & audited", badge: review ? <Badge tone="warn">{review} to review</Badge> : undefined },
-    { id: "ask", label: "Ask", hint: "Plain-language analysis" },
+  const tabs: { id: Page; label: string; count?: number | string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "compare", label: "Comparison", count: review || undefined },
+    { id: "ask", label: "Ask" },
+    { id: "quotes", label: "Quotes", count: s.responses.length ? `${read}/${s.responses.length}` : undefined },
+    { id: "rfx", label: "RFx" },
   ];
 
   return (
-    <div className="flex h-screen min-h-0">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-line bg-panel">
-        <div className="px-4 py-4">
-          <div className="text-[15px] font-bold tracking-tight">
-            Level<span className="text-brand">set</span>
-          </div>
-          <div className="text-[11px] text-muted">Kill the quote spreadsheet</div>
-        </div>
-        <nav className="flex-1 space-y-0.5 px-2">
-          {steps.map((st, i) => (
-            <button key={st.id} onClick={() => setStep(st.id)} className={cx("w-full rounded-md px-3 py-2 text-left", step === st.id ? "bg-white shadow-sm ring-1 ring-line" : "hover:bg-white/60")}>
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] font-medium">
-                  <span className="mr-1.5 text-muted">{i + 1}</span>
-                  {st.label}
-                </span>
-              </div>
-              <div className="flex items-center justify-between pl-4">
-                <span className="text-[11px] text-muted">{st.hint}</span>
-                {st.badge}
-              </div>
+    <div className="flex h-screen min-h-0 flex-col">
+      <header className="flex h-14 shrink-0 items-center gap-6 border-b border-line bg-white px-5">
+        <button onClick={() => go("overview")} className="flex items-center gap-2">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-[13px] font-bold text-white">L</span>
+          <span className="text-[15px] font-semibold tracking-tight">Levelset</span>
+        </button>
+        <nav className="flex h-full items-stretch gap-1">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => go(t.id)}
+              className={cx("relative flex items-center gap-1.5 px-3 text-[13.5px]", page === t.id || (t.id === "rfx" && page === "send") ? "font-semibold text-ink" : "text-muted hover:text-ink")}
+            >
+              {t.label}
+              {t.count !== undefined && <span className={cx("rounded-full px-1.5 text-[11px] tabular", t.id === "compare" ? "bg-warn-soft text-warn" : "bg-panel text-muted")}>{t.count}</span>}
+              {(page === t.id || (t.id === "rfx" && page === "send")) && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-ink" />}
             </button>
           ))}
         </nav>
-        <div className="space-y-2 border-t border-line p-3 text-[11px] text-muted">
-          <div>
-            Event: <b className="text-ink">{s.rfx.id}</b>
-            <br />
-            Buyer: {s.rfx.buyer.name}, {s.rfx.buyer.company}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="hidden text-[12px] text-muted lg:inline">AI live · email simulated · fictional companies</span>
+          <div className="relative">
+            <button onClick={() => setMenu(!menu)} className="grid h-8 w-8 place-items-center rounded-full bg-kraft-soft text-[12px] font-semibold text-kraft" title={`${s.rfx.buyer.name}, ${s.rfx.buyer.role}`}>
+              {s.rfx.buyer.name
+                .split(" ")
+                .map((x) => x[0])
+                .join("")}
+            </button>
+            {menu && (
+              <div className="absolute right-0 top-10 z-50 w-60 rounded-xl border border-line bg-white p-1.5 text-[13px] shadow-lg">
+                <div className="px-3 py-2 text-[12px] text-muted">
+                  {s.rfx.buyer.name}
+                  <br />
+                  {s.rfx.buyer.role}, {s.rfx.buyer.company}
+                </div>
+                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("demo"), setMenu(false))}>
+                  Reset the demo event
+                </button>
+                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("blank"), setMenu(false))}>
+                  Start a new RFx from scratch
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex gap-1">
-            <Button variant="ghost" className="px-2 text-[11px]" onClick={() => confirm("Reset to the demo event? This clears extractions and decisions.") && (reset("demo"), setStep("rfx"))}>
-              Reset demo
-            </Button>
-            <Button variant="ghost" className="px-2 text-[11px]" onClick={() => confirm("Start a blank RFx? This clears the demo event.") && (reset("blank"), setStep("rfx"))}>
-              New RFx
-            </Button>
-          </div>
-          <div className="leading-snug">Prototype · AI loops are live (Gemini). Email sending is simulated. All company names are fictional.</div>
         </div>
-      </aside>
-      <main className="min-w-0 flex-1 overflow-hidden bg-[#fbfcfd]">
-        {step === "rfx" && <RfxStep onNext={() => setStep("send")} />}
-        {step === "send" && <SendStep onNext={() => setStep("inbox")} />}
-        {step === "inbox" && <InboxStep onNext={() => setStep("compare")} />}
-        {step === "compare" && <CompareStep n={n} onAsk={() => setStep("ask")} />}
-        {step === "ask" && <AskStep n={n} />}
+      </header>
+      <main className="min-h-0 flex-1 overflow-hidden">
+        {page === "overview" && <OverviewStep n={n} go={go} />}
+        {page === "rfx" && <RfxStep onNext={() => go("send")} />}
+        {page === "send" && <SendStep onNext={() => go("overview")} />}
+        {page === "quotes" && <InboxStep onNext={() => go("overview")} />}
+        {page === "compare" && <CompareStep key={opts.nonce} n={n} onAsk={() => go("ask")} initialReview={!!opts.review} />}
+        {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
       </main>
+      {confirm && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
+          <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Reset the demo event?" : "Start a new RFx?"}</div>
+            <p className="mt-1.5 text-[13px] text-muted">This clears the quotes you've read, your review decisions and the analyst conversation in this browser.</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
+                Cancel
+              </button>
+              <button
+                className="rounded-lg bg-ink px-3.5 py-2 text-[13px] font-medium text-white"
+                onClick={() => {
+                  reset(confirm);
+                  setConfirm(null);
+                  go(confirm === "demo" ? "overview" : "rfx");
+                }}
+              >
+                {confirm === "demo" ? "Reset" : "Start new"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

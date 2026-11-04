@@ -47,7 +47,7 @@ ${r.buyer.role}, ${r.buyer.company}`
         </div>
         <div className="flex-1 divide-y divide-line overflow-y-auto">
           {vendors.map((x) => (
-            <button key={x.id} onClick={() => setSel(x.id)} className={cx("block w-full px-4 py-2.5 text-left", sel === x.id && "bg-brand-soft")}>
+            <button key={x.id} onClick={() => setSel(x.id)} className={cx("block w-full px-4 py-2.5 text-left", sel === x.id && "bg-kraft-soft")}>
               <div className="flex items-center justify-between">
                 <span className="font-medium">{x.name}</span>
                 {s.sentAt ? <Badge tone="good">sent</Badge> : <Badge>draft</Badge>}

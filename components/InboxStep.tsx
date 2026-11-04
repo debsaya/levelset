@@ -3,12 +3,11 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { fileName, useReader } from "@/lib/reader";
 
-export function fileName(url: string) {
-  return url.includes("#name=") ? decodeURIComponent(url.split("#name=")[1]) : url.split("/").pop()!;
-}
+export { fileName };
 
-const FORMAT_ICON: Record<string, string> = { Excel: "📊", "PDF on letterhead": "📄", "Word document": "📝", "Photo of rate card": "📷", "Email (incumbent)": "✉️" };
+const FORMAT_ICON: Record<string, string> = {};
 
 export default function InboxStep({ onNext }: { onNext: () => void }) {
   const { s, set, log } = useStore();
@@ -17,45 +16,7 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
   const visible = s.sentAt || s.mode === "blank" ? s.responses : [];
   const cur = s.responses.find((r) => r.vendor.id === sel);
 
-  function patch(id: string, p: Partial<VendorResponse>) {
-    set((x) => ({ ...x, responses: x.responses.map((r) => (r.vendor.id === id ? { ...r, ...p } : r)) }));
-  }
-
-  async function read(r: VendorResponse, uploaded?: File[]) {
-    patch(r.vendor.id, { status: "reading", error: undefined });
-    try {
-      const files = uploaded
-        ? await Promise.all(uploaded.map(async (f) => ({ name: f.name, mime: f.type || mimeFor(f.name), data: await fileToB64(f) })))
-        : await Promise.all(
-            r.vendor.attachments.map(async (url) => {
-              const blob = await (await fetch(url)).blob();
-              const name = fileName(url);
-              return { name, mime: mimeFor(name), data: await fileToB64(blob) };
-            })
-          );
-      const pc = s.prior[r.vendor.id];
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null }),
-      });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || "Extraction failed");
-      patch(r.vendor.id, { status: "done", extraction: j.extraction, model: j.model, ms: j.ms });
-      log(`Read response from ${r.vendor.name} (${j.extraction.lines?.length ?? 0} prices, ${j.model}, ${(j.ms / 1000).toFixed(0)}s)`);
-    } catch (e: any) {
-      patch(r.vendor.id, { status: "error", error: e.message });
-    }
-  }
-
-  async function readAll() {
-    const todo = visible.filter((r) => r.status !== "done" && r.status !== "reading");
-    const queue = [...todo];
-    const worker = async () => {
-      while (queue.length) await read(queue.shift()!);
-    };
-    await Promise.all([worker(), worker()]);
-  }
+  const { read, readAll } = useReader();
 
   const doneCount = visible.filter((r) => r.status === "done").length;
 
@@ -81,10 +42,10 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
             </div>
           )}
           {visible.map((r) => (
-            <button key={r.vendor.id} onClick={() => setSel(r.vendor.id)} className={cx("block w-full px-4 py-3 text-left", sel === r.vendor.id && "bg-brand-soft")}>
+            <button key={r.vendor.id} onClick={() => setSel(r.vendor.id)} className={cx("block w-full px-4 py-3 text-left", sel === r.vendor.id && "bg-kraft-soft")}>
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate font-medium">
-                  {FORMAT_ICON[r.vendor.format] || "📎"} {r.vendor.name}
+                  {r.vendor.name}
                 </span>
                 <StatusBadge r={r} />
               </div>
@@ -101,7 +62,7 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
           </Button>
           {doneCount > 0 && (
             <Button variant="primary" className="w-full justify-center" onClick={onNext}>
-              Compare {doneCount} vendors →
+              See the overview →
             </Button>
           )}
         </div>
@@ -183,8 +144,8 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
           {r.vendor.attachments.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {r.vendor.attachments.map((a) => (
-                <a key={a} href={a} target="_blank" className="rounded border border-line bg-white px-2 py-1 text-xs text-brand hover:underline">
-                  📎 {fileName(a)}
+                <a key={a} href={a} target="_blank" className="rounded border border-line bg-white px-2 py-1 text-xs text-kraft hover:underline">
+                  {fileName(a)}
                 </a>
               ))}
             </div>
@@ -273,7 +234,7 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
                 </div>
               )}
             </div>
-            <button className="text-xs text-brand" onClick={() => setShowRaw(!showRaw)}>
+            <button className="text-xs text-kraft" onClick={() => setShowRaw(!showRaw)}>
               {showRaw ? "Hide" : "Show"} raw extraction JSON
             </button>
             {showRaw && <pre className="max-h-96 overflow-auto rounded bg-panel p-3 text-[11px]">{JSON.stringify(ex, null, 1)}</pre>}
