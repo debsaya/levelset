@@ -50,6 +50,8 @@ export type VendorSummary = {
   total_inr: number;
   total_if_rebate_inr: number;
   basket_total_inr: number;
+  /** spend-weighted % above the cheapest price on the lines this vendor quoted (null if none comparable) */
+  avg_over_best_pct: number | null;
   flags: Flag[];
   terms: { currency: string; payment: number | null; lead: number | null; validity: number | null; freight: string; tax: string };
   adjustments: Adjustment[];
@@ -388,6 +390,7 @@ export function normalize(
         return s + (c.status !== "deviation" && c.unit_inr_if_rebate ? c.unit_inr_if_rebate * l.annual_qty : 0);
       }, 0),
       basket_total_inr: 0,
+      avg_over_best_pct: null,
       flags: vflags,
       terms: {
         currency: ex.currency,
@@ -423,6 +426,19 @@ export function normalize(
         }
       }
     }
+  }
+  // comparable index that works even when no single line was quoted by everyone
+  const best: Record<string, number> = {};
+  for (const c of cells) if (c.unit_inr !== null && c.status !== "deviation" && c.unit_inr > 0) best[c.line_id] = Math.min(best[c.line_id] ?? Infinity, c.unit_inr);
+  for (const v of vendors) {
+    let mine = 0,
+      cheapest = 0;
+    for (const c of cells) {
+      if (c.vendor_id !== v.vendor_id || c.unit_inr === null || c.status === "deviation" || !c.annual_inr || !best[c.line_id]) continue;
+      mine += c.annual_inr;
+      cheapest += c.annual_inr * (best[c.line_id] / c.unit_inr);
+    }
+    v.avg_over_best_pct = cheapest > 0 ? (mine / cheapest - 1) * 100 : null;
   }
   for (const v of vendors) v.review = cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "review").length;
 

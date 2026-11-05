@@ -184,7 +184,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
                           {x.vendorsUsed.map((v) => (
                             <span key={v.vendor_id}>
-                              {v.name.split(" ")[0]} · {v.lines} items · {crore(v.value)}
+                              {v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"} · {crore(v.value)}
                             </span>
                           ))}
                         </div>
@@ -223,7 +223,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   {n.vendors
                     .filter((v) => v.adjustments.some((a) => a.conditional))
                     .map((v) => (
-                      <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: conditional rebate`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
                     ))}
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               <h2 className="mb-3 text-[15px] font-semibold">Vendors</h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {[...n.vendors]
-                  .sort((a, b) => a.basket_total_inr - b.basket_total_inr)
+                  .sort((a, b) => (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
                   .map((v, i) => (
                     <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
                       <div className="flex items-start justify-between gap-2">
@@ -244,8 +244,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <div className="mt-1.5">
                         <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                       </div>
-                      <div className="mt-3 text-[20px] font-semibold tabular">{n.basket.length ? crore(v.basket_total_inr) : "–"}</div>
-                      <div className="text-[11.5px] text-muted">{done >= 2 ? `on the ${n.basket.length} items everyone quoted` : `on the ${n.basket.length} items quoted`}</div>
+                      <div className="mt-3 text-[20px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Cheapest" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
+                      <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : "vs the lowest price, on the items they quoted"}</div>
                       <div className="mt-3 grid grid-cols-2 gap-1 text-[12px]">
                         <span className="text-muted">Priced</span>
                         <span className="text-right tabular">
