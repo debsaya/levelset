@@ -55,7 +55,9 @@ function App() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          <span className="hidden text-[12px] text-muted lg:inline">AI live · email simulated · fictional companies</span>
+          <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[11.5px] text-muted lg:inline" title="Demo with made-up companies. The AI reads and answers for real; only the sending of emails to vendors is simulated.">
+            Demo data
+          </span>
           <div className="relative">
             <button onClick={() => setMenu(!menu)} className="grid h-8 w-8 place-items-center rounded-full bg-kraft-soft text-[12px] font-semibold text-kraft" title={`${s.rfx.buyer.name}, ${s.rfx.buyer.role}`}>
               {s.rfx.buyer.name

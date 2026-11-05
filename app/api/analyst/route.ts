@@ -74,7 +74,8 @@ How to work:
 - For award scenarios, compute the line-level winners and the total in SQL, compare to a baseline (e.g. the cheapest single vendor, or last year's prices from prior_prices), and list what was excluded and why.
 - Use show_table for anything with more than 3 numbers and show_chart when a picture helps. Do not repeat a table's contents in your text.
 - Final answer: lead with the answer in one or two sentences, then caveats (coverage gaps, unverified cells, conditional vendors, assumptions like FX and freight). Be concise. Use Indian number formatting (lakh, crore) for rupee totals. Write money as ₹.
-- If the question cannot be answered from the data, say what is missing and what you would ask the vendor.`;
+- If the question cannot be answered from the data, say what is missing and what you would ask the vendor.
+- Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not qualified", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
 
 export async function POST(req: Request) {
   const body = await req.json();

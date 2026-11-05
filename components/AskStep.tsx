@@ -19,6 +19,21 @@ const SUGGESTED = [
   "Draft an award recommendation I can send to my VP",
 ];
 
+// Show buyer-friendly words instead of database identifiers.
+const WORDS: Record<string, string> = { not_qualified: "Not qualified", qualified: "Qualified", conditional: "Conditional", qualified_or_conditional: "Qualified or conditional", needs_review: "Needs review", ok: "OK", missing: "No price", deviation: "Different spec" };
+function plain(t: string) {
+  return t.replace(/\b[a-z]+(?:_[a-z]+)+\b/g, (m) => (WORDS[m] ? WORDS[m].toLowerCase() : m.replace(/_/g, " ")));
+}
+function niceHeader(c: string) {
+  if (!/^[a-z0-9_]+$/.test(c)) return c;
+  let h = c.replace(/_inr$/, " (₹)").replace(/_/g, " ");
+  h = h.replace(/\bid\b/g, "ID").replace(/\bqty\b/g, "quantity");
+  return h.charAt(0).toUpperCase() + h.slice(1);
+}
+function niceCell(v: any) {
+  return typeof v === "string" && WORDS[v] ? WORDS[v] : v;
+}
+
 const COLORS = ["#2f5bea", "#12a07a", "#e08a00", "#c2417a", "#6b5bd6", "#3b8fbf"];
 
 export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?: string }) {
@@ -26,6 +41,21 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState<string[]>([]);
+  const [showPrev, setShowPrev] = useState(false);
+  const archive = s.analystArchive || [];
+  const snapshot = (x: typeof s) => (x.analyst.length ? [{ id: String(Date.now()), at: new Date().toISOString(), title: (x.analyst.find((m) => m.role === "user") as any)?.text || "Chat", analyst: x.analyst, analystHistory: x.analystHistory }] : []);
+  function startNew() {
+    set((x) => ({ ...x, analystArchive: [...snapshot(x), ...(x.analystArchive || [])].slice(0, 8), analyst: [], analystHistory: [] }));
+    setShowPrev(false);
+  }
+  function openChat(id: string) {
+    set((x) => {
+      const c = (x.analystArchive || []).find((a) => a.id === id);
+      if (!c) return x;
+      return { ...x, analyst: c.analyst, analystHistory: c.analystHistory, analystArchive: [...snapshot(x), ...(x.analystArchive || []).filter((a) => a.id !== id)].slice(0, 8) };
+    });
+    setShowPrev(false);
+  }
   const dbRef = useRef<any>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -143,11 +173,30 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
             <div className="font-semibold">Ask the comparison</div>
             <div className="text-xs text-muted">The analyst writes SQL over the normalised data. Tables and charts come straight from query results; figures in its prose are checked against them.</div>
           </div>
-          {s.analyst.length > 0 && (
-            <Button variant="ghost" onClick={() => set((x) => ({ ...x, analyst: [], analystHistory: [] }))}>
-              New conversation
-            </Button>
-          )}
+          <div className="relative flex gap-1">
+            {archive.length > 0 && (
+              <Button variant="ghost" disabled={busy} onClick={() => setShowPrev(!showPrev)}>
+                Previous chats ({archive.length})
+              </Button>
+            )}
+            {s.analyst.length > 0 && (
+              <Button variant="ghost" disabled={busy} onClick={startNew}>
+                New conversation
+              </Button>
+            )}
+            {showPrev && (
+              <div className="absolute right-0 top-9 z-10 w-80 overflow-hidden rounded-lg border border-line bg-white shadow-lg">
+                {archive.map((a) => (
+                  <button key={a.id} onClick={() => openChat(a.id)} className="block w-full border-b border-line px-3 py-2 text-left text-[12.5px] last:border-0 hover:bg-panel">
+                    <div className="truncate font-medium">{a.title}</div>
+                    <div className="text-[11px] text-muted">
+                      {new Date(a.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })} · {a.analyst.filter((m) => m.role === "user").length} questions
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           {!s.analyst.length && (
@@ -243,33 +292,33 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
       {m.error && <div className="rounded-md bg-bad-soft p-3 text-[13px] text-bad">⚠ {m.error}</div>}
       {m.text && (
         <div className="text-[13.5px] leading-relaxed">
-          <Md text={m.text} mark={mark} />
+          <Md text={plain(m.text)} mark={mark} />
         </div>
       )}
+      {m.grounding &&
+        (m.grounding.ungrounded.length ? (
+          <Badge tone="warn" title="Highlighted figures could not be matched to any query result in this answer.">
+            {m.grounding.ungrounded.length} of {m.grounding.checked} figures not traced to data
+          </Badge>
+        ) : m.grounding.checked ? (
+          <Badge tone="good">✓ all {m.grounding.checked} figures trace to query results</Badge>
+        ) : null)}
       {m.blocks.map((b, i) => (b.kind === "table" ? <TableBlock key={i} b={b} /> : <ChartBlock key={i} b={b} />))}
       <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted">
-        {m.grounding &&
-          (m.grounding.ungrounded.length ? (
-            <Badge tone="warn" title="Highlighted figures could not be matched to any query result in this answer.">
-              {m.grounding.ungrounded.length} of {m.grounding.checked} figures not traced to data
-            </Badge>
-          ) : m.grounding.checked ? (
-            <Badge tone="good">✓ all {m.grounding.checked} figures trace to query results</Badge>
-          ) : null)}
         {m.trace.length > 0 && (
           <button className="text-kraft" onClick={() => setShowSql(!showSql)}>
-            {showSql ? "Hide" : "Show"} {m.trace.length} queries
+            {showSql ? "Hide details" : "How this was worked out"}
           </button>
         )}
         {m.text && (
-          <button className="text-kraft" onClick={() => navigator.clipboard.writeText(m.text)}>
+          <button className="text-kraft" onClick={() => navigator.clipboard?.writeText(plain(m.text))}>
             Copy text
           </button>
         )}
-        {m.model && <span>· {m.model}</span>}
       </div>
       {showSql && (
         <div className="space-y-2">
+          {m.model && <div className="text-[11.5px] text-muted">Answered by {m.model} · {m.trace.length} steps</div>}
           {m.trace.map((t, i) => (
             <div key={i} className="rounded border border-line bg-panel p-2 font-mono text-[11px]">
               <div className="mb-1 font-sans text-muted">
@@ -294,23 +343,25 @@ function TableBlock({ b }: { b: Extract<Block, { kind: "table" }> }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
-        <div className="text-[13px] font-semibold">{b.title}</div>
+        <div className="text-[13px] font-semibold">
+          {b.title} <span className="ml-1 font-normal text-muted">· {b.rows.length} rows</span>
+        </div>
         <div className="flex gap-1">
-          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns, b.rows, "csv")}>
+          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns.map(niceHeader), b.rows.map((r) => r.map(niceCell)), "csv")}>
             CSV
           </Button>
-          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns, b.rows, "xlsx")}>
+          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns.map(niceHeader), b.rows.map((r) => r.map(niceCell)), "xlsx")}>
             XLSX
           </Button>
         </div>
       </div>
-      <div className="max-h-96 overflow-auto">
+      <div className="max-h-[60vh] overflow-auto">
         <table className="w-full text-[12.5px] tabular">
           <thead className="sticky top-0 bg-panel text-left text-[11px] text-muted">
             <tr>
               {b.columns.map((c) => (
                 <th key={c} className="px-3 py-1.5">
-                  {c}
+                  {niceHeader(c)}
                 </th>
               ))}
             </tr>
@@ -320,7 +371,7 @@ function TableBlock({ b }: { b: Extract<Block, { kind: "table" }> }) {
               <tr key={i} className="border-t border-line">
                 {r.map((v, j) => (
                   <td key={j} className={cx("px-3 py-1", typeof v === "number" && "text-right")}>
-                    {fmt(v)}
+                    {fmt(niceCell(v))}
                   </td>
                 ))}
               </tr>

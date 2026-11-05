@@ -27,6 +27,7 @@ export type State = {
   audit: AuditEntry[];
   analyst: AnalystMsg[];
   analystHistory: any[];
+  analystArchive?: { id: string; at: string; title: string; analyst: AnalystMsg[]; analystHistory: any[] }[];
   prior: PriorContracts;
 };
 

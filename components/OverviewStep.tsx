@@ -38,7 +38,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-kraft">
-              {s.rfx.buyer.company} · {s.rfx.lines.length} items · quotes due {due}
+              Buyer: {s.rfx.buyer.company} · {s.rfx.lines.length} items · {s.responses.length} vendors invited · quotes due {due}
             </div>
             <h1 className="mt-1 text-[28px] font-semibold leading-tight">{s.rfx.title.replace(/\s*—\s*/, ": ")}</h1>
           </div>
