@@ -75,6 +75,29 @@ export type Normalized = {
 
 export const key = (v: string, l: string) => `${v}|${l}`;
 
+/** Currency written however the vendor wrote it → ISO code ("Rs.", "₹", "us$" ...). Unknown stays as written (and is blocked, not guessed). */
+export function currencyCode(c: string | null | undefined): string {
+  const x = (c || "INR").trim().toUpperCase().replace(/\./g, "");
+  if (["", "INR", "RS", "₹", "RUPEE", "RUPEES", "INR/-"].includes(x)) return "INR";
+  if (["USD", "$", "US$", "US DOLLAR", "US DOLLARS", "USD$"].includes(x)) return "USD";
+  return x;
+}
+
+/** A date the model wrote → YYYY-MM-DD, or null if it can't be read with confidence. Day-first for dd/mm/yyyy (India). */
+export function isoDate(s: string | null | undefined): string | null {
+  if (!s) return null;
+  const t = s.trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(t);
+  if (m) {
+    const d = +m[1], mo = +m[2];
+    if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+    return `${m[3]}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  }
+  return null;
+}
+
 function toMm(sz: { L: number; W: number; H: number | null; unit: string }) {
   const f = sz.unit === "inch" ? 25.4 : sz.unit === "cm" ? 10 : 1;
   return [sz.L * f, sz.W * f, (sz.H || 0) * f];
@@ -190,7 +213,9 @@ export function normalize(
 
     for (const line of rfx.lines) {
       const k = key(vid, line.id);
-      const ov = overrides[k];
+      // an override with no usable price (blank box, zero, NaN) is ignored; the cell then stays in review instead of silently becoming ₹0
+      const ov0 = overrides[k];
+      const ov = ov0 && ov0.action === "override" && !(typeof ov0.unit_inr === "number" && isFinite(ov0.unit_inr) && ov0.unit_inr > 0) ? undefined : ov0;
       const cands = byLine[line.id] || [];
       const el = [...cands].sort((x, y) => (dimErr.get(x) ?? 999) - (dimErr.get(y) ?? 999) || Math.min(y.match_confidence, y.read_confidence) - Math.min(x.match_confidence, x.read_confidence))[0];
       const flags: Flag[] = [];
@@ -204,7 +229,7 @@ export function normalize(
       }
 
       let price = el.price;
-      let currency = (el.currency || ex.currency || "INR").toUpperCase();
+      let currency = currencyCode(el.currency || ex.currency);
       let basisUnit = el.basis_unit;
       let basisQty = el.basis_qty || 1;
       let quotedAs = "";
@@ -290,6 +315,10 @@ export function normalize(
       } else if (freightIncluded === null || freightIncluded === undefined) {
         flags.push({ code: "FREIGHT_UNCLEAR", sev: "warn", msg: "Freight terms not stated; treated as delivered. Confirm with the vendor." });
       }
+      if (!isFinite(v) || v <= 0) {
+        cells.push({ vendor_id: vid, line_id: line.id, status: ov?.action === "override" ? "ok" : "missing", quoted_as: quotedAs, unit_inr: ov?.action === "override" ? ov.unit_inr ?? null : null, unit_inr_if_rebate: null, annual_inr: ov?.action === "override" && ov.unit_inr ? ov.unit_inr * line.annual_qty : null, per_kg: null, confidence: conf, flags: [{ code: "INVALID_PRICE", sev: "warn", msg: "After conversions and discounts the price is zero or negative (a discount of 100% or more?). Ask the vendor to confirm." }], steps, source: el.source, derived_from: el.derived_from, override: ov, raw: el, missing_reason: "Price could not be used" });
+        continue;
+      }
       const ifRebate = condPct ? preFreight * (1 - condPct / 100) + freightAdd : v;
       if (condPct && a.apply_conditional_rebates) {
         v = ifRebate;
@@ -354,11 +383,14 @@ export function normalize(
         sum += per * line.annual_qty;
       }
       const diff = sum - ex.stated_total.amount;
-      if (Math.abs(diff) / ex.stated_total.amount > 0.005)
-        vflags.push({ code: "TOTAL_MISMATCH", sev: "warn", msg: `Vendor's own total (${ex.stated_total.currency} ${ex.stated_total.amount.toLocaleString("en-IN")}) differs from their line prices × RFx quantities (${sum.toLocaleString("en-IN", { maximumFractionDigits: 0 })}) by ${diff.toLocaleString("en-IN", { maximumFractionDigits: 0 })}. We use line prices, not their total.` });
+      const ratio = sum > 0 ? ex.stated_total.amount / sum : 0;
+      const gstLike = [5, 12, 18, 28].find((r) => Math.abs(ratio - (1 + r / 100)) < 0.006);
+      if (currencyCode(ex.stated_total.currency) !== currencyCode(ex.currency)) vflags.push({ code: "TOTAL_CURRENCY", sev: "info", msg: `Vendor's own total is in ${ex.stated_total.currency}, their prices are in ${ex.currency}; not cross-checked.` });
+      else if (Math.abs(diff) / ex.stated_total.amount > 0.005)
+        vflags.push({ code: "TOTAL_MISMATCH", sev: "warn", msg: `Vendor's own total (${ex.stated_total.currency} ${ex.stated_total.amount.toLocaleString("en-IN")}) differs from their line prices × RFx quantities (${sum.toLocaleString("en-IN", { maximumFractionDigits: 0 })}) by ${diff.toLocaleString("en-IN", { maximumFractionDigits: 0 })}${gstLike ? `, which is about ${gstLike}% GST: their total probably includes tax` : ""}. We use line prices, not their total.` });
       else vflags.push({ code: "TOTAL_OK", sev: "info", msg: "Vendor's stated total reconciles with their line prices." });
     }
-    const qd = ex.quote_date ? Date.parse(ex.quote_date) : NaN;
+    const qd = Date.parse(isoDate(ex.quote_date) || "");
     if (!isNaN(qd) && ex.validity_days && ex.validity_days > 0) {
       const until = new Date(qd + ex.validity_days * 864e5).toISOString().slice(0, 10);
       if (until < rfx.due_date) vflags.push({ code: "QUOTE_EXPIRED", sev: "warn", msg: `Prices were valid only until ${until}, before the RFx due date (${rfx.due_date}). Ask for a refreshed quote.` });
@@ -374,15 +406,20 @@ export function normalize(
       const ans = (ex.questionnaire || []).find((x) => x.question_id === qq.id);
       let assessment = ans?.assessment || "unanswered";
       let auto_note: string | undefined;
-      if (/certif/i.test(qq.text) && /iso/i.test(qq.text)) {
+      if (/certif/i.test(qq.text) && /\biso\b|9001/i.test(qq.text)) {
         // look only at ISO documents (an expired FSC certificate must not fail ISO), and if there are several take the newest
-        const docs = (ex.documents || []).filter((d) => d.valid_until);
-        const isoDocs = docs.filter((d) => /iso|9001/i.test(d.kind + " " + d.summary));
-        const generic = docs.filter((d) => /certif/i.test(d.kind + " " + d.summary) && !/fsc|pefc|brc|fssc|haccp|msme|gst|bis\b|udyam/i.test(d.kind + " " + d.summary));
-        const cert = (isoDocs.length ? isoDocs : generic).sort((x, y) => (y.valid_until! > x.valid_until! ? 1 : -1))[0];
-        if (cert && cert.valid_until && cert.valid_until < rfx.due_date) {
+        const docs = (ex.documents || []).filter((d) => d.valid_until).map((d) => ({ ...d, on: isoDate(d.valid_until) }));
+        const tag = (d: { kind: string; summary: string }) => `${d.kind} ${d.summary}`;
+        const isoDocs = docs.filter((d) => /\biso\b|9001/i.test(tag(d)));
+        const generic = docs.filter((d) => /certif/i.test(tag(d)) && !/fsc|pefc|brc|fssc|haccp|msme|gst|\bbis\b|udyam/i.test(tag(d)));
+        const pool = isoDocs.length ? isoDocs : generic;
+        const cert = [...pool].sort((x, y) => ((y.on || "") > (x.on || "") ? 1 : -1))[0];
+        if (cert && cert.on && cert.on < rfx.due_date) {
           assessment = "fail";
-          auto_note = `Attached certificate expired on ${cert.valid_until} (checked by system).`;
+          auto_note = `Attached certificate expired on ${cert.on} (checked by system).`;
+        } else if (cert && !cert.on && assessment === "pass") {
+          assessment = "partial";
+          auto_note = `Certificate attached, but its validity date ("${cert.valid_until}") could not be read reliably. Please check it.`;
         } else if (!cert && assessment === "pass") {
           assessment = "partial";
           auto_note = "Claimed, but no certificate with a validity date was attached.";

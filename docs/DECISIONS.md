@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 80 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 109 tests, ~1 second, no API key needed).
 
 ---
 
@@ -59,6 +59,16 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 26 | **Noise from the reader:** an invented line id, an answer to a question that doesn't exist, a regret line, a reply with no prices, no replies at all. | Ignored safely, never crashes, never costed. A regret keeps its reason. | various | the Coverage and noise tests |
 | 27 | **Other tax cases:** 18% GST, quotes that mix inclusive and exclusive lines, lower-case currency codes. | Same basis for every line, whatever the quote mixes. | `GST_INCLUDED` | the Tax variety tests |
 | 28 | **Hidden state.** The same inputs must always give the same answer, and the data must never be modified in place. | Pure functions. | `normalize()` | the "Safety net" tests |
+
+| 29 | **Dates in odd formats.** The reader writes a certificate date as "15/03/2025" or "June 2027" instead of 2025-03-15. Comparing them as text gives the wrong answer by luck. *(Gap, fixed.)* | Day-first and ISO dates are parsed; anything else is **not guessed**: an ISO claim with an unreadable date becomes "needs proof". | `isoDate()` | the four date tests |
+| 30 | **Currency written as "Rs." or "₹".** The system blocked it as an unknown currency. *(Gap, fixed.)* | The usual spellings of INR and USD are recognised. Truly unknown currencies are still blocked. | `currencyCode()` | the two currency tests |
+| 31 | **The buyer types a blank or bad override price.** A blank box became NaN and a trusted, cheapest ₹0 cell. *(Gap, fixed.)* | An override without a usable positive price is ignored; the cell stays in review. | `normalize()` override guard | *"an override with a blank/NaN/zero/negative price is ignored"* |
+| 32 | **A discount of 100% or more, or a negative pack size.** | Nothing can bring a price to zero or below; the cell is empty and flagged. *(Gap, fixed.)* | `INVALID_PRICE` | the two "too good to be true" tests |
+| 33 | **Vendor's own total includes GST.** It looked like an error in their line prices. | If the difference is exactly 5/12/18/28% GST the message says so. A total in another currency is not compared. | `TOTAL_MISMATCH` / `TOTAL_CURRENCY` | the two total tests |
+| 34 | **The word "ISO" hiding in other words.** A question about "isolation" or "precision" would trigger the certificate check. *(Gap, fixed.)* | Whole-word match only. | questionnaire block | the "precision/isolation" test |
+| 35 | **Sloppy reads.** The model omits tax, freight, documents, confidence scores or the whole questionnaire. | Never crashes. Missing evidence means **no approval**; missing confidence means **review**, not trust. | `normalize()` | the "Sloppy extractions" tests |
+| 36 | **Nothing to award.** No approved vendors, a vendor id that doesn't exist, ties. | Empty awards, not errors; ties resolve the same way every time. | `lib/award.ts` | the "Awards with nothing to award" tests |
+| 37 | **Unit confusion in sizes:** millimetres labelled inches, a ply nobody asked for, length and width swapped, flat items with no height. | Left out visibly or matched correctly; never forced onto the wrong line. | size check | the four size tests |
 
 ---
 
@@ -120,11 +130,15 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 - Number formats such as decimal commas are a reading problem, not a code problem; they belong in the extraction accuracy checks above, not in unit tests.
 - Free-tier model limits can slow a live read. The app retries and shows a clear message rather than failing silently.
 
-## 8. Run the proof
+## 8. What "proof" means here, and doesn't
+
+The tests prove the **code** does what each rule says, on every case I could think of and on odd inputs the reader might produce. They cannot prove the **AI reads every real document correctly** (that is the accuracy table in section 5), and they only cover situations I thought of. That is why the review queue exists: the system is designed to say "I'm not sure" about the unexpected case, instead of pretending to be right.
+
+## 9. Run the proof
 
 ```bash
 npm install
-npm test        # 80 checks, no API key needed
+npm test        # 109 checks, no API key needed
 ```
 
-I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6.
+I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, and removing the third round (rows 29 to 34) fails 10.
