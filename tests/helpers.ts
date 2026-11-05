@@ -18,6 +18,7 @@ export const A: Assumptions = {
   apply_conditional_rebates: false,
   per_kg_band: [25, 90],
   review_threshold: 0.8,
+  photo_review_threshold: 0.9,
 };
 
 const SRC = { file: "quote.xlsx", location: "row 1", quote: "3.40 per pc" };

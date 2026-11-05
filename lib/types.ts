@@ -120,6 +120,8 @@ export type Assumptions = {
   apply_conditional_rebates: boolean;
   per_kg_band: [number, number];
   review_threshold: number;
+  /** photos and scans must clear this confidence to be trusted without a look (higher than review_threshold; optional for older saved state) */
+  photo_review_threshold?: number;
 };
 
 export type CellOverride = {

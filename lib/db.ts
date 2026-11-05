@@ -104,7 +104,7 @@ export function runQuery(db: any, sql: string, limit = 500): QueryResult {
 export function contextDoc(a: Assumptions, n: Normalized) {
   return `${SCHEMA_DOC}
 
-Current buyer assumptions: USD→INR ${a.fx_usd_inr}; freight added for ex-works vendors at ₹/kg ${JSON.stringify(a.freight_inr_per_kg)} (default ${a.default_freight_inr_per_kg}); conditional rebates counted: ${a.apply_conditional_rebates ? "yes" : "no"}; review threshold ${a.review_threshold}.
+Current buyer assumptions: USD→INR ${a.fx_usd_inr}; freight added for ex-works vendors at ₹/kg ${JSON.stringify(a.freight_inr_per_kg)} (default ${a.default_freight_inr_per_kg}); conditional rebates counted: ${a.apply_conditional_rebates ? "yes" : "no"}; review threshold ${a.review_threshold} (${a.photo_review_threshold ?? 0.9} for photos and scans).
 Vendors in this event: ${n.vendors.map((v) => `${v.vendor_id}=${v.name} (${v.qualification})`).join(", ")}.
 Like-for-like basket (lines every vendor priced at spec): ${n.basket.join(", ") || "none"}.`;
 }

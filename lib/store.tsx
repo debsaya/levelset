@@ -38,6 +38,7 @@ const DEMO_ASSUMPTIONS: Assumptions = {
   apply_conditional_rebates: false,
   per_kg_band: [25, 90],
   review_threshold: 0.8,
+  photo_review_threshold: 0.9,
 };
 
 export function demoState(): State {

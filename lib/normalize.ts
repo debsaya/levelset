@@ -13,6 +13,12 @@ function realDeviation(t?: string | null): string | null {
   return unitOnly ? null : t;
 }
 
+const IMAGE_FILE = /\.(png|jpe?g|webp|heic|gif|bmp|tiff?)$/i;
+/** A price read from a photo or scan: the likeliest place for a misread digit or a slipped row. */
+export function isPhotoSource(file: string | null | undefined, format: string | null | undefined): boolean {
+  return IMAGE_FILE.test(file || "") || /photo|image|scan|handwrit/i.test(format || "");
+}
+
 export type CellStatus = "ok" | "review" | "missing" | "deviation" | "excluded";
 
 export type Cell = {
@@ -32,6 +38,8 @@ export type Cell = {
   override?: CellOverride;
   raw?: ExtractedLine;
   missing_reason?: string;
+  /** the price was read from a photo or scan */
+  from_photo?: boolean;
 };
 
 export type QCell = {
@@ -362,6 +370,11 @@ export function normalize(
       if (perKg < a.per_kg_band[0] || perKg > a.per_kg_band[1]) flags.push({ code: "UNIT_SUSPECT", sev: "warn", msg: `Implies ₹${perKg.toFixed(1)}/kg, outside the ₹${a.per_kg_band[0]}–${a.per_kg_band[1]}/kg band for corrugated. Likely a unit or reading error (per piece vs per 100?).` });
       if (conf < a.review_threshold) flags.push({ code: "LOW_CONFIDENCE", sev: "warn", msg: `Model confidence ${Math.round(conf * 100)}% (match ${Math.round((el.match_confidence ?? 0) * 100)}%, read ${Math.round((el.read_confidence ?? 0) * 100)}%).${el.note ? " " + el.note : ""}` });
       else if (el.note) flags.push({ code: "NOTE", sev: "info", msg: el.note });
+      // Photos and scans are held to a higher bar than clean files, but a clear one passes: only a read the AI itself was unsure of is flagged.
+      const fromPhoto = isPhotoSource(el.source?.file, r.vendor.format);
+      const photoBar = a.photo_review_threshold ?? 0.9;
+      if (fromPhoto && conf >= a.review_threshold && conf < photoBar)
+        flags.push({ code: "PHOTO_CONFIDENCE", sev: "warn", msg: `Read from a photo or scan with ${Math.round(conf * 100)}% confidence; photos need ${Math.round(photoBar * 100)}% to be trusted without a look. Check the original.` });
       if (el.derived_from === "rule") {
         flags.push({ code: "RULE", sev: "info", msg: `Derived from a group statement: "${el.source?.quote}".` });
         const alt = prior[vid]?.prices?.[line.id];
@@ -403,6 +416,7 @@ export function normalize(
         derived_from: el.derived_from,
         override: ov,
         raw: el,
+        from_photo: fromPhoto,
       });
     }
 

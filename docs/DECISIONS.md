@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 149 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 151 tests, ~1 second, no API key needed).
 
 ---
 
@@ -79,7 +79,7 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 44 | **A discount the reader called unconditional but whose wording sets a condition** ("5% on annual offtake above ₹1 Cr"). Giving credit they may never earn is the costlier mistake. | Not counted; the "if earned" price is shown. A percentage that looks like a fraction (0.05) or is huge (40) is flagged. A surcharge is the opposite: never hidden by condition wording. | `ADJ_CONDITION`, `ADJ_SCALE` | the discount tests |
 | 45 | **A price that could belong to two similar items** (a rounded size fits two lines). | Flagged on the cell, naming both lines. | `AMBIGUOUS_MATCH` | the two similar-item tests |
 
-| 46 | **A misread digit or slipped row on a photo or scan** that stays in a believable range. The checks above can't see it. | Treat the *source* as a risk: any winning price read from a photo or scan counts as "still needs your check" in every award summary until the buyer accepts or corrects it against the original. The analyst is told to say so. | `fromPhoto()` / `needsCheck()` | the five photo tests |
+| 46 | **A misread digit or slipped row on a photo or scan** that stays in a believable range. The checks above can't see it. | Photos and scans are held to a **higher confidence bar** (default 90%, against 80% for clean files; the buyer's setting). A clear photo passes like any other file; one the AI was unsure of goes to review and is counted in "still needs your check". Blanket distrust of every photo was rejected: it would punish clear images and train buyers to ignore the flag. | `isPhotoSource()`, `PHOTO_CONFIDENCE` | the photo-confidence tests |
 | 47 | **The vendor is the only one who knows what they meant.** | A **read-back** is added to the clarification email: for the items we'd award them, what they wrote and what we read, built by code (exact numbers, never retyped by the AI), asking them to reply "correct" or give the right price. It never says they are winning and never shows other vendors' prices. | `lib/readback.ts` | the five read-back tests |
 
 ---
@@ -151,7 +151,7 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 149 checks, no API key needed
+npm test        # 151 checks, no API key needed
 ```
 
 I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.

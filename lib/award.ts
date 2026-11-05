@@ -21,14 +21,13 @@ export function savingOnCommon(a: Scenario, b: Scenario) {
   return s;
 }
 
-const IMAGE_FILE = /\.(png|jpe?g|webp|heic|gif|bmp|tiff?)$/i;
-/** A price read from a photo or scan: the likeliest place for a misread digit or a slipped row. */
-export function fromPhoto(c: Cell, n: Normalized): boolean {
-  return IMAGE_FILE.test(c.source?.file || "") || /photo|image|scan|handwrit/i.test(n.vendors.find((v) => v.vendor_id === c.vendor_id)?.format || "");
+/** A price read from a photo or scan (informational; whether it needs a check is decided by the confidence rule in normalize). */
+export function fromPhoto(c: Cell): boolean {
+  return !!c.from_photo;
 }
-/** A winning price still needs the buyer's eye if it is amber, or if it came from a photo/scan the buyer hasn't confirmed. */
-export function needsCheck(c: Cell, n: Normalized): boolean {
-  return c.status === "review" || (fromPhoto(c, n) && !c.override);
+/** A winning price needs the buyer's eye when it is in the review queue (this includes photo reads below the photo confidence bar). */
+export function needsCheck(c: Cell): boolean {
+  return c.status === "review";
 }
 
 function usable(c: { unit_inr: number | null; status: string }) {
@@ -53,7 +52,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       const best = cs.sort((a, b) => a.unit_inr! - b.unit_inr!)[0];
       total += best.annual_inr || 0;
       byLine[l.id] = best.annual_inr || 0;
-      if (needsCheck(best, n)) unverified++;
+      if (needsCheck(best)) unverified++;
       used[best.vendor_id] ||= { lines: 0, value: 0 };
       used[best.vendor_id].lines++;
       used[best.vendor_id].value += best.annual_inr || 0;
@@ -134,7 +133,7 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
         continue;
       }
       const c = cs[0];
-      rows.push({ line_id: l.id, vendor_id: c.vendor_id, vendor_name: n.vendors.find((v) => v.vendor_id === c.vendor_id)!.name, unit_price_inr: Math.round(price(c) * 100) / 100, annual_value_inr: Math.round(price(c) * l.annual_qty), status: c.status, from_photo: fromPhoto(c, n), needs_check: needsCheck(c, n) });
+      rows.push({ line_id: l.id, vendor_id: c.vendor_id, vendor_name: n.vendors.find((v) => v.vendor_id === c.vendor_id)!.name, unit_price_inr: Math.round(price(c) * 100) / 100, annual_value_inr: Math.round(price(c) * l.annual_qty), status: c.status, from_photo: fromPhoto(c), needs_check: needsCheck(c) });
     }
   };
   let chosen = pool.map((v) => v.vendor_id);

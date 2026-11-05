@@ -14,39 +14,57 @@ function market(by: Record<string, { ex: Extraction; format?: string }>, overrid
 }
 const photoLine = (id: string, p: number) => line(id, p, { source: { file: "demo/V4/IMG_2026.jpg", location: "row 3", quote: `${p}` } });
 
-describe("Prices read from photos or scans are never silently trusted in an award", () => {
-  it("a photo winner counts as needing a check even when every automatic check passed", () => {
-    const n = market({ V1: { ex: extraction([photoLine("L01", 3.0)]), format: "Photo of rate card" }, V2: { ex: extraction([line("L01", 3.4)]) } });
-    assert.equal(n.cells.find((c) => c.vendor_id === "V1" && c.line_id === "L01")!.status, "ok");
+describe("Photos and scans: held to a higher confidence bar, but a clear photo is trusted", () => {
+  const photo = (id: string, p: number, conf: number) => line(id, p, { read_confidence: conf, match_confidence: conf, source: { file: "demo/V4/IMG_2026.jpg", location: "row 3", quote: `${p}` } });
+  const cell = (n: ReturnType<typeof market>) => n.cellMap["V1|L01"];
+
+  it("a clear photo read (confidence above the photo bar) is trusted like any other file", () => {
+    const n = market({ V1: { ex: extraction([photo("L01", 3.0, 0.95)]), format: "Photo of rate card" }, V2: { ex: extraction([line("L01", 3.4)]) } });
+    assert.equal(cell(n).status, "ok");
     const r = runScenario(RFX, n, { eligibility: "all" });
     assert.equal(r.rows[0].vendor_id, "V1");
-    assert.equal(r.prices_read_from_photos, 1);
-    assert.equal(r.unverified_prices_in_award, 1);
+    assert.equal(r.prices_read_from_photos, 1, "still reported as photo-sourced, for information");
+    assert.equal(r.unverified_prices_in_award, 0, "but not held back");
   });
 
-  it("it is recognised from the file type or from the vendor's reply format", () => {
-    const byFile = market({ V1: { ex: extraction([photoLine("L01", BASE)]) } });
-    assert.ok(fromPhoto(byFile.cellMap["V1|L01"], byFile));
-    const byFormat = market({ V1: { ex: extraction([line("L01", BASE)]), format: "Scanned letter" } });
-    assert.ok(fromPhoto(byFormat.cellMap["V1|L01"], byFormat));
-    const excel = market({ V1: { ex: extraction([line("L01", BASE)]) } });
-    assert.ok(!fromPhoto(excel.cellMap["V1|L01"], excel));
+  it("a photo read between the normal bar (80%) and the photo bar (90%) goes to review; the same confidence on an Excel does not", () => {
+    const n = market({ V1: { ex: extraction([photo("L01", 3.0, 0.85)]), format: "Photo" }, V2: { ex: extraction([line("L01", 3.4, { read_confidence: 0.85, match_confidence: 0.85 })]) } });
+    assert.equal(cell(n).status, "review");
+    assert.ok(cell(n).flags.some((f) => f.code === "PHOTO_CONFIDENCE"));
+    assert.equal(n.cellMap["V2|L01"].status, "ok");
+    assert.equal(runScenario(RFX, n, { eligibility: "all" }).unverified_prices_in_award, 1);
   });
 
-  it("an Excel, Word or text-PDF winner is not held back", () => {
-    const n = market({ V1: { ex: extraction([line("L01", BASE)]) } });
-    assert.equal(runScenario(RFX, n, { eligibility: "all" }).unverified_prices_in_award, 0);
+  it("a poor photo read (below the normal bar) is flagged once, as ordinary low confidence", () => {
+    const n = market({ V1: { ex: extraction([photo("L01", 3.0, 0.6)]), format: "Photo" } });
+    const codesOf = cell(n).flags.map((f) => f.code);
+    assert.ok(codesOf.includes("LOW_CONFIDENCE"));
+    assert.ok(!codesOf.includes("PHOTO_CONFIDENCE"));
   });
 
-  it("once the buyer accepts or corrects the price against the original, it no longer counts", () => {
+  it("the photo bar is the buyer's to change", () => {
+    const ex = () => ({ V1: { ex: extraction([photo("L01", 3.0, 0.95)]), format: "Photo" } });
+    const strict = normalize(RFX, Object.entries(ex()).map(([id, x]) => ({ vendor: { ...vendorMsg(id), format: x.format }, status: "done" as const, extraction: x.ex })), { ...A, photo_review_threshold: 0.99 }, {}, {}, PRIOR);
+    assert.equal(strict.cellMap["V1|L01"].status, "review");
+    const old = normalize(RFX, Object.entries(ex()).map(([id, x]) => ({ vendor: { ...vendorMsg(id), format: x.format }, status: "done" as const, extraction: x.ex })), { ...A, photo_review_threshold: undefined }, {}, {}, PRIOR);
+    assert.equal(old.cellMap["V1|L01"].status, "ok", "older saved state without the setting still works (default 90%)");
+  });
+
+  it("photo sources are recognised from the file type or from the reply format", () => {
+    assert.ok(fromPhoto(market({ V1: { ex: extraction([photo("L01", BASE, 0.95)]) } }).cellMap["V1|L01"]));
+    assert.ok(fromPhoto(market({ V1: { ex: extraction([line("L01", BASE)]), format: "Scanned letter" } }).cellMap["V1|L01"]));
+    assert.ok(!fromPhoto(market({ V1: { ex: extraction([line("L01", BASE)]) } }).cellMap["V1|L01"]));
+  });
+
+  it("the buyer's accept or correction clears a flagged photo price", () => {
     for (const ov of [override("accept"), override("override", 3.1)]) {
-      const n = market({ V1: { ex: extraction([photoLine("L01", BASE)]), format: "Photo" } }, { "V1|L01": ov });
+      const n = market({ V1: { ex: extraction([photo("L01", BASE, 0.85)]), format: "Photo" } }, { "V1|L01": ov });
       assert.equal(runScenario(RFX, n, { eligibility: "all" }).unverified_prices_in_award, 0);
     }
   });
 
-  it("the Overview's scenarios count them too, so the on-screen 'prices still need your check' is honest", () => {
-    const n = market({ V1: { ex: extraction([photoLine("L01", BASE)]), format: "Photo" } });
+  it("the Overview's scenarios count flagged photo winners too", () => {
+    const n = market({ V1: { ex: extraction([photo("L01", BASE, 0.85)]), format: "Photo" } });
     assert.equal(scenarios(RFX, n)[0].unverified, 1);
   });
 });

@@ -85,6 +85,7 @@ export function exportWorkbook(rfx: Rfx, n: Normalized, a: Assumptions, audit: A
       ["Conditional rebates counted", a.apply_conditional_rebates ? "yes" : "no"],
       ["₹/kg sanity band", a.per_kg_band.join("–")],
       ["Review threshold", a.review_threshold],
+      ["Review threshold for photos and scans", a.photo_review_threshold ?? 0.9],
     ]),
     "Assumptions"
   );
