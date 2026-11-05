@@ -11,12 +11,12 @@ import { downloadTable } from "@/lib/export";
 import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
 
 const SUGGESTED = [
-  "Who is cheapest on a like-for-like basis, and how much should I trust that?",
-  "What if we split it — cheapest per line, but only among vendors who cleared the quality questionnaire?",
-  "Which numbers are you unsure about, and what should I ask each vendor?",
-  "How does Tungabhadra's new quote compare to last year's contract, line by line?",
-  "Chart annual cost by vendor for the lines everyone quoted",
-  "Draft an award recommendation I can send to my VP",
+  { short: "Who is cheapest, and can I trust it?", q: "Who is cheapest on a like-for-like basis, and how much should I trust that?" },
+  { short: "Best split between vendors", q: "What if we split it — cheapest per line, but only among vendors who cleared the quality questionnaire?" },
+  { short: "Which numbers are you unsure about?", q: "Which numbers are you unsure about, and what should I ask each vendor?" },
+  { short: "Tungabhadra vs last year", q: "How does Tungabhadra's new quote compare to last year's contract, line by line?" },
+  { short: "Chart cost by vendor", q: "Chart annual cost by vendor for the lines everyone quoted" },
+  { short: "Draft a note for my VP", q: "Draft an award recommendation I can send to my VP" },
 ];
 
 // Show buyer-friendly words instead of database identifiers.
@@ -96,6 +96,7 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
     const blocks: Block[] = [];
     const trace: { tool: string; sql: string; rows?: number; error?: string }[] = [];
     const nums: number[] = [];
+    const scTotals: number[] = [];
     const collect = (rows: any[][]) => rows.forEach((r) => r.forEach((v) => typeof v === "number" && nums.push(v)));
     let finalText = "";
     let model = "";
@@ -124,7 +125,8 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
               st.free();
             } catch {}
             const label = `${(args?.strategy || "cheapest_per_line") === "single_vendor" ? "Single vendor" : "Cheapest per line"} · ${({ qualified: "approved vendors", qualified_or_conditional: "approved + needs-proof vendors", all: "all vendors" } as Record<string, string>)[args?.eligibility || "qualified"] || "approved vendors"}${args?.count_conditional_rebates ? " · rebates counted" : ""}`;
-            blocks.push({ kind: "table", title: `Award scenario: ${label}`, sql: `award_scenario(${JSON.stringify(args || {})})`, columns: ["Vendor", "Items won", "Annual value (₹)"], rows: [...sc.by_vendor.map((v) => [v.vendor, v.lines, v.annual_value_inr]), ["Total", sc.lines_awarded, sc.total_annual_value_inr]], note: [sc.lines_without_eligible_price.length ? `No eligible price for ${sc.lines_without_eligible_price.join(", ")}.` : "", sc.unverified_prices_in_award ? `${sc.unverified_prices_in_award} winning prices still need the buyer's check.` : "", sc.vendors_excluded.length ? `Excluded: ${sc.vendors_excluded.map((x) => x.vendor.split(" ")[0] + " (" + x.qualification.replace("_", " ") + ")").join(", ")}.` : ""].filter(Boolean).join(" ") });
+            blocks.push({ kind: "table", title: `Award scenario: ${label}`, sql: `award_scenario(${JSON.stringify(args || {})})`, columns: ["Vendor", "Items won", "Annual value (₹)"], rows: [...sc.by_vendor.map((v) => [v.vendor, v.lines, v.annual_value_inr]), ["Total", sc.lines_awarded, sc.total_annual_value_inr]], note: [sc.lines_without_eligible_price.length ? `No eligible price for ${sc.lines_without_eligible_price.join(", ")}.` : "", sc.unverified_prices_in_award ? `${sc.unverified_prices_in_award} winning prices still need the buyer's check.` : "", sc.vendors_excluded.length ? `Excluded: ${sc.vendors_excluded.map((x) => x.vendor.split(" ")[0] + " (" + ({ not_qualified: "not approved", conditional: "needs proof", qualified: "approved" } as Record<string, string>)[x.qualification] + ")").join(", ")}.` : ""].filter(Boolean).join(" ") });
+            scTotals.push(sc.total_annual_value_inr);
             nums.push(sc.total_annual_value_inr, sc.lines_awarded, sc.unverified_prices_in_award, ...sc.by_vendor.flatMap((v) => [v.lines, v.annual_value_inr]));
             collect(sc.rows.map((r) => [r.unit_price_inr, r.annual_value_inr]));
             trace.push({ tool: name, sql: JSON.stringify(args || {}), rows: sc.rows.length });
@@ -153,6 +155,8 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
     } catch (e: any) {
       error = e.message;
     }
+    // a saving is the difference between two scenario totals the buyer was shown
+    for (let i = 0; i < scTotals.length; i++) for (let j = i + 1; j < scTotals.length; j++) nums.push(Math.abs(scTotals[i] - scTotals[j]));
     // figures the analyst was given as context (FX, freight, terms) also count as traceable
     for (const m of (contextDoc(s.assumptions, n) + vendorFacts(n, s.assumptions)).matchAll(/\d[\d,]*\.?\d*/g)) nums.push(parseFloat(m[0].replace(/,/g, "")));
     const grounding = finalText ? checkGrounding(finalText, nums) : undefined;
@@ -171,7 +175,7 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
             <div className="font-semibold">Ask the comparison</div>
-            <div className="text-xs text-muted">The analyst writes SQL over the normalised data. Tables and charts come straight from query results; figures in its prose are checked against them.</div>
+            <div className="text-xs text-muted">Ask in plain English. Answers come from your comparison data, and every number is checked against it.</div>
           </div>
           <div className="relative flex gap-1">
             {archive.length > 0 && (
@@ -203,9 +207,9 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
             <div className="mx-auto max-w-2xl space-y-3 pt-6">
               <div className="text-center text-muted">Try one of these, or ask your own.</div>
               <div className="grid grid-cols-2 gap-2">
-                {SUGGESTED.map((q) => (
-                  <button key={q} onClick={() => ask(q)} className="rounded-lg border border-line p-3 text-left text-[13px] hover:bg-panel">
-                    {q}
+                {SUGGESTED.map((x) => (
+                  <button key={x.q} onClick={() => ask(x.q)} className="rounded-lg border border-line p-3 text-left text-[13px] hover:bg-panel">
+                    {x.q}
                   </button>
                 ))}
               </div>
@@ -229,9 +233,9 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
         <div className="border-t border-line p-3">
           {s.analyst.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5">
-              {SUGGESTED.map((q) => (
-                <button key={q} disabled={busy} onClick={() => ask(q)} className="rounded-full border border-line px-2 py-0.5 text-[11.5px] text-muted hover:bg-panel">
-                  {q.length > 60 ? q.slice(0, 58) + "…" : q}
+              {SUGGESTED.slice(0, 4).map((x) => (
+                <button key={x.q} disabled={busy} onClick={() => ask(x.q)} className="rounded-full border border-line px-2.5 py-0.5 text-[12px] text-muted hover:bg-panel">
+                  {x.short}
                 </button>
               ))}
             </div>
@@ -297,11 +301,11 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
       )}
       {m.grounding &&
         (m.grounding.ungrounded.length ? (
-          <Badge tone="warn" title="Highlighted figures could not be matched to any query result in this answer.">
-            {m.grounding.ungrounded.length} of {m.grounding.checked} figures not traced to data
+          <Badge tone="warn" title="The AI worked this number out itself, and it is not in any table it looked up. Verify it before you use it.">
+            Check the underlined number{m.grounding.ungrounded.length > 1 ? "s" : ""}: not found in the data
           </Badge>
         ) : m.grounding.checked ? (
-          <Badge tone="good">✓ all {m.grounding.checked} figures trace to query results</Badge>
+          <Badge tone="good">✓ Numbers checked against your data</Badge>
         ) : null)}
       {m.blocks.map((b, i) => (b.kind === "table" ? <TableBlock key={i} b={b} /> : <ChartBlock key={i} b={b} />))}
       <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted">
@@ -344,7 +348,7 @@ function TableBlock({ b }: { b: Extract<Block, { kind: "table" }> }) {
     <Card className="overflow-hidden">
       <div className="flex items-center justify-between border-b border-line px-3 py-2">
         <div className="text-[13px] font-semibold">
-          {b.title} <span className="ml-1 font-normal text-muted">· {b.rows.length} rows</span>
+          {b.title} {b.rows.length > 8 && <span className="ml-1 font-normal text-muted">· {b.rows.length} rows</span>}
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns.map(niceHeader), b.rows.map((r) => r.map(niceCell)), "csv")}>

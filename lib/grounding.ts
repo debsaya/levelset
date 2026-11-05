@@ -23,7 +23,7 @@ export function checkGrounding(text: string, resultNumbers: number[]): GroundRep
   const pool = resultNumbers.filter((x) => typeof x === "number" && isFinite(x));
   const ungrounded: string[] = [];
   let checked = 0;
-  const cleaned = text.replace(/\b[LQV]\d{1,2}\b/g, " ").replace(/\b20\d\d\b/g, " ").replace(/FY\d\d/gi, " ");
+  const cleaned = text.replace(/\b[LQV]\d{1,2}\b/g, " ").replace(/\b20\d\d\b/g, " ").replace(/FY\d\d/gi, " ").replace(/\bISO[\s-]?\d{3,5}(?::\d{4})?/gi, " ").replace(/\b\d{4,5}:\d{4}\b/g, " ");
   let m: RegExpExecArray | null;
   NUM_RE.lastIndex = 0;
   while ((m = NUM_RE.exec(cleaned))) {

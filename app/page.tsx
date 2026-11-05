@@ -28,9 +28,9 @@ function App() {
 
   const tabs: { id: Page; label: string; count?: number | string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "compare", label: "Comparison", count: review || undefined },
+    { id: "compare", label: "Comparison" },
     { id: "ask", label: "Ask" },
-    { id: "quotes", label: "Quotes", count: s.responses.length ? `${read}/${s.responses.length}` : undefined },
+    { id: "quotes", label: "Quotes" },
     { id: "rfx", label: "RFx" },
   ];
 

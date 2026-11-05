@@ -237,7 +237,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   {n.vendors
                     .filter((v) => v.qualification !== "qualified")
                     .map((v) => (
-                      <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
                     ))}
                   {n.vendors
                     .filter((v) => v.adjustments.some((a) => a.conditional))
@@ -286,16 +286,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <div className="mt-3 text-[20px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Cheapest" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
                       <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : "vs the lowest price, on the items they quoted"}</div>
                       <div className="mt-3 grid grid-cols-2 gap-1 text-[12px]">
-                        <span className="text-muted">Priced</span>
-                        <span className="text-right tabular">
-                          {v.quoted}/{s.rfx.lines.length}
-                        </span>
-                        <span className="text-muted">To check</span>
-                        <span className={cx("text-right tabular", v.review > 0 && "text-warn")}>{v.review}</span>
                         <span className="text-muted">Payment</span>
                         <span className="text-right tabular">{v.terms.payment ? `${v.terms.payment} days` : "–"}</span>
-                        <span className="text-muted">Quoted as</span>
-                        <span className="text-right">{v.format.split(" ")[0]}</span>
                       </div>
                       <button onClick={() => setClarify(v.vendor_id)} className="mt-auto pt-3 text-left text-[12.5px] font-medium text-kraft hover:underline">
                         {issues[v.vendor_id]?.length || 0} open questions → draft email
