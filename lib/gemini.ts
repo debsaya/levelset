@@ -3,10 +3,15 @@
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
+// Models that just told us their quota is used up are skipped for a while (per server instance).
+const exhausted = new Map<string, number>();
+
 export function modelChain(): string[] {
   const fromEnv = (process.env.GEMINI_MODEL || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const defaults = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest"];
-  return Array.from(new Set([...fromEnv, ...defaults]));
+  const defaults = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.5-flash-lite"];
+  const all = Array.from(new Set([...fromEnv, ...defaults]));
+  const ok = all.filter((m) => (exhausted.get(m) || 0) < Date.now());
+  return ok.length ? ok : all;
 }
 
 export type GeminiPart = Record<string, unknown>;
@@ -91,6 +96,10 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       if (res.status === 404) break; // model not available: try next model
       if (res.status === 400 && /thinking/i.test(errText)) continue; // retry without thinking config
       if (res.status === 400) break;
+      if (res.status === 429 && /quota|exceeded|limit/i.test(errText)) {
+        exhausted.set(model, Date.now() + 10 * 60_000);
+        break; // quota used up: go straight to the next model, don't wait
+      }
       if (res.status === 429 || res.status >= 500) {
         const m = errText.match(/retry in ([\d.]+)s/i);
         const wait = m ? Math.min(parseFloat(m[1]) * 1000, 20000) : 2500 * (attempt + 1);
