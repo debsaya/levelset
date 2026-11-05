@@ -53,6 +53,18 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
           )}
         </header>
 
+        <p className="-mt-3 max-w-3xl text-[15px] leading-relaxed text-muted">
+          Suppliers reply in whatever format they like. Levelset reads every reply into <span className="font-medium text-ink">one like-for-like comparison</span>, so you can pick a winner and defend it.
+        </p>
+
+        <section className="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
+          <Step n={1} state="done" title="Replies come in" line={`${total} replies · ${[...new Set(s.responses.map((r) => r.vendor.format.split(" ")[0]))].join(", ")}`} />
+          <Arrow />
+          <Step n={2} state={done === 0 ? (reading > 0 ? "active" : "todo") : done < total ? "active" : "done"} title="AI reads each one" line={done === 0 ? "Excel, PDF, Word, photos and emails, read as they are" : `${n.vendors.reduce((a, v) => a + v.quoted, 0)} prices matched to your ${s.rfx.lines.length} items · ${done}/${total} read`} />
+          <Arrow />
+          <Step n={3} state={done === 0 ? "todo" : "done"} title="You compare and decide" line={done === 0 ? "One table in ₹ per box, delivered, ex-GST" : `${review} prices for you to check · ${n.vendors.filter((v) => v.qualification === "qualified").length} vendors qualified`} />
+        </section>
+
         {done === 0 ? (
           <div className="rounded-2xl border border-line bg-white p-8">
             <div className="grid gap-8 md:grid-cols-[1.2fr_1fr]">
@@ -244,6 +256,26 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <div className="mt-1.5">
                         <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                       </div>
+                      {(() => {
+                        const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
+                        const captured = r?.extraction?.lines?.length ?? 0;
+                        const left = Math.max(0, captured - v.quoted);
+                        const file = r?.vendor.attachments?.[0];
+                        return (
+                          <div className="mt-3 space-y-1 rounded-lg bg-panel px-2.5 py-2 text-[11.5px] leading-snug text-muted">
+                            <div>
+                              <span className="font-medium text-ink">{v.format}</span> → {captured} prices captured
+                            </div>
+                            <div>→ {v.quoted} matched to your items{left > 0 ? ` (${left} didn't match an item)` : ""}</div>
+                            <div className={v.review > 0 ? "text-warn" : undefined}>→ {v.review} flagged for you</div>
+                            {file && (
+                              <a href={`/${file}`} target="_blank" rel="noreferrer" className="inline-block pt-0.5 font-medium text-kraft hover:underline">
+                                View the original file ↗
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="mt-3 text-[20px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Cheapest" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
                       <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : "vs the lowest price, on the items they quoted"}</div>
                       <div className="mt-3 grid grid-cols-2 gap-1 text-[12px]">
@@ -275,6 +307,22 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
         })()}
     </div>
   );
+}
+
+function Step({ n, state, title, line }: { n: number; state: "todo" | "active" | "done"; title: string; line: string }) {
+  return (
+    <div className={cx("flex items-start gap-3 rounded-xl border px-4 py-3", state === "todo" ? "border-line bg-white" : state === "active" ? "border-kraft bg-kraft-soft" : "border-line bg-white")}>
+      <span className={cx("mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold", state === "done" ? "bg-ink text-white" : state === "active" ? "bg-kraft text-white" : "bg-panel text-muted")}>{state === "done" ? "✓" : n}</span>
+      <div className="min-w-0">
+        <div className="text-[13.5px] font-semibold">{title}</div>
+        <div className="text-[12px] leading-snug text-muted">{line}</div>
+      </div>
+    </div>
+  );
+}
+
+function Arrow() {
+  return <div className="hidden items-center text-muted md:flex">→</div>;
 }
 
 function Kpi({ label, value, sub, accent, tone, onClick }: { label: string; value: string; sub: string; accent?: boolean; tone?: "good" | "bad" | "warn"; onClick?: () => void }) {
