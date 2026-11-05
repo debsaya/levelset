@@ -161,16 +161,36 @@ export function normalize(
     const gst = ex.tax?.gst_rate_pct ?? null;
     const freightIncluded = ex.freight?.included;
     const freightRate = a.freight_inr_per_kg[vid] ?? a.default_freight_inr_per_kg;
-    const uncondPct = (ex.adjustments || [])
+    // A discount the reader called "unconditional" but whose own wording sets a condition ("5% on annual offtake above ₹1 Cr")
+    // is treated as conditional: giving a vendor credit they may never earn is the costlier mistake.
+    const CONDITION_WORDS = /\bif\b|subject to|exceed|above|minimum|min\.|offtake|volume|annual|slab|quarterly|credit note|target|on achiev|provided/i;
+    const adjs: Adjustment[] = (ex.adjustments || []).map((d) =>
+      (d.kind === "discount" || d.kind === "rebate") && !d.conditional && CONDITION_WORDS.test(`${d.description || ""} ${d.condition || ""}`) ? { ...d, conditional: true } : d
+    );
+    for (const [i, d] of (ex.adjustments || []).entries()) {
+      if (adjs[i].conditional && !d.conditional) vflags.push({ code: "ADJ_CONDITION", sev: "warn", msg: `"${d.description}" was read as unconditional but its wording sets a condition, so it is NOT counted in prices. Confirm with the vendor.` });
+      if (d.pct !== null && d.pct !== undefined && d.pct > 0 && d.pct < 1 && (d.kind === "discount" || d.kind === "rebate")) vflags.push({ code: "ADJ_SCALE", sev: "warn", msg: `A ${d.kind} of ${d.pct}% looks like a fraction (did the vendor mean ${Math.round(d.pct * 100)}%?). Counted as written.` });
+      if (d.pct !== null && d.pct !== undefined && d.pct > 25) vflags.push({ code: "ADJ_SCALE", sev: "warn", msg: `A ${d.kind} of ${d.pct}% is unusually large. Check it was read correctly.` });
+    }
+    const uncondPct = adjs
       .filter((d) => (d.kind === "discount" || d.kind === "rebate") && !d.conditional && d.pct)
       .reduce((s, d) => s + (d.pct || 0), 0);
     // an unconditional percentage surcharge (fuel, handling...) makes the price higher; fixed one-time charges stay out of unit prices
-    const surchargePct = (ex.adjustments || [])
+    const surchargePct = adjs
       .filter((d) => d.kind === "surcharge" && !d.conditional && d.pct)
       .reduce((s, d) => s + (d.pct || 0), 0);
-    const condPct = (ex.adjustments || [])
+    const condPct = adjs
       .filter((d) => (d.kind === "discount" || d.kind === "rebate") && d.conditional && d.pct)
       .reduce((s, d) => s + (d.pct || 0), 0);
+
+    // Reading contradictions that move every price by a few %: the vendor's own freight wording vs what the reader decided.
+    const fnote = `${ex.freight?.note || ""} ${(ex.freight?.source?.quote) || ""}`;
+    const freightSaysExtra = /freight (is )?extra|extra freight|ex[- ]?works|\bexw\b|ex[- ]factory|to[- ]pay|at actuals?|freight (to be )?(borne|paid) by (buyer|customer)/i.test(fnote);
+    const freightSaysDelivered = /\bdelivered\b|free (of charge )?delivery|door delivery|\bfor\b[ -]*(destination|plant|bidadi)|freight (is )?(included|free)|inclusive of freight|freight paid by (us|supplier|vendor)/i.test(fnote);
+    const freightConflict = (freightIncluded === true && freightSaysExtra && !freightSaysDelivered) || (freightIncluded === false && freightSaysDelivered && !freightSaysExtra);
+    if (freightConflict) vflags.push({ code: "FREIGHT_CONFLICT", sev: "warn", msg: `Freight was read as ${freightIncluded ? "included" : "extra"}, but the vendor's wording says otherwise ("${fnote.trim().slice(0, 80)}"). Every price from this vendor is affected; confirm before awarding.` });
+    const anyInclusive = (ex.lines || []).some((l) => l.tax_included === true);
+    if ((!ex.tax || ex.tax.basis === "unclear") && !anyInclusive) vflags.push({ code: "TAX_UNCLEAR", sev: "warn", msg: "GST treatment is not stated. Prices are assumed to be ex-GST; if they include GST (5 to 18%) this vendor is overstated by that much. Confirm with the vendor." });
 
     // pick one extracted line per RFx line (highest confidence), note duplicates
     // Size check: code re-verifies every line match against the size the vendor wrote.
@@ -190,6 +210,8 @@ export function normalize(
           .sort((a, b) => a.e! - b.e!);
         const best = ranked[0];
         const fmtSz = `${sz.L}×${sz.W}${sz.H ? "×" + sz.H : ""} ${sz.unit}`;
+        const second = ranked[1];
+        if (best && second && second.e! - best.e! < 20) matchFlag.set(el, { code: "AMBIGUOUS_MATCH", sev: "warn", msg: `Vendor's ${fmtSz} fits both ${best.l.id} and ${second.l.id} within tolerance. Chose ${best.l.id}; confirm which item this price is for.` });
         if (best && best.l.id !== id) {
           matchFlag.set(el, {
             code: "REMATCHED",
@@ -210,6 +232,13 @@ export function normalize(
       if (!id) continue;
       (byLine[id] ||= []).push(el);
     }
+
+    // Basis consistency: if nearly every price in a quote is per kg (or per piece) and one is the other way, it is much more likely
+    // a misread than a real change, and the ₹/kg band can't catch it on heavy boxes (a ₹40 box and a ₹40/kg box look alike at 1 kg).
+    const explicit = Object.values(byLine).map((c) => c[0]).filter((e) => e.derived_from === "explicit" && e.price !== null);
+    const nKg = explicit.filter((e) => e.basis_unit === "kg").length;
+    const nPc = explicit.length - nKg;
+    const minorityBasis: "kg" | "piece" | null = explicit.length >= 4 ? (nKg > 0 && nKg <= explicit.length * 0.2 ? "kg" : nPc > 0 && nPc <= explicit.length * 0.2 ? "piece" : null) : null;
 
     for (const line of rfx.lines) {
       const k = key(vid, line.id);
@@ -271,8 +300,9 @@ export function normalize(
       // 1. to per piece
       let v = price;
       if (basisUnit === "kg") {
-        v = price * line.est_weight_kg;
-        steps.push({ label: "Per kg → per piece", value: `× ${line.est_weight_kg} kg/pc (weight computed from RFx spec) = ${num(v)}` });
+        // "₹42,000 per tonne" arrives as kg with basis_qty 1000, "₹4,200 per 100 kg" as 100
+        v = (price / basisQty) * line.est_weight_kg;
+        steps.push({ label: basisQty !== 1 ? `Per ${basisQty} kg → per piece` : "Per kg → per piece", value: `${basisQty !== 1 ? `÷ ${basisQty} kg, ` : ""}× ${line.est_weight_kg} kg/pc (weight computed from RFx spec) = ${num(v)}` });
         flags.push({ code: "PER_KG", sev: "info", msg: `Quoted per kg; converted using the RFx's computed box weight (${line.est_weight_kg} kg). Actual box weight may differ by a few %.` });
       } else if (basisQty !== 1) {
         v = price / basisQty;
@@ -319,6 +349,7 @@ export function normalize(
         cells.push({ vendor_id: vid, line_id: line.id, status: ov?.action === "override" ? "ok" : "missing", quoted_as: quotedAs, unit_inr: ov?.action === "override" ? ov.unit_inr ?? null : null, unit_inr_if_rebate: null, annual_inr: ov?.action === "override" && ov.unit_inr ? ov.unit_inr * line.annual_qty : null, per_kg: null, confidence: conf, flags: [{ code: "INVALID_PRICE", sev: "warn", msg: "After conversions and discounts the price is zero or negative (a discount of 100% or more?). Ask the vendor to confirm." }], steps, source: el.source, derived_from: el.derived_from, override: ov, raw: el, missing_reason: "Price could not be used" });
         continue;
       }
+      if (freightConflict) flags.push({ code: "FREIGHT_CONFLICT", sev: "warn", msg: "Freight terms read inconsistently with the vendor's own wording; see the vendor note." });
       const ifRebate = condPct ? preFreight * (1 - condPct / 100) + freightAdd : v;
       if (condPct && a.apply_conditional_rebates) {
         v = ifRebate;
@@ -336,6 +367,8 @@ export function normalize(
         const alt = prior[vid]?.prices?.[line.id];
         if (alt !== undefined) flags.push({ code: "RULE_VS_PRIOR", sev: line.type === "RSC" ? "info" : "warn", msg: `Ambiguous scope: does "${el.source?.quote}" cover this ${line.type.toLowerCase()}? Last year's contract price was ${inr(alt)}/pc. Confirm with the vendor.` });
       }
+      if (minorityBasis && el.derived_from === "explicit" && el.basis_unit === minorityBasis)
+        flags.push({ code: "BASIS_MIXED", sev: "warn", msg: `Priced per ${minorityBasis === "kg" ? "kg" : "piece"} while the vendor's other prices are per ${minorityBasis === "kg" ? "piece" : "kg"}. A unit misread is likelier than a real change; check the original.` });
       const mf = matchFlag.get(el);
       if (mf) flags.push(mf);
 
@@ -379,7 +412,7 @@ export function normalize(
       for (const el of ex.lines || []) {
         const line = el.rfx_line_id ? lineById[el.rfx_line_id] : null;
         if (!line || el.price === null || el.derived_from === "prior_contract") continue;
-        const per = el.basis_unit === "kg" ? el.price * line.est_weight_kg : el.price / (el.basis_qty || 1);
+        const per = el.basis_unit === "kg" ? (el.price / (el.basis_qty || 1)) * line.est_weight_kg : el.price / (el.basis_qty || 1);
         sum += per * line.annual_qty;
       }
       const diff = sum - ex.stated_total.amount;

@@ -39,6 +39,19 @@ describe("Prices that can never be real must not win by looking cheap", () => {
   });
 });
 
+describe("Weight-based quotes in bigger units", () => {
+  it("₹42,000 per tonne and ₹4,200 per 100 kg both equal ₹42 per kg", () => {
+    const w = L01.est_weight_kg;
+    near(cellOf(run({ V1: extraction([line("L01", 42000, { basis_unit: "kg", basis_qty: 1000 })]) }), "V1", "L01").unit_inr, 42 * w);
+    near(cellOf(run({ V1: extraction([line("L01", 4200, { basis_unit: "kg", basis_qty: 100 })]) }), "V1", "L01").unit_inr, 42 * w);
+  });
+  it("the vendor's own total uses the same conversion, so it still reconciles", () => {
+    const total = (42 * L01.est_weight_kg) * L01.annual_qty;
+    const ex = extraction([line("L01", 42000, { basis_unit: "kg", basis_qty: 1000 })], { stated_total: { amount: total, currency: "INR", note: "", source: SRC } });
+    assert.ok(vendorOf(run({ V1: ex }), "V1").flags.some((f) => f.code === "TOTAL_OK"));
+  });
+});
+
 describe("Adders that make a vendor look cheaper than they are", () => {
   it("an unconditional percentage surcharge (fuel, handling) is added to the price", () => {
     near(cellOf(run({ V1: extraction([line("L01", BASE)], { adjustments: [adj("surcharge", 3)] }) }), "V1", "L01").unit_inr, BASE * 1.03);

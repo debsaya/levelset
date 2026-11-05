@@ -138,6 +138,17 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
     chosen = options[0] ? [options[0].vid] : [];
   }
   pick(chosen);
+  // Winner's-curse check: the cheapest price is exactly where a misread number hides (3.40 read as 3.04 wins the line).
+  // Flag winners far below the next-best price from a different eligible vendor, whatever their own status says.
+  const winnersFarBelowNext = rows
+    .map((r) => {
+      const others = n.cells.filter((c) => c.line_id === r.line_id && c.vendor_id !== r.vendor_id && chosen.includes(c.vendor_id) && usable(c)).map((c) => price(c) as number);
+      if (!others.length) return null;
+      const next = Math.min(...others);
+      const gap = (next - r.unit_price_inr) / next;
+      return gap > 0.15 ? { line_id: r.line_id, winner: r.vendor_name, winning_price_inr: r.unit_price_inr, next_best_price_inr: Math.round(next * 100) / 100, below_next_best_pct: Math.round(gap * 1000) / 10 } : null;
+    })
+    .filter(Boolean) as { line_id: string; winner: string; winning_price_inr: number; next_best_price_inr: number; below_next_best_pct: number }[];
   const total = rows.reduce((s, r) => s + r.annual_value_inr, 0);
   const byVendor = Object.values(
     rows.reduce((m: Record<string, { vendor: string; lines: number; annual_value_inr: number }>, r) => {
@@ -147,5 +158,5 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
       return m;
     }, {})
   ).sort((x, y) => y.annual_value_inr - x.annual_value_inr);
-  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.status === "review").length, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
+  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.status === "review").length, winning_prices_far_below_next_best: winnersFarBelowNext, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
 }

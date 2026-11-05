@@ -140,7 +140,7 @@ const SYSTEM = `You are the extraction engine of a procurement quote-levelling s
 
 Rules:
 1. Record each price exactly as written. Do NOT convert currency, units, tax or freight. The system's code does all arithmetic.
-2. basis_unit/basis_qty describe what the price is for: "per 100 nos" -> piece/100; "per bundle (25)" -> piece/25; "per box"/"per pc"/"per set" -> piece/1; "Rs/kg" -> kg/1.
+2. basis_unit/basis_qty describe what the price is for: "per 100 nos" -> piece/100; "per bundle (25)" -> piece/25; "per box"/"per pc"/"per set" -> piece/1; "Rs/kg" -> kg/1; "per tonne"/"per MT" -> kg/1000; "per 100 kg"/"per quintal" -> kg/100.
 3. Match vendor items to RFx lines by spec: item type, ply, dimensions, print. Vendors may use their own codes, a different order, or inches (1 inch = 25.4 mm; inch sizes are usually rounded to the nearest 0.5"). Lower match_confidence when matching on approximate dimensions or when two lines could fit. Include EVERY priced item the vendor lists, even ones that match no RFx line (rfx_line_id null): the system re-checks every match against the size you record in vendor_size, so record sizes exactly as written, row by row.
 4. If a vendor states a pricing rule for a group ("Rs 42/kg for the 5-ply"), expand it to every RFx line it plausibly covers, derived_from "rule", same source quote, and note the interpretation (e.g. whether printed or die-cut items are included). Use match_confidence <= 0.75 where the scope of the rule is ambiguous.
 5. If the vendor refers to earlier prices ("rest same as last year", "as per current contract"), emit a line for each affected RFx line with derived_from "prior_contract", price null, currency INR, basis piece/1. Do this only for lines not already priced elsewhere.

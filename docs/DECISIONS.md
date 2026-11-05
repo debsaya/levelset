@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 109 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 139 tests, ~1 second, no API key needed).
 
 ---
 
@@ -70,6 +70,15 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 36 | **Nothing to award.** No approved vendors, a vendor id that doesn't exist, ties. | Empty awards, not errors; ties resolve the same way every time. | `lib/award.ts` | the "Awards with nothing to award" tests |
 | 37 | **Unit confusion in sizes:** millimetres labelled inches, a ply nobody asked for, length and width swapped, flat items with no height. | Left out visibly or matched correctly; never forced onto the wrong line. | size check | the four size tests |
 
+| 38 | **Per tonne / per 100 kg quotes.** Read as plain per-kg, the price is 1,000× or 100× off. *(Gap, fixed.)* | Weight-based prices are divided by the pack size before conversion (prompt rule 2 teaches the reader to record it). | `normalize()` per-kg step | *"₹42,000 per tonne and ₹4,200 per 100 kg both equal ₹42 per kg"* |
+| 39 | **Per-kg vs per-piece swapped on a heavy box.** On a 1 kg+ box, ₹41 a piece and ₹41 a kg both look plausible, so the ₹/kg sanity band can't catch it. *(Found by sweeping all 30 lines; fixed.)* | If almost every price in a quote uses one basis and one line uses the other, that line is flagged: a misread is likelier than a real change. | `BASIS_MIXED` | the "vendor quotes per piece / per kg" sweeps |
+| 40 | **Order-of-magnitude misreads** (decimal shifted, ×100 / ÷100, per-100 vs per-piece, INR read as USD and back). | Every one of these, on every one of the 30 lines, is caught and none can be trusted without review. | band + `UNIT_SUSPECT` | the misread sweeps (160+ simulated misreads) |
+| 41 | **A misread LOW price wins the line.** Awards pick the cheapest, so a 3.04 mistaken for 3.40 is exactly the number that gets chosen. | The award calculator reports any winner more than 15% below the next-best eligible offer. The analyst must tell the buyer to check those against the original quote before awarding. | `winning_prices_far_below_next_best` | the winner-margin tests |
+| 42 | **Freight read the opposite way to the vendor's wording** ("freight extra" read as delivered). Moves every price by 2 to 5%. | Contradictions between the reader's decision and the vendor's own words are flagged on the vendor and on every price. | `FREIGHT_CONFLICT` | the freight tests (including "no extra charges" not being a false alarm) |
+| 43 | **GST not stated at all.** | Flagged on the vendor: a 5 to 18% error could hide in it. | `TAX_UNCLEAR` | the GST tests |
+| 44 | **A discount the reader called unconditional but whose wording sets a condition** ("5% on annual offtake above ₹1 Cr"). Giving credit they may never earn is the costlier mistake. | Not counted; the "if earned" price is shown. A percentage that looks like a fraction (0.05) or is huge (40) is flagged. A surcharge is the opposite: never hidden by condition wording. | `ADJ_CONDITION`, `ADJ_SCALE` | the discount tests |
+| 45 | **A price that could belong to two similar items** (a rounded size fits two lines). | Flagged on the cell, naming both lines. | `AMBIGUOUS_MATCH` | the two similar-item tests |
+
 ---
 
 ## 3. The review queue: when a number is "amber"
@@ -126,6 +135,7 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 - Box weight is **computed from the spec**, so per-kg quotes are accurate to a few percent, and the tool says so on each converted cell.
 - "Needs proof" and "not approved" depend on questions the RFx marks as must-haves. A badly written must-have gives a badly drawn line.
 - The size re-match assumes the vendor's written size is reliable; a mis-read size can still send a price to review or drop it (both visible, neither silent).
+- **What the checks cannot see:** a misread that stays in a believable range, such as 3.40 read as 3.04, or a few-percent GST or freight error with consistent wording. These are only caught indirectly: by confidence scores, the peer comparison when 3+ vendors quoted the line, the 15% winner check, and the citation next to every price so the buyer can look. If the vendor quotes the only price on a line there is no peer to compare with.
 - **Not modelled yet:** quantity price breaks as a structure (they arrive as duplicates and the buyer picks), and minimum order quantities. Both would need new fields in the reading step, which I chose not to risk this close to the demo.
 - Number formats such as decimal commas are a reading problem, not a code problem; they belong in the extraction accuracy checks above, not in unit tests.
 - Free-tier model limits can slow a live read. The app retries and shows a clear message rather than failing silently.
@@ -138,7 +148,7 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 109 checks, no API key needed
+npm test        # 139 checks, no API key needed
 ```
 
-I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, and removing the third round (rows 29 to 34) fails 10.
+I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.
