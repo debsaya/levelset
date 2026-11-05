@@ -17,7 +17,8 @@ const QUAL = {
 
 export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const { s } = useStore();
-  const { readAll } = useReader();
+  const { readAll, hasSaved, loadSaved, savedAt } = useReader();
+  const savedLabel = savedAt ? new Date(savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
   const [clarify, setClarify] = useState<string | null>(null);
   const total = s.responses.length;
   const done = s.responses.filter((r) => r.status === "done").length;
@@ -77,6 +78,11 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   <button className="text-[13px] text-muted underline-offset-4 hover:underline" onClick={() => go("quotes")}>
                     See the raw quotes
                   </button>
+                  {hasSaved && (
+                    <button className="text-[13px] text-muted underline-offset-4 hover:underline" disabled={reading > 0} onClick={loadSaved} title="Real results from an earlier live run of the AI reader, in case the AI service is slow or unavailable.">
+                      Load saved reading{savedLabel ? ` (live run, ${savedLabel})` : ""}
+                    </button>
+                  )}
                 </div>
                 {errors > 0 && <div className="mt-3 text-[13px] text-bad">{errors} quote(s) couldn&apos;t be read. Open Quotes to retry.</div>}
               </div>
@@ -131,9 +137,16 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 <span>
                   {done} of {total} quotes read. {errors > 0 ? `${errors} couldn't be read (connection or busy AI). Press Read the rest to retry.` : "Numbers above cover only those."}
                 </span>
-                <Button onClick={readAll} disabled={reading > 0}>
-                  {reading ? <Spinner /> : null} Read the rest
-                </Button>
+                <div className="flex items-center gap-2">
+                  {hasSaved && (
+                    <Button variant="ghost" onClick={loadSaved} disabled={reading > 0}>
+                      Load saved reading
+                    </Button>
+                  )}
+                  <Button onClick={readAll} disabled={reading > 0}>
+                    {reading ? <Spinner /> : null} Read the rest
+                  </Button>
+                </div>
               </div>
             )}
 

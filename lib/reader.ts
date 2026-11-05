@@ -3,6 +3,9 @@ import { useStore } from "./store";
 import type { VendorResponse } from "./types";
 import { fileToB64, mimeFor } from "@/components/ui";
 import { postJson } from "./api";
+import savedRaw from "@/data/saved_reading.json";
+
+const saved = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
 
 export function fileName(url: string) {
   return url.includes("#name=") ? decodeURIComponent(url.split("#name=")[1]) : url.split("/").pop()!;
@@ -43,5 +46,18 @@ export function useReader() {
     };
     await Promise.all([worker(), worker()]);
   }
-  return { read, readAll };
+  const hasSaved = Object.keys(saved.extractions).length > 0;
+  /** Fallback for a flaky connection or an exhausted AI quota: real results from an earlier live run, labelled as such. */
+  function loadSaved() {
+    let n = 0;
+    for (const r of s.responses) {
+      const e = saved.extractions[r.vendor.id];
+      if (e && r.status !== "done") {
+        patch(r.vendor.id, { status: "done", extraction: e.extraction, model: `saved run (${e.model || "AI"})`, ms: e.ms, error: undefined });
+        n++;
+      }
+    }
+    if (n) log(`Loaded saved reading for ${n} quote(s), recorded from a live run on ${saved.recorded_at ? new Date(saved.recorded_at).toLocaleDateString("en-IN") : "an earlier date"}`);
+  }
+  return { read, readAll, hasSaved, loadSaved, savedAt: saved.recorded_at };
 }
