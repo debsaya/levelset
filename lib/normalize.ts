@@ -5,6 +5,14 @@ import type { Assumptions, CellOverride, ExtractedLine, PriorContracts, Rfx, Rfx
 export type Sev = "info" | "warn" | "block";
 export type Flag = { code: string; sev: Sev; msg: string };
 export type Step = { label: string; value: string };
+/** A vendor writing sizes in inches is a unit, not a different spec; models sometimes flag it as one. */
+function realDeviation(t?: string | null): string | null {
+  if (!t) return null;
+  const x = t.toLowerCase();
+  const unitOnly = /\binch|in inches|given in|\bcm\b|centimet/.test(x) && !/\bply\b|flute|board|gsm|print|colou?r|material|instead|different|lamination|grade|thinner|thicker/.test(x);
+  return unitOnly ? null : t;
+}
+
 export type CellStatus = "ok" | "review" | "missing" | "deviation" | "excluded";
 
 export type Cell = {
@@ -289,8 +297,9 @@ export function normalize(
 
       steps.push({ label: "Landed, ex-GST", value: `${inr(v)} per ${line.uom}` });
 
-      let status: CellStatus = el.spec_deviation ? "deviation" : flags.some((f) => f.sev !== "info") ? "review" : "ok";
-      if (el.spec_deviation) flags.unshift({ code: "SPEC_DEVIATION", sev: "warn", msg: `Different spec offered: ${el.spec_deviation}` });
+      const specDev = realDeviation(el.spec_deviation);
+      let status: CellStatus = specDev ? "deviation" : flags.some((f) => f.sev !== "info") ? "review" : "ok";
+      if (specDev) flags.unshift({ code: "SPEC_DEVIATION", sev: "warn", msg: `Different spec offered: ${specDev}` });
       let unit: number | null = v;
       if (ov?.action === "exclude") {
         status = "excluded";
