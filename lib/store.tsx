@@ -73,7 +73,7 @@ export function blankState(): State {
     mode: "blank",
     rfx: {
       id: "RFX-NEW",
-      title: "Untitled RFx",
+      title: "Untitled request",
       buyer: s.rfx.buyer,
       scope: "",
       currency: "INR",

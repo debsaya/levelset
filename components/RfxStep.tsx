@@ -36,7 +36,7 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
       const { rfx, notes } = applyOps(s.rfx, j.ops || []);
       setFlash(rfx.lines.filter((l) => !before.has(JSON.stringify(l))).map((l) => l.id));
       set((x) => ({ ...x, rfx, copilot: [...msgs, { role: "assistant", text: j.reply, ops: notes }] }));
-      if (notes.length) log(`Co-pilot edited RFx: ${notes.length} change(s)`);
+      if (notes.length) log(`Co-pilot edited the request: ${notes.length} change(s)`);
     } catch (e: any) {
       set((x) => ({ ...x, copilot: [...msgs, { role: "assistant", text: `⚠️ ${e.message}` }] }));
     } finally {
@@ -50,8 +50,8 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
     <div className="grid h-full grid-cols-[minmax(340px,420px)_1fr] gap-4 p-4">
       <Card className="flex min-h-0 flex-col">
         <div className="border-b border-line px-4 py-3">
-          <div className="font-semibold">RFx co-pilot</div>
-          <div className="text-xs text-muted">Talk the RFx into shape. Every edit shows up on the right with a reason.</div>
+          <div className="font-semibold">Request co-pilot</div>
+          <div className="text-xs text-muted">Talk the request into shape. Every edit shows up on the right with a reason.</div>
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {s.copilot.map((m, i) => (

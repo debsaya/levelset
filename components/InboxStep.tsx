@@ -38,7 +38,7 @@ export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => 
         <div className="flex-1 divide-y divide-line overflow-y-auto">
           {!s.sentAt && s.mode === "demo" && (
             <div className="space-y-3 p-5 text-sm text-muted">
-              <p>Nothing yet — the RFx hasn&apos;t been sent.</p>
+              <p>Nothing yet — your request hasn&apos;t been sent.</p>
               <Button onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))}>Skip ahead: simulate replies arriving</Button>
             </div>
           )}
@@ -158,7 +158,7 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
         {r.status === "error" && <div className="rounded-md bg-bad-soft p-3 text-sm text-bad">{r.error}</div>}
         {r.status === "reading" && (
           <div className="flex items-center gap-2 text-sm text-muted">
-            <Spinner /> Reading every attachment, mapping prices to RFx lines, citing sources…
+            <Spinner /> Reading every attachment, matching prices to your items, citing sources…
           </div>
         )}
         {ex && (
@@ -262,7 +262,7 @@ function AddResponse({ onCancel, onAdd, nextId }: { onCancel: () => void; onAdd:
   return (
     <div className="space-y-3 p-5">
       <div className="font-semibold">Add a vendor response</div>
-      <div className="text-xs text-muted">Drop in anything — a PDF, Excel, Word file, phone photo, or paste the email text. It is read against the current RFx exactly like the others.</div>
+      <div className="text-xs text-muted">Drop in anything — a PDF, Excel, Word file, phone photo, or paste the email text. It is read against your current request exactly like the others.</div>
       <input className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
       <textarea className="h-36 w-full rounded-md border border-line px-3 py-2 text-[13px]" placeholder="Paste the email body (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
       <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => setFiles(Array.from(e.target.files || []))} />

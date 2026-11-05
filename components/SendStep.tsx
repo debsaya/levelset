@@ -20,7 +20,7 @@ Dear ${v.contact.split(" ")[0]},
 
 ${r.buyer.company} invites ${v.name} to quote for our ${r.title.toLowerCase()}.
 
-• ${r.lines.length} line items (specs and annual volumes attached as RFx_${r.id}.xlsx)
+• ${r.lines.length} line items (specs and annual volumes attached as Request_${r.id}.xlsx)
 • A ${r.questionnaire.length}-question supplier questionnaire (${r.questionnaire.filter((q) => q.must_have).length} must-haves)
 • Quotes due by ${r.due_date}
 
@@ -69,7 +69,7 @@ ${r.buyer.role}, ${r.buyer.company}`
             </div>
           ) : (
             <Button variant="primary" className="w-full justify-center" onClick={sendAll} disabled={!vendors.length}>
-              Send RFx to {vendors.length} vendors
+              Send request to {vendors.length} vendors
             </Button>
           )}
         </div>

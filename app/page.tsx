@@ -26,12 +26,12 @@ function App() {
     setPage(p);
   };
 
-  const tabs: { id: Page; label: string; count?: number | string }[] = [
+  const tabs: { id: Page; label: string; hint?: string; count?: number | string }[] = [
     { id: "overview", label: "Overview" },
-    { id: "compare", label: "Comparison" },
-    { id: "ask", label: "Ask" },
-    { id: "quotes", label: "Quotes" },
-    { id: "rfx", label: "RFx" },
+    { id: "rfx", label: "Request", hint: "The request for quotes you send to vendors (the industry calls it an RFx): items, questions and terms." },
+    { id: "quotes", label: "Quotes", hint: "What each vendor sent back, and what the AI read from it." },
+    { id: "compare", label: "Comparison", hint: "Every vendor side by side, on the same items, units and currency." },
+    { id: "ask", label: "Ask AI", hint: "Ask questions about the comparison in plain English." },
   ];
 
   return (
@@ -45,6 +45,7 @@ function App() {
           {tabs.map((t) => (
             <button
               key={t.id}
+              title={t.hint}
               onClick={() => go(t.id)}
               className={cx("relative flex items-center gap-1.5 px-3 text-[13.5px]", page === t.id || (t.id === "rfx" && page === "send") ? "font-semibold text-ink" : "text-muted hover:text-ink")}
             >
@@ -76,7 +77,7 @@ function App() {
                   Reset the demo event
                 </button>
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("blank"), setMenu(false))}>
-                  Start a new RFx from scratch
+                  Start a new request from scratch
                 </button>
               </div>
             )}
@@ -94,7 +95,7 @@ function App() {
       {confirm && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
           <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Reset the demo event?" : "Start a new RFx?"}</div>
+            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Reset the demo event?" : "Start a new request?"}</div>
             <p className="mt-1.5 text-[13px] text-muted">This clears the quotes you've read, your review decisions and the analyst conversation in this browser.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
