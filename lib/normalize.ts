@@ -141,6 +141,10 @@ export function normalize(
     const uncondPct = (ex.adjustments || [])
       .filter((d) => (d.kind === "discount" || d.kind === "rebate") && !d.conditional && d.pct)
       .reduce((s, d) => s + (d.pct || 0), 0);
+    // an unconditional percentage surcharge (fuel, handling...) makes the price higher; fixed one-time charges stay out of unit prices
+    const surchargePct = (ex.adjustments || [])
+      .filter((d) => d.kind === "surcharge" && !d.conditional && d.pct)
+      .reduce((s, d) => s + (d.pct || 0), 0);
     const condPct = (ex.adjustments || [])
       .filter((d) => (d.kind === "discount" || d.kind === "rebate") && d.conditional && d.pct)
       .reduce((s, d) => s + (d.pct || 0), 0);
@@ -232,6 +236,13 @@ export function normalize(
         continue;
       }
 
+      // a zero or negative price (or a per-kg price on a line with no weight) can never be a real price: never let it win by being "cheapest"
+      if (price <= 0 || (basisUnit === "kg" && !(line.est_weight_kg > 0))) {
+        const why = price <= 0 ? "A zero or negative price can't be real." : "Priced per kg but this line has no weight to convert with.";
+        cells.push({ vendor_id: vid, line_id: line.id, status: ov?.action === "override" ? "ok" : "missing", quoted_as: quotedAs, unit_inr: ov?.action === "override" ? ov.unit_inr ?? null : null, unit_inr_if_rebate: null, annual_inr: ov?.action === "override" && ov.unit_inr ? ov.unit_inr * line.annual_qty : null, per_kg: null, confidence: conf, flags: [{ code: "INVALID_PRICE", sev: "warn", msg: `${why} Ask the vendor to confirm.` }], steps, source: el.source, derived_from: el.derived_from, override: ov, raw: el, missing_reason: "Price could not be used" });
+        continue;
+      }
+
       // 1. to per piece
       let v = price;
       if (basisUnit === "kg") {
@@ -263,6 +274,10 @@ export function normalize(
       if (uncondPct) {
         v = v * (1 - uncondPct / 100);
         steps.push({ label: "Discount", value: `× ${1 - uncondPct / 100} (${uncondPct}% unconditional) = ${num(v)}` });
+      }
+      if (surchargePct) {
+        v = v * (1 + surchargePct / 100);
+        steps.push({ label: "Surcharge", value: `× ${1 + surchargePct / 100} (${surchargePct}% unconditional surcharge) = ${num(v)}` });
       }
       const preFreight = v;
       // 5. freight
@@ -343,6 +358,11 @@ export function normalize(
         vflags.push({ code: "TOTAL_MISMATCH", sev: "warn", msg: `Vendor's own total (${ex.stated_total.currency} ${ex.stated_total.amount.toLocaleString("en-IN")}) differs from their line prices × RFx quantities (${sum.toLocaleString("en-IN", { maximumFractionDigits: 0 })}) by ${diff.toLocaleString("en-IN", { maximumFractionDigits: 0 })}. We use line prices, not their total.` });
       else vflags.push({ code: "TOTAL_OK", sev: "info", msg: "Vendor's stated total reconciles with their line prices." });
     }
+    const qd = ex.quote_date ? Date.parse(ex.quote_date) : NaN;
+    if (!isNaN(qd) && ex.validity_days && ex.validity_days > 0) {
+      const until = new Date(qd + ex.validity_days * 864e5).toISOString().slice(0, 10);
+      if (until < rfx.due_date) vflags.push({ code: "QUOTE_EXPIRED", sev: "warn", msg: `Prices were valid only until ${until}, before the RFx due date (${rfx.due_date}). Ask for a refreshed quote.` });
+    }
     if (unmatched.length) vflags.push({ code: "UNMATCHED_ITEMS", sev: "info", msg: `${unmatched.length} priced item(s) match no RFx line by size and were left out: ${unmatched.slice(0, 6).join(", ")}${unmatched.length > 6 ? "…" : ""}.` });
     for (const u of ex.unresolved || []) vflags.push({ code: "MODEL_NOTE", sev: "info", msg: u });
 
@@ -355,7 +375,11 @@ export function normalize(
       let assessment = ans?.assessment || "unanswered";
       let auto_note: string | undefined;
       if (/certif/i.test(qq.text) && /iso/i.test(qq.text)) {
-        const cert = (ex.documents || []).find((d) => /iso|9001|certif/i.test(d.kind + " " + d.summary) && d.valid_until);
+        // look only at ISO documents (an expired FSC certificate must not fail ISO), and if there are several take the newest
+        const docs = (ex.documents || []).filter((d) => d.valid_until);
+        const isoDocs = docs.filter((d) => /iso|9001/i.test(d.kind + " " + d.summary));
+        const generic = docs.filter((d) => /certif/i.test(d.kind + " " + d.summary) && !/fsc|pefc|brc|fssc|haccp|msme|gst|bis\b|udyam/i.test(d.kind + " " + d.summary));
+        const cert = (isoDocs.length ? isoDocs : generic).sort((x, y) => (y.valid_until! > x.valid_until! ? 1 : -1))[0];
         if (cert && cert.valid_until && cert.valid_until < rfx.due_date) {
           assessment = "fail";
           auto_note = `Attached certificate expired on ${cert.valid_until} (checked by system).`;

@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 57 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 80 tests, ~1 second, no API key needed).
 
 ---
 
@@ -50,6 +50,15 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 18 | **Awarding to someone who isn't approved just because they're cheapest.** | Awards only use approved vendors by default. Anyone excluded is **named with the reason**. Widening is a visible choice, and the tool shows the price of doing so. | `lib/award.ts` | the award tests |
 | 19 | **Holes in coverage.** | Lines nobody eligible priced are reported as **gaps**, never costed at zero. Awards report how many winning prices still rest on unverified cells. | `runScenario` | *"lines nobody eligible quoted are reported as gaps"*; *"unverified prices … are counted"* |
 | 20 | **AI writes a confident number that isn't in the data.** | Every figure in the analyst's prose is checked against the query results of that turn; anything that doesn't trace is highlighted. Tables and charts come only from SQL, never from model-typed numbers. | `lib/grounding.ts` | the four grounding tests (invented figure caught; ISO numbers, years and line ids not mistaken for figures) |
+
+| 21 | **A zero or negative price.** A typo, or "0" meaning "no quote". Left alone it would be "the cheapest" and win the award. *(A gap I found while testing and fixed.)* | Never a price. The cell is empty, flagged, and can't win. The buyer can still key in a price they got by phone. Same for a per-kg price on a line with no weight. | `INVALID_PRICE` | *"a zero or negative price is not a price"*; *"per-kg price on a line with no weight"* |
+| 22 | **A percentage surcharge hidden in the terms** (fuel, handling). It made a vendor look cheaper than they are. *(Gap, fixed.)* | Unconditional % surcharges are added to the unit price. Conditional ones and fixed one-time charges (plates, dies) stay out of the unit price and are shown beside it. | `surchargePct` | *"an unconditional percentage surcharge is added"*; *"a conditional surcharge and a one-time charge do NOT change the unit price"* |
+| 23 | **An unrelated expired certificate.** The vendor attaches an expired FSC certificate and a valid ISO one; the ISO question could read the wrong one. Or an old and a renewed ISO certificate side by side. *(Gap, fixed.)* | Only ISO documents are judged for the ISO question; if there are several, the newest counts. | questionnaire block | three certificate tests |
+| 24 | **Prices that expired before the event.** "Valid 15 days" from a quote dated weeks before the due date. *(New check.)* | Flagged for the buyer: ask for a refreshed quote. Missing or unreadable dates raise nothing. | `QUOTE_EXPIRED` | two validity tests |
+| 25 | **Quantity slabs / the same item twice.** | The reader gives both prices; code keeps the more confident one, **never averages**, and shows the buyer both so they can pick. Slabs are not modelled yet (see limits). | `DUPLICATE` | *"the same item priced twice … is flagged and never averaged"* |
+| 26 | **Noise from the reader:** an invented line id, an answer to a question that doesn't exist, a regret line, a reply with no prices, no replies at all. | Ignored safely, never crashes, never costed. A regret keeps its reason. | various | the Coverage and noise tests |
+| 27 | **Other tax cases:** 18% GST, quotes that mix inclusive and exclusive lines, lower-case currency codes. | Same basis for every line, whatever the quote mixes. | `GST_INCLUDED` | the Tax variety tests |
+| 28 | **Hidden state.** The same inputs must always give the same answer, and the data must never be modified in place. | Pure functions. | `normalize()` | the "Safety net" tests |
 
 ---
 
@@ -107,13 +116,15 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 - Box weight is **computed from the spec**, so per-kg quotes are accurate to a few percent, and the tool says so on each converted cell.
 - "Needs proof" and "not approved" depend on questions the RFx marks as must-haves. A badly written must-have gives a badly drawn line.
 - The size re-match assumes the vendor's written size is reliable; a mis-read size can still send a price to review or drop it (both visible, neither silent).
+- **Not modelled yet:** quantity price breaks as a structure (they arrive as duplicates and the buyer picks), and minimum order quantities. Both would need new fields in the reading step, which I chose not to risk this close to the demo.
+- Number formats such as decimal commas are a reading problem, not a code problem; they belong in the extraction accuracy checks above, not in unit tests.
 - Free-tier model limits can slow a live read. The app retries and shows a clear message rather than failing silently.
 
 ## 8. Run the proof
 
 ```bash
 npm install
-npm test        # 57 checks, no API key needed
+npm test        # 80 checks, no API key needed
 ```
 
-I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, and removing the inches-vs-spec fix fails one.
+I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6.
