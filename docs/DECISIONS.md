@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 151 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 152 tests, ~1 second, no API key needed).
 
 ---
 
@@ -151,7 +151,7 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 151 checks, no API key needed
+npm test        # 152 checks, no API key needed
 ```
 
 I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.

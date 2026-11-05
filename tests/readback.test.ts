@@ -97,10 +97,24 @@ describe("Read-back: the vendor confirms what we read before we finalise", () =>
     assert.equal(readBackIssue("V1", n, RFX), null);
   });
 
-  it("caps a long list and says how many were left out", () => {
-    const n = market({ V1: { ex: extraction(RFX.lines.map((l) => line(l.id, Math.round(41 * l.est_weight_kg * 100) / 100))) } });
+  it("an unconverted price is stated once; a converted one shows what they wrote beside what we read", () => {
+    const n = market({ V1: { ex: extraction([line("L01", 340, { basis_qty: 100, source: { file: "q.xlsx", location: "B2", quote: "Rs 340 per 100 nos" } }), line("L02", 5.5)]) } });
     const rb = readBackIssue("V1", n, RFX)!;
-    assert.match(rb, /plus 15 smaller items/);
-    assert.equal((rb.match(/you wrote/g) || []).length, 15);
+    assert.match(rb, /L02 [^;]*: ₹5\.50 per piece(;|\.)/, "plain price: no 'you wrote … we read' repetition");
+    assert.match(rb, /L01 [^;]*you wrote .*Rs 340 per 100 nos.*we read it as ₹3\.40 per piece/);
+  });
+
+  it("lists everything up to 40 items; a longer list is capped and says how many were left out", () => {
+    const big = structuredClone(RFX);
+    const extra = RFX.lines.slice(0, 15).map((l) => ({ ...l, id: "X" + l.id.slice(1) }));
+    big.lines = [...RFX.lines, ...extra]; // 45 lines
+    const lines = big.lines.map((l) => line(l.id, Math.round(41 * l.est_weight_kg * 100) / 100));
+    const responses = [{ vendor: vendorMsg("V1"), status: "done" as const, extraction: extraction(lines) }];
+    const n = normalize(big, responses, A, {}, {}, PRIOR);
+    const rb = readBackIssue("V1", n, big)!;
+    assert.match(rb, /plus 5 smaller items/);
+    assert.equal((rb.match(/₹[\d.]+ per piece/g) || []).length, 40);
+    const rb30 = readBackIssue("V1", market({ V1: { ex: extraction(RFX.lines.map((l) => line(l.id, Math.round(41 * l.est_weight_kg * 100) / 100))) } }), RFX)!;
+    assert.ok(!rb30.includes("plus"), "30 items are all listed");
   });
 });
