@@ -155,3 +155,18 @@ export function mimeFor(name: string) {
   if (n.endsWith(".csv")) return "text/csv";
   return "text/plain";
 }
+
+/** A section that stays closed until asked: title and a one-line summary are always visible, the detail is one click away. */
+export function Disclosure({ title, summary, defaultOpen = false, children }: { title: string; summary?: string; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <section className="rounded-2xl border border-line bg-white">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-5 py-3.5 text-left">
+        <span className={cx("grid h-5 w-5 shrink-0 place-items-center text-[11px] text-muted transition-transform", open && "rotate-90")}>▶</span>
+        <span className="text-[14.5px] font-semibold">{title}</span>
+        {summary && <span className="ml-auto text-[12.5px] text-muted">{summary}</span>}
+      </button>
+      {open && <div className="border-t border-line">{children}</div>}
+    </section>
+  );
+}

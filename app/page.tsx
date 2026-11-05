@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { normalize } from "@/lib/normalize";
 import OverviewStep from "@/components/OverviewStep";
@@ -13,49 +13,66 @@ import { cx } from "@/components/ui";
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
 function App() {
-  const { s, reset } = useStore();
-  const [page, setPage] = useState<Page>("overview");
+  const { s, reset, hydrated } = useStore();
+  const [page, setPage] = useState<Page>("rfx");
   const [opts, setOpts] = useState<{ review?: boolean; ask?: string; nonce: number }>({ nonce: 0 });
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState<null | "demo" | "blank">(null);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
   const review = n.cells.filter((c) => c.status === "review").length;
+  const total = s.responses.length;
   const read = s.responses.filter((r) => r.status === "done").length;
   const go = (p: Page, o?: { review?: boolean; ask?: string }) => {
     setOpts({ ...o, nonce: Date.now() });
     setPage(p);
   };
 
-  const tabs: { id: Page; label: string; hint?: string; count?: number | string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "rfx", label: "Request", hint: "The request for quotes you send to vendors (the industry calls it an RFx): items, questions and terms." },
-    { id: "quotes", label: "Quotes", hint: "What each vendor sent back, and what the AI read from it." },
-    { id: "compare", label: "Comparison", hint: "Every vendor side by side, on the same items, units and currency." },
-    { id: "ask", label: "Ask AI", hint: "Ask questions about the comparison in plain English." },
+  // Open on the first unfinished step, once the saved session has loaded.
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!hydrated || landed.current) return;
+    landed.current = true;
+    if (!s.sentAt && s.mode === "demo") setPage("rfx");
+    else if (total && read < total) setPage("quotes");
+    else if (read > 0) setPage(review > 0 ? "compare" : "overview");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
+  // The four steps of the buyer's job, in order. "Ask AI" is a helper, not a step.
+  type St = "done" | "active" | "todo";
+  const steps: { id: Page; label: string; hint: string; state: St; note?: string }[] = [
+    { id: "rfx", label: "Request", hint: "Draft what you need and send it to vendors (the industry calls this an RFx).", state: s.sentAt ? "done" : "active", note: s.sentAt ? "sent" : "draft" },
+    { id: "quotes", label: "Replies", hint: "Collect what each vendor sent back, in any format, and let the AI read it.", state: total && read === total ? "done" : s.sentAt || read ? "active" : "todo", note: total && s.sentAt ? `${read}/${total} read` : undefined },
+    { id: "compare", label: "Compare", hint: "Every vendor side by side, on the same items, units and currency. Check anything flagged.", state: read === 0 ? "todo" : read === total && review === 0 ? "done" : "active", note: read > 0 && review > 0 ? `${review} to check` : undefined },
+    { id: "overview", label: "Decision", hint: "Your recommended award and the reasons behind it.", state: read === 0 ? "todo" : "active" },
   ];
+  const cur: Page = page === "send" ? "rfx" : page;
+  const here = () => go(!s.sentAt && s.mode === "demo" ? "rfx" : total && read < total ? "quotes" : read > 0 ? (review > 0 ? "compare" : "overview") : "quotes");
 
   return (
     <div className="flex h-screen min-h-0 flex-col">
       <header className="flex h-14 shrink-0 items-center gap-6 border-b border-line bg-white px-5">
-        <button onClick={() => go("overview")} className="flex items-center gap-2">
+        <button onClick={here} className="flex items-center gap-2" title="Back to where you left off">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-[13px] font-bold text-white">L</span>
           <span className="text-[15px] font-semibold tracking-tight">Levelset</span>
         </button>
         <nav className="flex h-full items-stretch gap-1">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              title={t.hint}
-              onClick={() => go(t.id)}
-              className={cx("relative flex items-center gap-1.5 px-3 text-[13.5px]", page === t.id || (t.id === "rfx" && page === "send") ? "font-semibold text-ink" : "text-muted hover:text-ink")}
-            >
-              {t.label}
-              {t.count !== undefined && <span className={cx("rounded-full px-1.5 text-[11px] tabular", t.id === "compare" ? "bg-warn-soft text-warn" : "bg-panel text-muted")}>{t.count}</span>}
-              {(page === t.id || (t.id === "rfx" && page === "send")) && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-ink" />}
-            </button>
+          {steps.map((t, i) => (
+            <div key={t.id} className="flex items-center">
+              {i > 0 && <span className="px-1 text-line">—</span>}
+              <button onClick={() => go(t.id)} title={t.hint} className={cx("relative flex h-full items-center gap-2 px-2.5 text-[13.5px]", cur === t.id ? "font-semibold text-ink" : "text-muted hover:text-ink")}>
+                <span className={cx("grid h-5 w-5 place-items-center rounded-full text-[11px] font-semibold", t.state === "done" ? "bg-ink text-white" : cur === t.id ? "bg-kraft text-white" : "bg-panel text-muted")}>{t.state === "done" ? "✓" : i + 1}</span>
+                {t.label}
+                {t.note && <span className={cx("hidden text-[11.5px] font-normal lg:inline", /check/.test(t.note) ? "text-warn" : "text-muted")}>{t.note}</span>}
+                {cur === t.id && <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-ink" />}
+              </button>
+            </div>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
+          <button onClick={() => go("ask")} title="Ask questions about the comparison in plain English" className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", page === "ask" ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
+            Ask AI
+          </button>
           <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[11.5px] text-muted lg:inline" title="Demo with made-up companies. The AI reads and answers for real; only the sending of emails to vendors is simulated.">
             Demo data
           </span>
@@ -87,9 +104,9 @@ function App() {
       <main className="min-h-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <RfxStep onNext={() => go("send")} />}
-        {page === "send" && <SendStep onNext={() => go("overview")} />}
-        {page === "quotes" && <InboxStep n={n} onNext={() => go("overview")} />}
-        {page === "compare" && <CompareStep key={opts.nonce} n={n} onAsk={() => go("ask")} initialReview={!!opts.review} />}
+        {page === "send" && <SendStep onNext={() => go("quotes")} />}
+        {page === "quotes" && <InboxStep n={n} onNext={() => go("compare")} />}
+        {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} initialReview={!!opts.review} />}
         {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
       </main>
       {confirm && (
@@ -106,7 +123,7 @@ function App() {
                 onClick={() => {
                   reset(confirm);
                   setConfirm(null);
-                  go(confirm === "demo" ? "overview" : "rfx");
+                  go("rfx");
                 }}
               >
                 {confirm === "demo" ? "Reset" : "Start new"}

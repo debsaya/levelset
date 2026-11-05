@@ -14,13 +14,14 @@ const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
   not_qualified: { tone: "bad", label: "Not approved" },
 };
 
-export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized; onAsk: () => void; initialReview?: boolean }) {
+export default function CompareStep({ n, onNext, initialReview }: { n: Normalized; onNext: () => void; initialReview?: boolean }) {
   const { s, set, log } = useStore();
   const [tab, setTab] = useState<"prices" | "questionnaire" | "audit">("prices");
   const [onlyReview, setOnlyReview] = useState(!!initialReview);
   const [sel, setSel] = useState<{ v: string; l: string } | null>(null);
   const [selQ, setSelQ] = useState<{ v: string; q: string } | null>(null);
   const [clarify, setClarify] = useState<string | null>(null);
+  const [showBasis, setShowBasis] = useState(false);
   const a = s.assumptions;
   const vs = n.vendors;
   const reviewCount = n.cells.filter((c) => c.status === "review").length;
@@ -30,7 +31,7 @@ export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized
   if (!vs.length)
     return (
       <div className="p-10 text-muted">
-        No responses read yet. Go to <b>Responses</b> and click <b>Read all</b>.
+        No replies read yet. Go to <b>Replies</b> and click <b>Read all</b>.
       </div>
     );
 
@@ -42,40 +43,49 @@ export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       {/* assumptions */}
-      <Card className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 text-[12.5px]">
-        <span className="font-semibold">Comparison basis:</span>
-        <span className="text-muted">₹ per piece · landed at Bidadi · ex-GST</span>
-        <label className="flex items-center gap-1.5">
-          USD→INR
-          <input type="number" step="0.1" value={a.fx_usd_inr} onChange={(e) => setA({ fx_usd_inr: parseFloat(e.target.value) || 0 }, `Set FX to ${e.target.value}`)} className="w-20 rounded border border-line px-1.5 py-0.5 tabular" />
-        </label>
-        <span className="flex items-center gap-1.5" title="These vendors quoted at their factory gate, so we add transport to the Bidadi plant. Change the rate and every total updates.">
-          Add freight (₹/kg) for vendors who quoted ex-works:
-          {vs
-            .filter((v) => v.terms.freight.startsWith("Ex-works"))
-            .map((v) => (
-              <label key={v.vendor_id} className="flex items-center gap-1 text-muted">
-                {v.name.split(" ")[0]}
-                <input
-                  type="number"
-                  step="0.05"
-                  value={a.freight_inr_per_kg[v.vendor_id] ?? a.default_freight_inr_per_kg}
-                  onChange={(e) => setA({ freight_inr_per_kg: { ...a.freight_inr_per_kg, [v.vendor_id]: parseFloat(e.target.value) || 0 } }, `Set freight for ${v.name} to ₹${e.target.value}/kg`)}
-                  className="w-16 rounded border border-line px-1.5 py-0.5 tabular text-ink"
-                />
-              </label>
-            ))}
-        </span>
-        <label className="flex items-center gap-1.5">
-          <input type="checkbox" checked={a.apply_conditional_rebates} onChange={(e) => setA({ apply_conditional_rebates: e.target.checked }, `${e.target.checked ? "Counted" : "Stopped counting"} conditional rebates`)} />
-          <span title="Some vendors offer a discount only if a condition is met, such as a yearly volume. Tick to count it anyway.">Count rebates that need a condition</span>
-        </label>
-        <div className="ml-auto flex gap-2">
-          <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>
-          <Button variant="primary" onClick={onAsk}>
-            Ask the data →
-          </Button>
+      <Card className="px-4 py-2.5 text-[12.5px]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <button onClick={() => setShowBasis(!showBasis)} aria-expanded={showBasis} className="flex items-center gap-2 text-left" title="The assumptions behind every price. Open to change them.">
+            <span className={cx("text-[10px] text-muted transition-transform", showBasis && "rotate-90")}>▶</span>
+            <span className="font-semibold">Prices are ₹ per piece, delivered to Bidadi, ex-GST</span>
+            <span className="text-muted">· USD at ₹{a.fx_usd_inr}{showBasis ? "" : " · change assumptions"}</span>
+          </button>
+          <div className="ml-auto flex gap-2">
+            <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>
+            <Button variant="primary" onClick={onNext}>
+              Continue to decision →
+            </Button>
+          </div>
         </div>
+        {showBasis && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-2.5">
+            <label className="flex items-center gap-1.5">
+              USD→INR
+              <input type="number" step="0.1" value={a.fx_usd_inr} onChange={(e) => setA({ fx_usd_inr: parseFloat(e.target.value) || 0 }, `Set FX to ${e.target.value}`)} className="w-20 rounded border border-line px-1.5 py-0.5 tabular" />
+            </label>
+            <span className="flex items-center gap-1.5" title="These vendors quoted at their factory gate, so we add transport to the Bidadi plant. Change the rate and every total updates.">
+              Add freight (₹/kg) for vendors who quoted ex-works:
+              {vs
+                .filter((v) => v.terms.freight.startsWith("Ex-works"))
+                .map((v) => (
+                  <label key={v.vendor_id} className="flex items-center gap-1 text-muted">
+                    {v.name.split(" ")[0]}
+                    <input
+                      type="number"
+                      step="0.05"
+                      value={a.freight_inr_per_kg[v.vendor_id] ?? a.default_freight_inr_per_kg}
+                      onChange={(e) => setA({ freight_inr_per_kg: { ...a.freight_inr_per_kg, [v.vendor_id]: parseFloat(e.target.value) || 0 } }, `Set freight for ${v.name} to ₹${e.target.value}/kg`)}
+                      className="w-16 rounded border border-line px-1.5 py-0.5 tabular text-ink"
+                    />
+                  </label>
+                ))}
+            </span>
+            <label className="flex items-center gap-1.5">
+              <input type="checkbox" checked={a.apply_conditional_rebates} onChange={(e) => setA({ apply_conditional_rebates: e.target.checked }, `${e.target.checked ? "Counted" : "Stopped counting"} conditional rebates`)} />
+              <span title="Some vendors offer a discount only if a condition is met, such as a yearly volume. Tick to count it anyway.">Count rebates that need a condition</span>
+            </label>
+          </div>
+        )}
       </Card>
 
       <div className="flex items-center gap-4 text-[13px]">

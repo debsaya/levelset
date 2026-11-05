@@ -98,7 +98,7 @@ function reducer(s: State, a: Action): State {
 }
 
 const KEY = "levelset-state-v3";
-const Ctx = createContext<{ s: State; set: (fn: (s: State) => State) => void; reset: (mode: "demo" | "blank") => void; log: (what: string) => void } | null>(null);
+const Ctx = createContext<{ s: State; set: (fn: (s: State) => State) => void; reset: (mode: "demo" | "blank") => void; log: (what: string) => void; hydrated: boolean } | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [s, dispatch] = useReducer(reducer, undefined, demoState);
@@ -122,7 +122,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const set = (fn: (s: State) => State) => dispatch({ type: "set", fn });
   const reset = (mode: "demo" | "blank") => dispatch({ type: "replace", state: mode === "demo" ? demoState() : blankState() });
   const log = (what: string) => set((x) => ({ ...x, audit: [{ at: new Date().toISOString(), who: x.rfx.buyer.name, what }, ...x.audit] }));
-  return <Ctx.Provider value={{ s, set, reset, log }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ s, set, reset, log, hydrated }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {

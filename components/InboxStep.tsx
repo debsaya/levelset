@@ -63,7 +63,7 @@ export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => 
           </Button>
           {doneCount > 0 && (
             <Button variant="primary" className="w-full justify-center" onClick={onNext}>
-              See the overview →
+              Continue to compare →
             </Button>
           )}
         </div>

@@ -2,10 +2,11 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
-import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
+import { lastYear, scenarios } from "@/lib/award";
+import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal, vendorIssues } from "./CompareStep";
-import { Badge, Button, Spinner, cx } from "./ui";
+import { Badge, Button, Disclosure, Spinner, cx } from "./ui";
 
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
 
@@ -15,10 +16,10 @@ const QUAL = {
   not_qualified: { tone: "bad" as const, label: "Not approved" },
 };
 
+/** Step 4: the decision. One answer up front; everything that supports it is one click away. */
 export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const { s } = useStore();
-  const { readAll, hasSaved, loadSaved, savedAt } = useReader();
-  const savedLabel = savedAt ? new Date(savedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
+  const { readAll, hasSaved, loadSaved } = useReader();
   const [clarify, setClarify] = useState<string | null>(null);
   const total = s.responses.length;
   const done = s.responses.filter((r) => r.status === "done").length;
@@ -26,135 +27,36 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const errors = s.responses.filter((r) => r.status === "error").length;
   const sc = useMemo(() => scenarios(s.rfx, n), [s.rfx, n]);
   const best = [...sc].filter((x) => x.key !== "split_qc").sort((a, b) => b.linesCovered - a.linesCovered || a.total - b.total)[0];
-  const single = sc.find((x) => x.key === "single");
   const ly = useMemo(() => lastYear(s.rfx, s.prior, best, n), [s.rfx, s.prior, best, n]);
   const review = n.cells.filter((c) => c.status === "review").length;
   const issues = useMemo(() => Object.fromEntries(n.vendors.map((v) => [v.vendor_id, vendorIssues(v, n, s.rfx, s.responses)])), [n, s.rfx, s.responses]);
-  const openQs = Object.values(issues).reduce((a, b) => a + b.length, 0);
-  const due = new Date(s.rfx.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  const approved = n.vendors.filter((v) => v.qualification === "qualified").length;
+  const attention = (review > 0 ? 1 : 0) + n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length;
+
+  const names = best ? best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} (${v.lines} ${v.lines === 1 ? "item" : "items"})`) : [];
+  const headline = !best
+    ? "No approved vendor has cleared the must-have questions yet"
+    : best.vendorsUsed.length === 1
+      ? `Award all ${best.linesCovered} items to ${best.vendorsUsed[0].name}`
+      : `Split the award: ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-[1180px] space-y-6 px-6 py-7">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-kraft">
-              Buyer: {s.rfx.buyer.company} · {s.rfx.lines.length} items · {s.responses.length} vendors invited · quotes due {due}
-            </div>
-            <h1 className="mt-1 text-[28px] font-semibold leading-tight">{s.rfx.title.replace(/\s*—\s*/, ": ")}</h1>
-          </div>
-          {done > 0 && (
-            <div className="flex gap-2">
-              <Button onClick={() => go("compare")}>Open comparison</Button>
-              <Button variant="primary" onClick={() => go("ask")}>
-                Ask a question
-              </Button>
-            </div>
-          )}
-        </header>
-
-        <p className="-mt-3 max-w-3xl text-[15px] leading-relaxed text-muted">
-          Suppliers reply in whatever format they like. Levelset reads every reply into <span className="font-medium text-ink">one like-for-like comparison</span>, so you can pick a winner and defend it.
-        </p>
-
-        <section className="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
-          <Step n={1} onClick={() => go("quotes")} hint="See the raw replies" state="done" title="Replies come in" line={`${total} replies · ${[...new Set(s.responses.map((r) => r.vendor.format.split(" ")[0]))].join(", ")}`} />
-          <Arrow />
-          <Step n={2} onClick={() => go("quotes")} hint="See what the AI read" state={done === 0 ? (reading > 0 ? "active" : "todo") : done < total ? "active" : "done"} title="AI reads each one" line={done === 0 ? "Excel, PDF, Word, photos and emails, read as they are" : `${n.vendors.reduce((a, v) => a + v.quoted, 0)} prices matched to your ${s.rfx.lines.length} items · ${done}/${total} read`} />
-          <Arrow />
-          <Step n={3} onClick={() => go("compare")} hint="Open the comparison" state={done === 0 ? "todo" : "done"} title="You compare and decide" line={done === 0 ? "One table in ₹ per box, delivered, ex-GST" : `${review} prices for you to check · ${n.vendors.filter((v) => v.qualification === "qualified").length} vendors qualified`} />
-        </section>
-
+      <div className="mx-auto max-w-[860px] space-y-4 px-6 py-8">
         {done === 0 ? (
-          <div className="rounded-2xl border border-line bg-white p-8">
-            <div className="grid gap-8 md:grid-cols-[1.2fr_1fr]">
-              <div>
-                <div className="text-[44px] font-semibold leading-none tabular">
-                  {total}
-                  <span className="text-muted">/{total}</span>
-                </div>
-                <div className="mt-2 text-[17px] font-medium">quotes are in, in {new Set(s.responses.map((r) => r.vendor.format)).size} different formats</div>
-                <p className="mt-2 max-w-md text-muted">
-                  Excel, a letterhead PDF, a Word letter in USD, a phone photo and a one-line email. Read them all and you&apos;ll get one comparison in rupees per box, delivered, ex-GST.
-                </p>
-                <div className="mt-5 flex items-center gap-3">
-                  <Button variant="primary" className="px-5 py-2.5 text-[14px]" onClick={readAll} disabled={reading > 0}>
-                    {reading > 0 ? (
-                      <>
-                        <Spinner /> Reading {reading} of {total}…
-                      </>
-                    ) : (
-                      `Read all ${total} quotes`
-                    )}
-                  </Button>
-                  <button className="text-[13px] text-muted underline-offset-4 hover:underline" onClick={() => go("quotes")}>
-                    See the raw quotes
-                  </button>
-                  {hasSaved && (
-                    <button className="text-[13px] text-muted underline-offset-4 hover:underline" disabled={reading > 0} onClick={loadSaved} title="Real results from an earlier live run of the AI reader, in case the AI service is slow or unavailable.">
-                      Load saved reading{savedLabel ? ` (live run, ${savedLabel})` : ""}
-                    </button>
-                  )}
-                </div>
-                {errors > 0 && <div className="mt-3 text-[13px] text-bad">{errors} quote(s) couldn&apos;t be read. Open Quotes to retry.</div>}
-              </div>
-              <div className="space-y-2">
-                {s.responses.map((r) => (
-                  <div key={r.vendor.id} className="flex items-center justify-between rounded-lg bg-panel px-3 py-2 text-[13px]">
-                    <span className="font-medium">{r.vendor.name}</span>
-                    <span className="flex items-center gap-2 text-muted">
-                      {r.vendor.format}
-                      {r.status === "reading" && <Spinner className="h-3 w-3" />}
-                      {r.status === "done" && <span className="text-good">✓</span>}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="rounded-2xl border border-line bg-white p-8 text-center">
+            <div className="text-[20px] font-semibold">Nothing to decide yet</div>
+            <p className="mx-auto mt-2 max-w-md text-muted">Once the vendor replies are read, your recommended award appears here, with everything behind it one click away.</p>
+            <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={() => go("quotes")}>
+              Go to the replies
+            </Button>
           </div>
         ) : (
           <>
-            {/* KPI row */}
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Kpi
-                label="Best price from approved vendors"
-                value={best ? crore(best.total) : "–"}
-                sub={best ? `buying ${best.linesCovered} of ${s.rfx.lines.length} items from ${best.vendorsUsed.length} approved vendor${best.vendorsUsed.length > 1 ? "s" : ""}` : "No approved vendor yet"}
-                accent
-              />
-              {(() => {
-                const alt = sc.find((x) => x.key === "split_qc");
-                return done < 2 ? (
-                  <Kpi label="Saving from splitting" value="–" sub="Needs at least 2 quotes read" />
-                ) : alt && best && alt.total < best.total ? (
-                  <Kpi label="Possible extra saving" value={`−${crore(best.total - alt.total)}`} sub={`if you also use vendors who still need to send proof · ${alt.unverified} prices to check`} tone="good" onClick={() => go("ask", { ask: "What proof would the vendors marked Needs proof have to send for us to safely use them, and how much would that save? Show the items that move." })} />
-                ) : (
-                  <Kpi
-                    label="Saving from splitting"
-                    value={single && best && single.key !== best.key ? crore(Math.max(0, savingOnCommon(single, best))) : "₹0"}
-                    sub={single && best && single.key !== best.key ? `vs ${single.label.replace("All to ", "all to ")}, on the same items` : `${single?.label.replace("All to ", "") || "One vendor"} is cheapest on every item`}
-                  />
-                );
-              })()}
-              <Kpi
-                label="Compared with last year's contract"
-                value={ly ? `${crore(Math.abs(ly.delta))} ${ly.delta > 0 ? "higher" : "lower"}` : "–"}
-                sub={ly ? `${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}% ${ly.delta > 0 ? "more" : "less"} across the ${ly.lines} items that had a price last year` : "No prior contract on file"}
-                tone={ly ? (ly.delta > 0 ? "bad" : "good") : undefined}
-              />
-              <Kpi label="Prices to double-check" value={`${review}`} sub={`the AI wasn't sure about these · ${openQs} questions you could send to vendors`} tone={review ? "warn" : "good"} onClick={() => go("compare", { review: true })} />
-            </section>
-            {done === total && (
-              <div className="flex items-center justify-end gap-3 text-[12.5px] text-muted">
-                <button className="underline-offset-4 hover:underline" onClick={() => go("quotes")}>
-                  Back to the raw replies
-                </button>
-              </div>
-            )}
             {done < total && (
-              <div className="flex items-center justify-between rounded-xl bg-kraft-soft px-4 py-3 text-[13px]">
+              <div className="flex items-center justify-between gap-3 rounded-xl bg-kraft-soft px-4 py-3 text-[13px]">
                 <span>
-                  {done} of {total} quotes read. {errors > 0 ? `${errors} couldn't be read (connection or busy AI). Press Read the rest to retry.` : "Numbers above cover only those."}
+                  {done} of {total} replies read, so this covers only those. {errors > 0 ? `${errors} couldn't be read (connection or busy AI).` : ""}
                 </span>
                 <div className="flex items-center gap-2">
                   {hasSaved && (
@@ -169,89 +71,102 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             )}
 
-            <section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
-              {/* award options */}
-              <div className="rounded-2xl border border-line bg-white">
-                <div className="flex items-center justify-between px-5 pt-4">
-                  <h2 className="text-[15px] font-semibold">Award options</h2>
-                  <span className="text-[12px] text-muted">annual value, landed at plant, ex-GST</span>
-                </div>
-                <div className="divide-y divide-line">
-                  {sc.map((x) => {
-                    const isBest = best && x.key === best.key;
-                    return (
-                      <div key={x.key} className="px-5 py-4">
-                        <div className="flex items-baseline justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 font-medium">
-                              {x.label} {isBest && <Badge tone="brand">recommended</Badge>}
-                            </div>
-                            <div className="text-[12.5px] text-muted">{x.detail}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[20px] font-semibold tabular">{crore(x.total)}</div>
-                            <div className="text-[12px] text-muted">
-                              {x.linesCovered}/{s.rfx.lines.length} items
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-2.5 flex h-2 overflow-hidden rounded-full bg-panel">
-                          {x.vendorsUsed.map((v, i) => (
-                            <div key={v.vendor_id} title={`${v.name}: ${crore(v.value)}`} style={{ width: `${(v.value / x.total) * 100}%`, background: ["#15181d", "#9c6a32", "#6f8a7a", "#b9a17f", "#8a93a3"][i % 5] }} />
-                          ))}
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-                          {x.vendorsUsed.map((v) => (
-                            <span key={v.vendor_id}>
-                              {v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"} · {crore(v.value)}
-                            </span>
-                          ))}
-                        </div>
-                        {(x.linesMissing.length > 0 || x.unverified > 0) && (
-                          <div className="mt-1.5 text-[12px] text-warn">
-                            {x.linesMissing.length > 0 && `No qualified price for ${x.linesMissing.join(", ")}. `}
-                            {x.unverified > 0 && `${x.unverified} winning prices still need your check.`}
-                          </div>
-                        )}
+            <div className="rounded-2xl border border-ink bg-ink p-7 text-white">
+              <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-white/60">Recommended</div>
+              <h1 className="mt-1.5 text-[24px] font-semibold leading-snug">{headline}</h1>
+              {best && (
+                <>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="text-[44px] font-semibold leading-none tabular">{crore(best.total)}</span>
+                    <span className="text-[13px] text-white/70">a year, delivered to your plant, ex-GST</span>
+                  </div>
+                  <div className="mt-3 space-y-1 text-[13.5px] text-white/80">
+                    {ly && (
+                      <div>
+                        {crore(Math.abs(ly.delta))} ({Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}%) {ly.delta > 0 ? "higher" : "lower"} than last year&apos;s contract, on the {ly.lines} items that had a price then
                       </div>
-                    );
-                  })}
-                  {!sc.length && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
-                </div>
-                <div className="flex justify-end px-5 pb-4">
-                  <button className="text-[13px] font-medium text-kraft hover:underline" onClick={() => go("ask", { ask: "Compare the award options and recommend one I can defend to my VP. Show the line-level split." })}>
-                    Ask the analyst to compare these →
-                  </button>
-                </div>
+                    )}
+                    {best.linesMissing.length > 0 && <div>No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</div>}
+                    {best.unverified > 0 && (
+                      <div>
+                        {best.unverified} of the winning prices still need your check{" "}
+                        <button className="underline underline-offset-2" onClick={() => go("compare", { review: true })}>
+                          Check them
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button className="border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>
+                  Export to Excel
+                </Button>
+                <Button className="border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>
+                  Ask AI why
+                </Button>
               </div>
+            </div>
 
-              {/* attention */}
-              <div className="rounded-2xl border border-line bg-white">
-                <div className="px-5 pt-4">
-                  <h2 className="text-[15px] font-semibold">Needs your attention</h2>
-                </div>
-                <div className="space-y-1 p-3">
-                  {review > 0 && (
-                    <Attention tone="warn" title={`${review} prices the system isn't sure about`} body="Unit conversions, photo reads and group rules. Check them before you award." action="Review" onClick={() => go("compare", { review: true })} />
-                  )}
-                  {n.vendors
-                    .filter((v) => v.qualification !== "qualified")
-                    .map((v) => (
-                      <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
-                    ))}
-                  {n.vendors
-                    .filter((v) => v.adjustments.some((a) => a.conditional))
-                    .map((v) => (
-                      <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
-                    ))}
-                </div>
+            <Disclosure title="Other award options" summary={`${sc.length} ${sc.length === 1 ? "option" : "options"}`}>
+              <div className="divide-y divide-line">
+                {sc.map((x) => {
+                  const isBest = best && x.key === best.key;
+                  return (
+                    <div key={x.key} className="px-5 py-4">
+                      <div className="flex items-baseline justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            {x.label} {isBest && <Badge tone="brand">recommended</Badge>}
+                          </div>
+                          <div className="text-[12.5px] text-muted">{x.detail}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[18px] font-semibold tabular">{crore(x.total)}</div>
+                          <div className="text-[12px] text-muted">
+                            {x.linesCovered}/{s.rfx.lines.length} items
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+                        {x.vendorsUsed.map((v) => (
+                          <span key={v.vendor_id}>
+                            {v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"} · {crore(v.value)}
+                          </span>
+                        ))}
+                      </div>
+                      {(x.linesMissing.length > 0 || x.unverified > 0) && (
+                        <div className="mt-1.5 text-[12px] text-warn">
+                          {x.linesMissing.length > 0 && `No qualified price for ${x.linesMissing.join(", ")}. `}
+                          {x.unverified > 0 && `${x.unverified} winning prices still need your check.`}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {!sc.length && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
               </div>
-            </section>
+            </Disclosure>
 
-            {/* vendor scorecards */}
-            <section>
-              <h2 className="mb-3 text-[15px] font-semibold">Vendors</h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <Disclosure title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "nothing open"}>
+              <div className="space-y-1 p-3">
+                {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open.</div>}
+                {review > 0 && <Attention tone="warn" title={`${review} prices the system isn't sure about`} body="Unit conversions, photo reads and group rules. Check them before you award." action="Review" onClick={() => go("compare", { review: true })} />}
+                {n.vendors
+                  .filter((v) => v.qualification !== "qualified")
+                  .map((v) => (
+                    <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                  ))}
+                {n.vendors
+                  .filter((v) => v.adjustments.some((a) => a.conditional))
+                  .map((v) => (
+                    <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                  ))}
+              </div>
+            </Disclosure>
+
+            <Disclosure title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
+              <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[...n.vendors]
                   .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
                   .map((v, i) => (
@@ -295,7 +210,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     </div>
                   ))}
               </div>
-            </section>
+            </Disclosure>
           </>
         )}
       </div>
@@ -305,37 +220,6 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
           return <ClarifyModal v={v} issues={issues[clarify] || []} onClose={() => setClarify(null)} />;
         })()}
     </div>
-  );
-}
-
-function Step({ n, state, title, line, onClick, hint }: { n: number; state: "todo" | "active" | "done"; title: string; line: string; onClick?: () => void; hint?: string }) {
-  return (
-    <button onClick={onClick} title={hint} className={cx("flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition hover:border-[#cfd3da]", state === "todo" ? "border-line bg-white" : state === "active" ? "border-kraft bg-kraft-soft" : "border-line bg-white")}>
-      <span className={cx("mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold", state === "done" ? "bg-ink text-white" : state === "active" ? "bg-kraft text-white" : "bg-panel text-muted")}>{state === "done" ? "✓" : n}</span>
-      <div className="min-w-0">
-        <div className="text-[13.5px] font-semibold">{title}</div>
-        <div className="text-[12px] leading-snug text-muted">{line}</div>
-        {hint && <div className="mt-0.5 text-[11.5px] font-medium text-kraft">{hint} →</div>}
-      </div>
-    </button>
-  );
-}
-
-function Arrow() {
-  return <div className="hidden items-center text-muted md:flex">→</div>;
-}
-
-function Kpi({ label, value, sub, accent, tone, onClick }: { label: string; value: string; sub: string; accent?: boolean; tone?: "good" | "bad" | "warn"; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={!onClick}
-      className={cx("rounded-2xl border p-4 text-left transition", accent ? "border-ink bg-ink text-white" : "border-line bg-white", onClick && "hover:border-[#cfd3da]")}
-    >
-      <div className={cx("text-[12px] font-medium", accent ? "text-white/70" : "text-muted")}>{label}</div>
-      <div className={cx("mt-1 text-[28px] font-semibold leading-tight tabular", tone === "good" && "text-good", tone === "bad" && "text-bad", tone === "warn" && "text-warn")}>{value}</div>
-      <div className={cx("mt-0.5 text-[12px]", accent ? "text-white/70" : "text-muted")}>{sub}</div>
-    </button>
   );
 }
 
