@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "mammoth": "^1.13.0",
@@ -24,6 +25,7 @@
     "@types/sql.js": "^1.4.11",
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.4",
+    "tsx": "^4.23.15",
     "typescript": "5.9"
   }
 }

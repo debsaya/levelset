@@ -26,12 +26,20 @@ A working prototype for a buyer who has to get from "five vendors replied in fiv
 - Anything the system isn't sure about goes to a review queue (amber) instead of silently entering totals. Buyer accept/override/exclude actions are logged.
 - Analyst tables and charts are rendered from SQL results, never from model-typed numbers. Figures in its prose that don't match a query result are highlighted.
 
+## Where to look (how it thinks)
+
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): 20 real-world edge cases (expired ISO certificate, "size in inches" vs a real spec change, "same as last year", conditional rebates...), each mapped to the rule, the code and a test.
+- `tests/`: 57 automated checks for those rules. Run `npm test` (about 1 second, no API key needed).
+- `lib/normalize.ts`: all conversions, flags and the must-have rules. `lib/award.ts`: award scenarios. `lib/grounding.ts`: the check on the analyst's numbers.
+- `app/api/*/route.ts`: the prompts.
+
 ## Run locally
 
 ```bash
 npm install
 echo "GEMINI_API_KEY=..." > .env.local     # free key: https://aistudio.google.com
 npm run dev
+npm test      # run the checks
 ```
 
 Optional: `GEMINI_MODEL=model-a,model-b` to set the model fallback order.
