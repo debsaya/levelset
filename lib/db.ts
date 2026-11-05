@@ -108,3 +108,16 @@ Current buyer assumptions: USD→INR ${a.fx_usd_inr}; freight added for ex-works
 Vendors in this event: ${n.vendors.map((v) => `${v.vendor_id}=${v.name} (${v.qualification})`).join(", ")}.
 Like-for-like basket (lines every vendor priced at spec): ${n.basket.join(", ") || "none"}.`;
 }
+
+export function vendorFacts(n: Normalized, a: Assumptions) {
+  const lines = n.vendors.map((v) => {
+    const cells = n.cells.filter((c) => c.vendor_id === v.vendor_id);
+    const missing = cells.filter((c) => c.status === "missing").map((c) => c.line_id);
+    const dev = cells.filter((c) => c.status === "deviation").map((c) => c.line_id);
+    const adj = v.adjustments.length
+      ? v.adjustments.map((x) => `${x.kind}${x.pct ? " " + x.pct + "%" : ""}${x.amount ? " ₹" + x.amount : ""}${x.conditional ? ` CONDITIONAL on ${x.condition} (not counted in unit_price_inr)` : ""}: ${x.description}`).join("; ")
+      : "none";
+    return `- ${v.vendor_id} ${v.name}: ${v.qualification.toUpperCase()}${v.qual_reasons.length ? ` (${v.qual_reasons.join("; ")})` : ""}. Replied as: ${v.format}. Priced ${v.quoted}/${cells.length} lines${missing.length ? `; no price for ${missing.join(", ")}` : ""}${dev ? (dev.length ? `; alternate spec on ${dev.join(", ")}` : "") : ""}. Currency ${v.terms.currency}; ${v.terms.freight}${v.terms.freight.startsWith("Ex-works") ? ` at ₹${a.freight_inr_per_kg[v.vendor_id] ?? a.default_freight_inr_per_kg}/kg` : ""}; tax ${v.terms.tax}; payment ${v.terms.payment ?? "?"} days; lead time ${v.terms.lead ?? "?"} days. Discounts/rebates/charges: ${adj}. Cells needing review: ${v.review}.`;
+  });
+  return lines.join("\n");
+}

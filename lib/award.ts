@@ -98,3 +98,54 @@ export function lastYear(rfx: Rfx, prior: PriorContracts, s: Scenario | undefine
   }
   return { lines: lines.length, fy26, now, delta: now - fy26, ref: pc.contract_ref };
 }
+
+export type ScenarioArgs = {
+  eligibility?: "qualified" | "qualified_or_conditional" | "all";
+  strategy?: "cheapest_per_line" | "single_vendor";
+  vendor_ids?: string[];
+  count_conditional_rebates?: boolean;
+};
+
+/** General award calculator the analyst can call. Deterministic; returns line-level winners. */
+export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
+  const elig = a.eligibility || "qualified";
+  const pool = n.vendors.filter((v) => (a.vendor_ids?.length ? a.vendor_ids.includes(v.vendor_id) : elig === "all" ? true : elig === "qualified" ? v.qualification === "qualified" : v.qualification !== "not_qualified"));
+  const excluded = n.vendors.filter((v) => !pool.includes(v)).map((v) => ({ vendor: v.name, qualification: v.qualification, why: v.qual_reasons.join("; ") || "not selected" }));
+  const price = (c: any) => (a.count_conditional_rebates ? c.unit_inr_if_rebate ?? c.unit_inr : c.unit_inr);
+  const rows: { line_id: string; vendor_id: string; vendor_name: string; unit_price_inr: number; annual_value_inr: number; status: string }[] = [];
+  const missing: string[] = [];
+  const pick = (ids: string[]) => {
+    rows.length = 0;
+    missing.length = 0;
+    for (const l of rfx.lines) {
+      const cs = n.cells.filter((c) => c.line_id === l.id && ids.includes(c.vendor_id) && usable(c)).sort((x, y) => price(x) - price(y));
+      if (!cs.length) {
+        missing.push(l.id);
+        continue;
+      }
+      const c = cs[0];
+      rows.push({ line_id: l.id, vendor_id: c.vendor_id, vendor_name: n.vendors.find((v) => v.vendor_id === c.vendor_id)!.name, unit_price_inr: Math.round(price(c) * 100) / 100, annual_value_inr: Math.round(price(c) * l.annual_qty), status: c.status });
+    }
+  };
+  let chosen = pool.map((v) => v.vendor_id);
+  if ((a.strategy || "cheapest_per_line") === "single_vendor") {
+    const options = pool
+      .map((v) => {
+        pick([v.vendor_id]);
+        return { vid: v.vendor_id, covered: rows.length, total: rows.reduce((s, r) => s + r.annual_value_inr, 0) };
+      })
+      .sort((x, y) => y.covered - x.covered || x.total - y.total);
+    chosen = options[0] ? [options[0].vid] : [];
+  }
+  pick(chosen);
+  const total = rows.reduce((s, r) => s + r.annual_value_inr, 0);
+  const byVendor = Object.values(
+    rows.reduce((m: Record<string, { vendor: string; lines: number; annual_value_inr: number }>, r) => {
+      m[r.vendor_id] ||= { vendor: r.vendor_name, lines: 0, annual_value_inr: 0 };
+      m[r.vendor_id].lines++;
+      m[r.vendor_id].annual_value_inr += r.annual_value_inr;
+      return m;
+    }, {})
+  ).sort((x, y) => y.annual_value_inr - x.annual_value_inr);
+  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.status === "review").length, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
+}

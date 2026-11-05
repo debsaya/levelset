@@ -84,8 +84,36 @@ export function Md({ text, mark }: { text: string; mark?: (t: string) => React.R
     );
     list = null;
   };
+  let table: string[][] | null = null;
+  const flushTable = () => {
+    if (!table) return;
+    const [head, ...body] = table;
+    blocks.push(
+      <div key={blocks.length} className="my-2 overflow-x-auto">
+        <table className="text-[12.5px] tabular">
+          <thead>
+            <tr>{head.map((h, i) => <th key={i} className="border-b border-line px-2 py-1 text-left font-medium text-muted">{inline(h, `th${i}`, mark)}</th>)}</tr>
+          </thead>
+          <tbody>
+            {body.map((r, i) => (
+              <tr key={i}>{r.map((c, j) => <td key={j} className="border-b border-line px-2 py-1">{inline(c, `td${i}-${j}`, mark)}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+    table = null;
+  };
   for (const raw of lines) {
     const l = raw.trimEnd();
+    if (/^\s*\|.*\|\s*$/.test(l)) {
+      flush();
+      const cells = l.trim().slice(1, -1).split("|").map((c) => c.trim());
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue;
+      (table ||= []).push(cells);
+      continue;
+    }
+    flushTable();
     const b = l.match(/^\s*[-*•]\s+(.*)/);
     const n = l.match(/^\s*\d+[.)]\s+(.*)/);
     if (b || n) {
@@ -104,6 +132,7 @@ export function Md({ text, mark }: { text: string; mark?: (t: string) => React.R
     else blocks.push(<p key={blocks.length}>{inline(l, String(blocks.length), mark)}</p>);
   }
   flush();
+  flushTable();
   return <div className="md">{blocks}</div>;
 }
 

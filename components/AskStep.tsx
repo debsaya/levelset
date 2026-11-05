@@ -2,9 +2,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useStore, type AnalystMsg, type Block } from "@/lib/store";
-import { buildDb, contextDoc, runQuery } from "@/lib/db";
+import { buildDb, contextDoc, runQuery, vendorFacts } from "@/lib/db";
 import type { Normalized } from "@/lib/normalize";
 import { checkGrounding } from "@/lib/grounding";
+import { runScenario } from "@/lib/award";
 import { downloadTable } from "@/lib/export";
 import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
 
@@ -70,7 +71,7 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
     let error: string | undefined;
     try {
       for (let step = 0; step < 10; step++) {
-        const res = await fetch("/api/analyst", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: history, context: contextDoc(s.assumptions, n) }) });
+        const res = await fetch("/api/analyst", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) }) });
         const j = await res.json();
         if (!res.ok) throw new Error(j.error || "Analyst failed");
         model = j.model;
@@ -83,6 +84,25 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
         const responses: any[] = [];
         for (const p of calls) {
           const { name, args } = p.functionCall;
+          if (name === "award_scenario") {
+            const sc = runScenario(s.rfx, n, args || {});
+            const tname = `scenario_${trace.length + 1}`;
+            try {
+              db.run(`CREATE TABLE ${tname}(line_id TEXT, vendor_id TEXT, vendor_name TEXT, unit_price_inr REAL, annual_value_inr REAL, status TEXT)`);
+              const st = db.prepare(`INSERT INTO ${tname} VALUES (?,?,?,?,?,?)`);
+              for (const r of sc.rows) st.run([r.line_id, r.vendor_id, r.vendor_name, r.unit_price_inr, r.annual_value_inr, r.status]);
+              st.free();
+            } catch {}
+            const label = `${(args?.strategy || "cheapest_per_line") === "single_vendor" ? "Single vendor" : "Cheapest per line"} · ${(args?.eligibility || "qualified").replace(/_/g, " ")}${args?.count_conditional_rebates ? " · rebates counted" : ""}`;
+            blocks.push({ kind: "table", title: `Award scenario: ${label}`, sql: `award_scenario(${JSON.stringify(args || {})})`, columns: ["Vendor", "Items won", "Annual value (₹)"], rows: [...sc.by_vendor.map((v) => [v.vendor, v.lines, v.annual_value_inr]), ["Total", sc.lines_awarded, sc.total_annual_value_inr]], note: [sc.lines_without_eligible_price.length ? `No eligible price for ${sc.lines_without_eligible_price.join(", ")}.` : "", sc.unverified_prices_in_award ? `${sc.unverified_prices_in_award} winning prices still need the buyer's check.` : "", sc.vendors_excluded.length ? `Excluded: ${sc.vendors_excluded.map((x) => x.vendor.split(" ")[0] + " (" + x.qualification.replace("_", " ") + ")").join(", ")}.` : ""].filter(Boolean).join(" ") });
+            nums.push(sc.total_annual_value_inr, sc.lines_awarded, sc.unverified_prices_in_award, ...sc.by_vendor.flatMap((v) => [v.lines, v.annual_value_inr]));
+            collect(sc.rows.map((r) => [r.unit_price_inr, r.annual_value_inr]));
+            trace.push({ tool: name, sql: JSON.stringify(args || {}), rows: sc.rows.length });
+            setLive((l) => [...l, `Running award scenario: ${label}`]);
+            const { rows: _rows, ...summary } = sc;
+            responses.push({ functionResponse: { name, response: { ...summary, line_table: tname, note: `Line-level winners are in SQLite table ${tname}(line_id, vendor_id, vendor_name, unit_price_inr, annual_value_inr, status). A summary table was already shown to the buyer.` } } });
+            continue;
+          }
           const r = runQuery(db, args.sql || "");
           trace.push({ tool: name, sql: args.sql, rows: r.rows.length, error: r.error });
           setLive((l) => [...l, `${name === "run_sql" ? "Querying" : name === "show_table" ? "Building table" : "Drawing chart"}${args.title ? `: ${args.title}` : ""}${r.error ? " — error, retrying" : ` (${r.rows.length} rows)`}`]);
