@@ -58,11 +58,11 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
         </p>
 
         <section className="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
-          <Step n={1} state="done" title="Replies come in" line={`${total} replies · ${[...new Set(s.responses.map((r) => r.vendor.format.split(" ")[0]))].join(", ")}`} />
+          <Step n={1} onClick={() => go("quotes")} hint="See the raw replies" state="done" title="Replies come in" line={`${total} replies · ${[...new Set(s.responses.map((r) => r.vendor.format.split(" ")[0]))].join(", ")}`} />
           <Arrow />
-          <Step n={2} state={done === 0 ? (reading > 0 ? "active" : "todo") : done < total ? "active" : "done"} title="AI reads each one" line={done === 0 ? "Excel, PDF, Word, photos and emails, read as they are" : `${n.vendors.reduce((a, v) => a + v.quoted, 0)} prices matched to your ${s.rfx.lines.length} items · ${done}/${total} read`} />
+          <Step n={2} onClick={() => go("quotes")} hint="See what the AI read" state={done === 0 ? (reading > 0 ? "active" : "todo") : done < total ? "active" : "done"} title="AI reads each one" line={done === 0 ? "Excel, PDF, Word, photos and emails, read as they are" : `${n.vendors.reduce((a, v) => a + v.quoted, 0)} prices matched to your ${s.rfx.lines.length} items · ${done}/${total} read`} />
           <Arrow />
-          <Step n={3} state={done === 0 ? "todo" : "done"} title="You compare and decide" line={done === 0 ? "One table in ₹ per box, delivered, ex-GST" : `${review} prices for you to check · ${n.vendors.filter((v) => v.qualification === "qualified").length} vendors qualified`} />
+          <Step n={3} onClick={() => go("compare")} hint="Open the comparison" state={done === 0 ? "todo" : "done"} title="You compare and decide" line={done === 0 ? "One table in ₹ per box, delivered, ex-GST" : `${review} prices for you to check · ${n.vendors.filter((v) => v.qualification === "qualified").length} vendors qualified`} />
         </section>
 
         {done === 0 ? (
@@ -144,6 +144,13 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               />
               <Kpi label="Waiting on you" value={`${review}`} sub={`prices to check · ${openQs} vendor questions`} tone={review ? "warn" : "good"} onClick={() => go("compare", { review: true })} />
             </section>
+            {done === total && (
+              <div className="flex items-center justify-end gap-3 text-[12.5px] text-muted">
+                <button className="underline-offset-4 hover:underline" onClick={() => go("quotes")}>
+                  Back to the raw replies
+                </button>
+              </div>
+            )}
             {done < total && (
               <div className="flex items-center justify-between rounded-xl bg-kraft-soft px-4 py-3 text-[13px]">
                 <span>
@@ -309,15 +316,16 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   );
 }
 
-function Step({ n, state, title, line }: { n: number; state: "todo" | "active" | "done"; title: string; line: string }) {
+function Step({ n, state, title, line, onClick, hint }: { n: number; state: "todo" | "active" | "done"; title: string; line: string; onClick?: () => void; hint?: string }) {
   return (
-    <div className={cx("flex items-start gap-3 rounded-xl border px-4 py-3", state === "todo" ? "border-line bg-white" : state === "active" ? "border-kraft bg-kraft-soft" : "border-line bg-white")}>
+    <button onClick={onClick} title={hint} className={cx("flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition hover:border-[#cfd3da]", state === "todo" ? "border-line bg-white" : state === "active" ? "border-kraft bg-kraft-soft" : "border-line bg-white")}>
       <span className={cx("mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold", state === "done" ? "bg-ink text-white" : state === "active" ? "bg-kraft text-white" : "bg-panel text-muted")}>{state === "done" ? "✓" : n}</span>
       <div className="min-w-0">
         <div className="text-[13.5px] font-semibold">{title}</div>
         <div className="text-[12px] leading-snug text-muted">{line}</div>
+        {hint && <div className="mt-0.5 text-[11.5px] font-medium text-kraft">{hint} →</div>}
       </div>
-    </div>
+    </button>
   );
 }
 
