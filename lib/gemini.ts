@@ -46,7 +46,8 @@ function thinkingConfig(model: string, level: "low" | "high") {
   return undefined;
 }
 
-export async function generate(req: Req): Promise<{ model: string; content: GeminiContent; text: string; raw: any }> {
+export async function generate(req: Req): Promise<{ model: string; content: GeminiContent; text: string; raw: any; attempts: string[] }> {
+  const attempts: string[] = [];
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new GeminiError("GEMINI_API_KEY is not set on the server.", 500);
   let lastErr: GeminiError | null = null;
@@ -64,6 +65,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       if (req.system) body.systemInstruction = { parts: [{ text: req.system }] };
       if (req.tools) body.tools = req.tools;
       let res: Response;
+      const tStart = Date.now();
       const left = (req.deadline ?? Date.now() + 280_000) - Date.now();
       if (left < 5000) throw lastErr || new GeminiError("Ran out of time waiting for the AI service. Try again.", 504);
       try {
@@ -79,6 +81,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
         await sleep(800);
         continue;
       }
+      attempts.push(`${model}:${res.status}:${Date.now() - tStart}ms`);
       if (res.ok) {
         const raw = await res.json();
         const cand = raw?.candidates?.[0];
@@ -89,7 +92,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
           lastErr = new GeminiError(`Empty response from ${model} (finishReason: ${cand?.finishReason || "unknown"})`, 502);
           continue;
         }
-        return { model, content, text, raw };
+        return { model, content, text, raw, attempts };
       }
       const errText = await res.text();
       lastErr = new GeminiError(`${model}: ${res.status} ${errText.slice(0, 300)}`, res.status);

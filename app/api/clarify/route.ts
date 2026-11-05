@@ -42,6 +42,6 @@ export async function POST(req: Request) {
       thinking: "low",
       maxOutputTokens: 4000,
     });
-    return { ...parseJson<Record<string, unknown>>(out.text), model: out.model };
+    return { ...parseJson<Record<string, unknown>>(out.text), model: out.model, attempts: out.attempts };
   });
 }

@@ -20,6 +20,7 @@ const LINE = {
     uom: { type: "string", nullable: true },
     is_new: { type: "boolean", nullable: true },
   },
+  required: ["type", "ply", "length_mm", "width_mm", "height_mm", "print", "end_use", "annual_qty"],
 };
 
 const SCHEMA = {
@@ -34,7 +35,7 @@ const SCHEMA = {
         properties: {
           op: { type: "string", enum: ["set_meta", "add_line", "update_line", "remove_line", "add_question", "update_question", "remove_question", "set_term", "remove_term"] },
           target_id: { type: "string", nullable: true, description: "Line id (L07) or question id (Q3) for update/remove" },
-          line: LINE,
+          line: { ...LINE, description: "For add_line and update_line: the COMPLETE line with every field filled (for updates, copy unchanged values from the draft)." },
           question: {
             type: "object",
             nullable: true,
@@ -86,6 +87,6 @@ export async function POST(req: Request) {
     ];
     const out = await generate({ system: SYSTEM, contents, responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 16000 });
     const parsed = parseJson<{ reply: string; ops: any[] }>(out.text);
-    return { ...parsed, model: out.model };
+    return { ...parsed, model: out.model, attempts: out.attempts };
   });
 }

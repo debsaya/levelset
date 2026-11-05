@@ -81,6 +81,6 @@ export async function POST(req: Request) {
   return heartbeatJson(async () => {
     const { contents, context, facts } = body;
     const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000 });
-    return { content: out.content, model: out.model };
+    return { content: out.content, model: out.model, attempts: out.attempts };
   });
 }

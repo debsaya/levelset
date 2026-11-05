@@ -231,6 +231,6 @@ async function extract(input: any) {
     }
     const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000, deadline });
     const extraction = parseJson(out.text);
-    return { extraction, model: out.model, ms: Date.now() - t0 };
+    return { extraction, model: out.model, ms: Date.now() - t0, attempts: out.attempts };
   }
 }

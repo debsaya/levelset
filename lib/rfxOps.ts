@@ -28,6 +28,8 @@ export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[] } {
         if (o.meta.scope) r.scope = o.meta.scope;
         if (o.meta.due_date) r.due_date = o.meta.due_date;
         notes.push(`Updated event details — ${o.why}`);
+      } else if (o.op === "add_line" && o.line && (!Number(o.line.length_mm) || !Number(o.line.width_mm))) {
+        notes.push(`Couldn't add a line without its size. Say the dimensions in mm.`);
       } else if (o.op === "add_line" && o.line) {
         const id = nextId("L", r.lines.map((l) => l.id));
         r.lines.push(buildLine({ ...o.line, is_new: o.line.is_new ?? r.id !== "RFX-NEW" }, id));
