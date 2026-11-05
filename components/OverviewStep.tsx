@@ -10,9 +10,9 @@ import { Badge, Button, Spinner, cx } from "./ui";
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
 
 const QUAL = {
-  qualified: { tone: "good" as const, label: "Qualified" },
-  conditional: { tone: "warn" as const, label: "Conditional" },
-  not_qualified: { tone: "bad" as const, label: "Not qualified" },
+  qualified: { tone: "good" as const, label: "Approved" },
+  conditional: { tone: "warn" as const, label: "Needs proof" },
+  not_qualified: { tone: "bad" as const, label: "Not approved" },
 };
 
 export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
@@ -117,9 +117,9 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
             {/* KPI row */}
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Kpi
-                label="Best qualified award"
+                label="Best price from approved vendors"
                 value={best ? crore(best.total) : "–"}
-                sub={best ? `${best.vendorsUsed.length} vendor${best.vendorsUsed.length > 1 ? "s" : ""} · ${best.linesCovered}/${s.rfx.lines.length} items` : "No qualified vendor yet"}
+                sub={best ? `buying ${best.linesCovered} of ${s.rfx.lines.length} items from ${best.vendorsUsed.length} approved vendor${best.vendorsUsed.length > 1 ? "s" : ""}` : "No approved vendor yet"}
                 accent
               />
               {(() => {
@@ -127,7 +127,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 return done < 2 ? (
                   <Kpi label="Saving from splitting" value="–" sub="Needs at least 2 quotes read" />
                 ) : alt && best && alt.total < best.total ? (
-                  <Kpi label="If you accept conditional vendors" value={`−${crore(best.total - alt.total)}`} sub={`${alt.unverified} of those prices still need checking`} tone="good" onClick={() => go("ask", { ask: "What would it take to safely include the conditional vendors in the award, and how much would it save? Show the lines that move." })} />
+                  <Kpi label="Possible extra saving" value={`−${crore(best.total - alt.total)}`} sub={`if you also use vendors who still need to send proof · ${alt.unverified} prices to check`} tone="good" onClick={() => go("ask", { ask: "What proof would the vendors marked Needs proof have to send for us to safely use them, and how much would that save? Show the items that move." })} />
                 ) : (
                   <Kpi
                     label="Saving from splitting"
@@ -137,12 +137,12 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 );
               })()}
               <Kpi
-                label="vs FY26 contract rates"
-                value={ly ? `${ly.delta > 0 ? "+" : "−"}${crore(Math.abs(ly.delta)).replace("₹", "₹")}` : "–"}
-                sub={ly ? `${((ly.delta / ly.fy26) * 100).toFixed(1)}% on ${ly.lines} items with a FY26 price` : "No prior contract on file"}
+                label="Compared with last year's contract"
+                value={ly ? `${crore(Math.abs(ly.delta))} ${ly.delta > 0 ? "higher" : "lower"}` : "–"}
+                sub={ly ? `${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}% ${ly.delta > 0 ? "more" : "less"} across the ${ly.lines} items that had a price last year` : "No prior contract on file"}
                 tone={ly ? (ly.delta > 0 ? "bad" : "good") : undefined}
               />
-              <Kpi label="Waiting on you" value={`${review}`} sub={`prices to check · ${openQs} vendor questions`} tone={review ? "warn" : "good"} onClick={() => go("compare", { review: true })} />
+              <Kpi label="Prices to double-check" value={`${review}`} sub={`the AI wasn't sure about these · ${openQs} questions you could send to vendors`} tone={review ? "warn" : "good"} onClick={() => go("compare", { review: true })} />
             </section>
             {done === total && (
               <div className="flex items-center justify-end gap-3 text-[12.5px] text-muted">

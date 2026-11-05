@@ -173,7 +173,7 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
                   {q.must_have ? <Badge tone="bad">must-have</Badge> : <Badge>scored</Badge>}
                 </div>
               ))}
-              <div className="px-4 py-3 text-xs text-muted">Must-haves decide qualification: fail one and the vendor is out; partly meet one and they stay in as &quot;conditional&quot; until the buyer decides.</div>
+              <div className="px-4 py-3 text-xs text-muted">Must-haves decide approval: fail one and the vendor is out; partly meet one and they stay in as &quot;needs proof&quot; until the buyer decides.</div>
             </div>
           )}
           {tab === "terms" && (

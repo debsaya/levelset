@@ -20,7 +20,7 @@ const SUGGESTED = [
 ];
 
 // Show buyer-friendly words instead of database identifiers.
-const WORDS: Record<string, string> = { not_qualified: "Not qualified", qualified: "Qualified", conditional: "Conditional", qualified_or_conditional: "Qualified or conditional", needs_review: "Needs review", ok: "OK", missing: "No price", deviation: "Different spec" };
+const WORDS: Record<string, string> = { not_qualified: "Not approved", qualified: "Approved", conditional: "Needs proof", qualified_or_conditional: "Approved or needs proof", needs_review: "Needs review", ok: "OK", missing: "No price", deviation: "Different spec" };
 function plain(t: string) {
   return t.replace(/\b[a-z]+(?:_[a-z]+)+\b/g, (m) => (WORDS[m] ? WORDS[m].toLowerCase() : m.replace(/_/g, " ")));
 }
@@ -123,7 +123,7 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
               for (const r of sc.rows) st.run([r.line_id, r.vendor_id, r.vendor_name, r.unit_price_inr, r.annual_value_inr, r.status]);
               st.free();
             } catch {}
-            const label = `${(args?.strategy || "cheapest_per_line") === "single_vendor" ? "Single vendor" : "Cheapest per line"} · ${(args?.eligibility || "qualified").replace(/_/g, " ")}${args?.count_conditional_rebates ? " · rebates counted" : ""}`;
+            const label = `${(args?.strategy || "cheapest_per_line") === "single_vendor" ? "Single vendor" : "Cheapest per line"} · ${({ qualified: "approved vendors", qualified_or_conditional: "approved + needs-proof vendors", all: "all vendors" } as Record<string, string>)[args?.eligibility || "qualified"] || "approved vendors"}${args?.count_conditional_rebates ? " · rebates counted" : ""}`;
             blocks.push({ kind: "table", title: `Award scenario: ${label}`, sql: `award_scenario(${JSON.stringify(args || {})})`, columns: ["Vendor", "Items won", "Annual value (₹)"], rows: [...sc.by_vendor.map((v) => [v.vendor, v.lines, v.annual_value_inr]), ["Total", sc.lines_awarded, sc.total_annual_value_inr]], note: [sc.lines_without_eligible_price.length ? `No eligible price for ${sc.lines_without_eligible_price.join(", ")}.` : "", sc.unverified_prices_in_award ? `${sc.unverified_prices_in_award} winning prices still need the buyer's check.` : "", sc.vendors_excluded.length ? `Excluded: ${sc.vendors_excluded.map((x) => x.vendor.split(" ")[0] + " (" + x.qualification.replace("_", " ") + ")").join(", ")}.` : ""].filter(Boolean).join(" ") });
             nums.push(sc.total_annual_value_inr, sc.lines_awarded, sc.unverified_prices_in_award, ...sc.by_vendor.flatMap((v) => [v.lines, v.annual_value_inr]));
             collect(sc.rows.map((r) => [r.unit_price_inr, r.annual_value_inr]));

@@ -8,9 +8,9 @@ import { fileName } from "./InboxStep";
 import { Badge, Button, Card, Spinner, cx } from "./ui";
 
 const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
-  qualified: { tone: "good", label: "Qualified" },
-  conditional: { tone: "warn", label: "Conditional" },
-  not_qualified: { tone: "bad", label: "Not qualified" },
+  qualified: { tone: "good", label: "Approved" },
+  conditional: { tone: "warn", label: "Needs proof" },
+  not_qualified: { tone: "bad", label: "Not approved" },
 };
 
 export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized; onAsk: () => void; initialReview?: boolean }) {
@@ -67,7 +67,7 @@ export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized
         </span>
         <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={a.apply_conditional_rebates} onChange={(e) => setA({ apply_conditional_rebates: e.target.checked }, `${e.target.checked ? "Counted" : "Stopped counting"} conditional rebates`)} />
-          Count conditional rebates
+          <span title="Some vendors offer a discount only if a condition is met, such as a yearly volume. Tick to count it anyway.">Count rebates that need a condition</span>
         </label>
         <div className="ml-auto flex gap-2">
           <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>

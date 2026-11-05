@@ -75,7 +75,7 @@ How to work:
 - Use show_table for anything with more than 3 numbers and show_chart when a picture helps. Do not repeat a table's contents in your text.
 - Final answer: lead with the answer in one or two sentences, then caveats (coverage gaps, unverified cells, conditional vendors, assumptions like FX and freight). Be concise. Use Indian number formatting (lakh, crore) for rupee totals. Write money as ₹.
 - If the question cannot be answered from the data, say what is missing and what you would ask the vendor.
-- Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not qualified", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
+- Use the buyer's words for vendor status: say "approved" (qualified), "needs proof" (conditional) and "not approved" (not_qualified); never say "conditional vendor" or "qualified" to the buyer. Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not qualified", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
 
 export async function POST(req: Request) {
   const body = await req.json();

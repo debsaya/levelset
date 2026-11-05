@@ -71,14 +71,14 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       return { vid, lines: cs.length, total: cs.reduce((s, c) => s + (c.annual_inr || 0), 0) };
     })
     .sort((a, b) => b.lines - a.lines || a.total - b.total);
-  if (singles[0]) split("single", `All to ${name[singles[0].vid]}`, "Cheapest qualified vendor that quoted the most lines", [singles[0].vid]);
-  if (q.length) split("split_q", "Split: cheapest qualified per line", "Each line to the lowest landed price among qualified vendors", q);
+  if (singles[0]) split("single", `All to ${name[singles[0].vid]}`, "Cheapest approved vendor that quoted the most items", [singles[0].vid]);
+  if (q.length) split("split_q", "Split: cheapest approved vendor per item", "Each item goes to the lowest price among approved vendors", q);
   // drop the split if it lands on exactly the single-vendor answer
   if (out.length === 2 && out[0].vendorsUsed.length === 1 && out[1].vendorsUsed.length === 1 && Math.abs(out[0].total - out[1].total) < 1) {
-    out[0].detail = `Lowest qualified price on every item it quoted, so splitting saves nothing`;
+    out[0].detail = `Lowest approved price on every item it quoted, so splitting saves nothing`;
     out.pop();
   }
-  if (qc.length > q.length) split("split_qc", "Split incl. conditional vendors", "Adds vendors with a partly-met must-have (buyer's call)", qc);
+  if (qc.length > q.length) split("split_qc", "Split, also using vendors who still need to send proof", "Adds vendors who haven't fully proved a requirement yet (your call)", qc);
   return out;
 }
 
