@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, inr, key, type Cell, type Normalized, type QCell, type VendorSummary } from "@/lib/normalize";
 import { exportWorkbook } from "@/lib/export";
+import { postJson } from "@/lib/api";
 import { fileName } from "./InboxStep";
 import { Badge, Button, Card, Spinner, cx } from "./ui";
 
@@ -518,9 +519,8 @@ export function ClarifyModal({ v, issues, onClose }: { v: VendorSummary; issues:
     setBusy(true);
     setErr("");
     try {
-      const res = await fetch("/api/clarify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ vendor: { name: v.name, contact: vendor?.contact }, buyer: s.rfx.buyer, rfx_id: s.rfx.id, rfx_title: s.rfx.title, issues, today: new Date().toISOString().slice(0, 10) }) });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error);
+      const j = await postJson("/api/clarify", { vendor: { name: v.name, contact: vendor?.contact }, buyer: s.rfx.buyer, rfx_id: s.rfx.id, rfx_title: s.rfx.title, issues, today: new Date().toISOString().slice(0, 10) });
+      if (j.error) throw new Error(j.error);
       setDraft(j);
       log(`Drafted clarification email to ${v.name} (${issues.length} issues)`);
     } catch (e: any) {

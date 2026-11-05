@@ -5,7 +5,7 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export function modelChain(): string[] {
   const fromEnv = (process.env.GEMINI_MODEL || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const defaults = ["gemini-3-flash-preview", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest"];
+  const defaults = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest"];
   return Array.from(new Set([...fromEnv, ...defaults]));
 }
 

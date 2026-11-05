@@ -6,6 +6,7 @@ import { buildDb, contextDoc, runQuery, vendorFacts } from "@/lib/db";
 import type { Normalized } from "@/lib/normalize";
 import { checkGrounding } from "@/lib/grounding";
 import { runScenario } from "@/lib/award";
+import { postJson } from "@/lib/api";
 import { downloadTable } from "@/lib/export";
 import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
 
@@ -71,9 +72,8 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
     let error: string | undefined;
     try {
       for (let step = 0; step < 10; step++) {
-        const res = await fetch("/api/analyst", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) }) });
-        const j = await res.json();
-        if (!res.ok) throw new Error(j.error || "Analyst failed");
+        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) });
+        if (j.error) throw new Error(j.error);
         model = j.model;
         history.push(j.content);
         const calls = (j.content.parts || []).filter((p: any) => p.functionCall);

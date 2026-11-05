@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { applyOps } from "@/lib/rfxOps";
+import { postJson } from "@/lib/api";
 import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
 
 const SUGGESTIONS = [
@@ -29,9 +30,8 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
     setInput("");
     setBusy(true);
     try {
-      const res = await fetch("/api/copilot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ messages: msgs.slice(1), rfx: s.rfx }) });
-      const j = await res.json();
-      if (!res.ok) throw new Error(j.error || "Co-pilot failed");
+      const j = await postJson("/api/copilot", { messages: msgs.slice(1), rfx: s.rfx });
+      if (j.error) throw new Error(j.error);
       const before = new Set(s.rfx.lines.map((l) => JSON.stringify(l)));
       const { rfx, notes } = applyOps(s.rfx, j.ops || []);
       setFlash(rfx.lines.filter((l) => !before.has(JSON.stringify(l))).map((l) => l.id));

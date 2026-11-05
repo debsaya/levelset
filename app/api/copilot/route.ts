@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -67,8 +67,9 @@ How you work:
 - Keep replies under 120 words. Mention what you changed in plain language.`;
 
 export async function POST(req: Request) {
-  try {
-    const { messages, rfx } = await req.json();
+  const body = await req.json();
+  return heartbeatJson(async () => {
+    const { messages, rfx } = body;
     const draft = {
       title: rfx.title,
       scope: rfx.scope,
@@ -85,8 +86,6 @@ export async function POST(req: Request) {
     ];
     const out = await generate({ system: SYSTEM, contents, responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 16000 });
     const parsed = parseJson<{ reply: string; ops: any[] }>(out.text);
-    return NextResponse.json({ ...parsed, model: out.model });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
-  }
+    return { ...parsed, model: out.model };
+  });
 }

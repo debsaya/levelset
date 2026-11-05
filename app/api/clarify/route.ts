@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -23,8 +23,9 @@ const SYSTEM = `You write clarification emails from an Indian manufacturing comp
 - Sign off with the buyer's name and role.`;
 
 export async function POST(req: Request) {
-  try {
-    const { vendor, buyer, rfx_id, rfx_title, issues, today } = await req.json();
+  const body = await req.json();
+  return heartbeatJson(async () => {
+    const { vendor, buyer, rfx_id, rfx_title, issues, today } = body;
     const out = await generate({
       system: SYSTEM,
       contents: [
@@ -41,8 +42,6 @@ export async function POST(req: Request) {
       thinking: "low",
       maxOutputTokens: 4000,
     });
-    return NextResponse.json({ ...parseJson<Record<string, unknown>>(out.text), model: out.model });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
-  }
+    return { ...parseJson<Record<string, unknown>>(out.text), model: out.model };
+  });
 }

@@ -2,6 +2,7 @@
 import { useStore } from "./store";
 import type { VendorResponse } from "./types";
 import { fileToB64, mimeFor } from "@/components/ui";
+import { postJson } from "./api";
 
 export function fileName(url: string) {
   return url.includes("#name=") ? decodeURIComponent(url.split("#name=")[1]) : url.split("/").pop()!;
@@ -25,21 +26,8 @@ export function useReader() {
             })
           );
       const pc = s.prior[r.vendor.id];
-      const body = JSON.stringify({ vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null });
-      let j: any = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const res = await fetch("/api/extract", { method: "POST", headers: { "Content-Type": "application/json" }, body });
-          const txt = (await res.text()).trim();
-          j = txt ? JSON.parse(txt) : { error: "The reader timed out (network)." };
-        } catch (e: any) {
-          j = { error: e?.message || "Network error" };
-        }
-        // retry when the model service is busy or the connection dropped
-        if (!j.error || !/high demand|overloaded|503|504|429|quota|fetch|network|timed out|too long|time/i.test(j.error)) break;
-        await new Promise((ok) => setTimeout(ok, 5000 * (attempt + 1)));
-      }
-      if (j.error) throw new Error(/high demand|503/i.test(j.error) ? "Google's AI service is busy right now. Try reading this quote again in a minute." : j.error);
+      const j: any = await postJson("/api/extract", { vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null });
+      if (j.error) throw new Error(j.error);
       patch(r.vendor.id, { status: "done", extraction: j.extraction, model: j.model, ms: j.ms });
       log(`Read quote from ${r.vendor.name} (${j.extraction.lines?.length ?? 0} prices, ${(j.ms / 1000).toFixed(0)}s)`);
     } catch (e: any) {

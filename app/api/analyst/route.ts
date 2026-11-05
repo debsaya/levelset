@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { heartbeatJson } from "@/lib/stream";
 import { generate } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -77,11 +77,10 @@ How to work:
 - If the question cannot be answered from the data, say what is missing and what you would ask the vendor.`;
 
 export async function POST(req: Request) {
-  try {
-    const { contents, context, facts } = await req.json();
+  const body = await req.json();
+  return heartbeatJson(async () => {
+    const { contents, context, facts } = body;
     const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000 });
-    return NextResponse.json({ content: out.content, model: out.model });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
-  }
+    return { content: out.content, model: out.model };
+  });
 }
