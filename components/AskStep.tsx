@@ -130,14 +130,14 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
             nums.push(sc.total_annual_value_inr, sc.lines_awarded, sc.unverified_prices_in_award, ...sc.by_vendor.flatMap((v) => [v.lines, v.annual_value_inr]));
             collect(sc.rows.map((r) => [r.unit_price_inr, r.annual_value_inr]));
             trace.push({ tool: name, sql: JSON.stringify(args || {}), rows: sc.rows.length });
-            setLive((l) => [...l, `Running award scenario: ${label}`]);
+            setLive((l) => [...l, `Working out the award options (${label})`]);
             const { rows: _rows, ...summary } = sc;
             responses.push({ functionResponse: { name, response: { ...summary, line_table: tname, note: `Line-level winners are in SQLite table ${tname}(line_id, vendor_id, vendor_name, unit_price_inr, annual_value_inr, status). A summary table was already shown to the buyer.` } } });
             continue;
           }
           const r = runQuery(db, args.sql || "");
           trace.push({ tool: name, sql: args.sql, rows: r.rows.length, error: r.error });
-          setLive((l) => [...l, `${name === "run_sql" ? "Querying" : name === "show_table" ? "Building table" : "Drawing chart"}${args.title ? `: ${args.title}` : ""}${r.error ? " — error, retrying" : ` (${r.rows.length} rows)`}`]);
+          setLive((l) => [...l, r.error ? "Double-checking the data…" : name === "run_sql" ? "Looking up the numbers" : name === "show_table" ? `Preparing a table${args.title ? `: ${args.title}` : ""}` : `Drawing a chart${args.title ? `: ${args.title}` : ""}`]);
           if (!r.error) collect(r.rows);
           if (name === "show_table" && !r.error) blocks.push({ kind: "table", title: args.title, note: args.note, sql: args.sql, columns: r.columns, rows: r.rows });
           if (name === "show_chart" && !r.error) blocks.push({ kind: "chart", title: args.title, chart_type: args.chart_type, x: args.x, y: args.y || [], y_label: args.y_label, sql: args.sql, columns: r.columns, rows: r.rows });
