@@ -4,12 +4,13 @@ import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Spinner, cx, fileToB64, mimeFor } from "./ui";
 import { fileName, useReader } from "@/lib/reader";
+import type { Normalized } from "@/lib/normalize";
 
 export { fileName };
 
 const FORMAT_ICON: Record<string, string> = {};
 
-export default function InboxStep({ onNext }: { onNext: () => void }) {
+export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => void }) {
   const { s, set, log } = useStore();
   const [sel, setSel] = useState<string | undefined>(s.responses[0]?.vendor.id);
   const [adding, setAdding] = useState(false);
@@ -25,9 +26,9 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
       <Card className="flex min-h-0 flex-col">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <div className="font-semibold">Inbox</div>
+            <div className="font-semibold">Vendor replies</div>
             <div className="text-xs text-muted">
-              {visible.length} responses · {doneCount} read
+              {visible.length} replies · {doneCount} read by the AI
             </div>
           </div>
           <Button variant="primary" onClick={readAll} disabled={!visible.some((r) => r.status === "new" || r.status === "error")}>
@@ -47,7 +48,7 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
                 <span className="truncate font-medium">
                   {r.vendor.name}
                 </span>
-                <StatusBadge r={r} />
+                <StatusBadge r={r} n={n} />
               </div>
               <div className="truncate text-xs text-muted">{r.vendor.subject}</div>
               <div className="mt-0.5 text-[11px] text-muted">
@@ -90,7 +91,7 @@ export default function InboxStep({ onNext }: { onNext: () => void }) {
   );
 }
 
-function StatusBadge({ r }: { r: VendorResponse }) {
+function StatusBadge({ r, n }: { r: VendorResponse; n: Normalized }) {
   if (r.status === "reading")
     return (
       <Badge tone="brand">
@@ -99,12 +100,11 @@ function StatusBadge({ r }: { r: VendorResponse }) {
     );
   if (r.status === "error") return <Badge tone="bad">error</Badge>;
   if (r.status === "done") {
-    const ex = r.extraction!;
-    const low = (ex.lines || []).filter((l) => Math.min(l.match_confidence, l.read_confidence) < 0.8).length;
+    const v = n.vendors.find((x) => x.vendor_id === r.vendor.id);
     return (
       <span className="flex gap-1">
-        <Badge tone="good">{new Set(ex.lines.map((l) => l.rfx_line_id).filter(Boolean)).size} priced</Badge>
-        {low > 0 && <Badge tone="warn">{low} unsure</Badge>}
+        <Badge tone="good">{v ? v.quoted : 0} priced</Badge>
+        {v && v.review > 0 && <Badge tone="warn">{v.review} to check</Badge>}
       </span>
     );
   }
@@ -126,8 +126,8 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
           </div>
           <div className="flex items-center gap-2">
             {r.status === "done" && (
-              <span className="text-[11px] text-muted">
-                read by {r.model} in {((r.ms || 0) / 1000).toFixed(0)}s
+              <span className="text-[11px] text-muted" title={r.model}>
+                read by AI in {((r.ms || 0) / 1000).toFixed(0)}s
               </span>
             )}
             <Button onClick={onRead} disabled={r.status === "reading"}>

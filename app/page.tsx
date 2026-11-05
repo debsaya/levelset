@@ -87,7 +87,7 @@ function App() {
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <RfxStep onNext={() => go("send")} />}
         {page === "send" && <SendStep onNext={() => go("overview")} />}
-        {page === "quotes" && <InboxStep onNext={() => go("overview")} />}
+        {page === "quotes" && <InboxStep n={n} onNext={() => go("overview")} />}
         {page === "compare" && <CompareStep key={opts.nonce} n={n} onAsk={() => go("ask")} initialReview={!!opts.review} />}
         {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
       </main>

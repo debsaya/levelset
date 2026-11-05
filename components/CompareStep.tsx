@@ -86,7 +86,7 @@ export default function CompareStep({ n, onAsk, initialReview }: { n: Normalized
         {tab === "prices" && (
           <label className="ml-auto flex items-center gap-1.5 text-[12.5px]">
             <input type="checkbox" checked={onlyReview} onChange={(e) => setOnlyReview(e.target.checked)} />
-            Show only lines needing review <Badge tone="warn">{reviewCount} cells</Badge>
+            Show only lines needing review <Badge tone="warn">{reviewCount} prices</Badge>
           </label>
         )}
       </div>
@@ -136,7 +136,7 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
       {v.review > 0 && <div className="text-[11px] text-warn">{v.review} need review</div>}
       {warn.map((f, i) => (
         <div key={i} className="text-[11px] leading-snug text-warn" title={f.msg}>
-          {f.code === "TOTAL_MISMATCH" ? "Their total ≠ their lines" : f.msg.slice(0, 60)}
+          {f.code === "TOTAL_MISMATCH" ? "Stated total doesn't match its lines" : f.msg.slice(0, 60)}
         </div>
       ))}
       <button onClick={onClarify} className="text-[11px] font-medium text-kraft hover:underline">

@@ -49,7 +49,7 @@ export function demoState(): State {
       {
         role: "assistant",
         text:
-          "I've loaded the **FY27 corrugated packaging** event: 30 lines (~1,000 t/yr, ~₹4.4 Cr at market rates), a 9-question supplier questionnaire with 3 must-haves, and your standard terms. Weights are computed from each spec so per-kg quotes can be compared later.\n\nTell me what to change — e.g. *\"add a 5-ply export carton 600×400×300, 30k a year\"* or *\"make FSC a must-have\"*.",
+          "I've loaded the **FY27 corrugated packaging** event: 30 lines (~1,000 t/yr, ~₹4.4 Cr at market rates), a 9-question supplier questionnaire with 3 must-haves, and your standard terms. I\u2019ve also worked out each box\u2019s weight, so vendors who quote per kg can be compared fairly.\n\nTell me what to change — e.g. *\"add a 5-ply export carton 600×400×300, 30k a year\"* or *\"make FSC a must-have\"*.",
       },
     ],
     sentAt: null,

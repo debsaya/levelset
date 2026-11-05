@@ -99,8 +99,8 @@ export default function RfxStep({ onNext }: { onNext: () => void }) {
       <Card className="flex min-h-0 flex-col">
         <div className="flex items-start justify-between border-b border-line px-4 py-3">
           <div>
-            <div className="text-xs text-muted">{r.id} · due {r.due_date}</div>
-            <div className="text-[15px] font-semibold">{r.title}</div>
+            <div className="text-xs text-muted">{r.id} · quotes due {new Date(r.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+            <div className="text-[15px] font-semibold">{r.title.replace(/\s*—\s*/, ": ")}</div>
             <div className="mt-1 max-w-3xl text-xs text-muted">{r.scope}</div>
           </div>
           <div className="flex flex-col items-end gap-2">
