@@ -163,7 +163,9 @@ export function normalize(
           });
           id = best.l.id;
         } else if (!best && id) {
-          matchFlag.set(el, { code: "SIZE_MISMATCH", sev: "warn", msg: `Vendor's size ${fmtSz} doesn't fit ${id} (${lineById[id].description}). Check this is the same item.` });
+          // the vendor's own size fits no RFx line: don't trust the model's guess
+          unmatched.push(`${fmtSz} (model guessed ${id})`);
+          continue;
         }
         if (best && best.l.id === id) dimErr.set(el, best.e!);
         if (!id) unmatched.push(fmtSz);

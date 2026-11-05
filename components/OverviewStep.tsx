@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
-import { lastYear, scenarios } from "@/lib/award";
+import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal, vendorIssues } from "./CompareStep";
 import { Badge, Button, Spinner, cx } from "./ui";
@@ -109,7 +109,11 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 return alt && best && alt.total < best.total ? (
                   <Kpi label="If you accept conditional vendors" value={`−${crore(best.total - alt.total)}`} sub={`${alt.unverified} of those prices still need checking`} tone="good" onClick={() => go("ask", { ask: "What would it take to safely include the conditional vendors in the award, and how much would it save? Show the lines that move." })} />
                 ) : (
-                  <Kpi label="Split vs one vendor" value={single && best && single.total > best.total ? `−${crore(single.total - best.total)}` : "₹0"} sub={single && best && single.key === best.key ? `${single.label.replace("All to ", "")} is cheapest on every line` : "by splitting lines"} />
+                  <Kpi
+                    label="Saving from splitting"
+                    value={single && best && single.key !== best.key ? crore(Math.max(0, savingOnCommon(single, best))) : "₹0"}
+                    sub={single && best && single.key !== best.key ? `vs ${single.label.replace("All to ", "all to ")}, on the same items` : `${single?.label.replace("All to ", "") || "One vendor"} is cheapest on every item`}
+                  />
                 );
               })()}
               <Kpi
@@ -204,7 +208,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   {n.vendors
                     .filter((v) => v.adjustments.some((a) => a.conditional))
                     .map((v) => (
-                      <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: conditional rebate`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: conditional rebate`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
                     ))}
                 </div>
               </div>

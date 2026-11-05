@@ -189,6 +189,8 @@ async function extract(input: any) {
         ply: l.ply,
         dims_mm: l.dimensions_mm,
         print: l.print,
+        end_use: l.end_use,
+        board: l.board_gsm,
         uom: l.uom,
         new_this_year: l.is_new,
       })),
@@ -207,6 +209,7 @@ async function extract(input: any) {
       { text: "Extract this vendor's response now, following the rules." },
     ];
     const t0 = Date.now();
+    const deadline = t0 + 270_000;
     // Photos get a transcription pass first: read every row before mapping anything.
     const images = files.filter((f) => f.mime.startsWith("image/"));
     for (const img of images) {
@@ -216,6 +219,7 @@ async function extract(input: any) {
           contents: [{ role: "user", parts: [{ text: `Transcribe ${img.name}.` }, { inlineData: { mimeType: img.mime, data: img.data } }] }],
           responseSchema: TRANSCRIBE_SCHEMA,
           thinking: "low",
+          deadline: t0 + 100_000,
           maxOutputTokens: 12000,
         });
         const t = parseJson<{ header: string[]; rows: string[][]; notes: string[] }>(tr.text);
@@ -225,7 +229,7 @@ async function extract(input: any) {
         /* fall back to the image alone */
       }
     }
-    const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000 });
+    const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000, deadline });
     const extraction = parseJson(out.text);
     return { extraction, model: out.model, ms: Date.now() - t0 };
   }

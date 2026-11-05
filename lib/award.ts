@@ -11,7 +11,15 @@ export type Scenario = {
   linesMissing: string[];
   vendorsUsed: { vendor_id: string; name: string; lines: number; value: number }[];
   unverified: number;
+  byLine: Record<string, number>;
 };
+
+/** Saving of scenario b over scenario a, counted only on lines both cover. */
+export function savingOnCommon(a: Scenario, b: Scenario) {
+  let s = 0;
+  for (const [l, v] of Object.entries(a.byLine)) if (b.byLine[l] !== undefined) s += v - b.byLine[l];
+  return s;
+}
 
 function usable(c: { unit_inr: number | null; status: string }) {
   return c.unit_inr !== null && c.status !== "deviation" && c.status !== "excluded" && c.status !== "missing";
@@ -25,6 +33,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       unverified = 0;
     const missing: string[] = [];
     const used: Record<string, { lines: number; value: number }> = {};
+    const byLine: Record<string, number> = {};
     for (const l of rfx.lines) {
       const cs = n.cells.filter((c) => c.line_id === l.id && allowed.includes(c.vendor_id) && usable(c));
       if (!cs.length) {
@@ -33,6 +42,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       }
       const best = cs.sort((a, b) => a.unit_inr! - b.unit_inr!)[0];
       total += best.annual_inr || 0;
+      byLine[l.id] = best.annual_inr || 0;
       if (best.status === "review") unverified++;
       used[best.vendor_id] ||= { lines: 0, value: 0 };
       used[best.vendor_id].lines++;
@@ -49,6 +59,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
         .map(([vendor_id, x]) => ({ vendor_id, name: name[vendor_id], ...x }))
         .sort((a, b) => b.value - a.value),
       unverified,
+      byLine,
     });
   };
   const q = n.vendors.filter((v) => v.qualification === "qualified").map((v) => v.vendor_id);

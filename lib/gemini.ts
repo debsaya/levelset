@@ -19,6 +19,8 @@ type Req = {
   tools?: unknown[];
   thinking?: "low" | "high";
   maxOutputTokens?: number;
+  /** epoch ms after which no new attempt starts and in-flight calls are cut */
+  deadline?: number;
 };
 
 export class GeminiError extends Error {
@@ -57,13 +59,17 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       if (req.system) body.systemInstruction = { parts: [{ text: req.system }] };
       if (req.tools) body.tools = req.tools;
       let res: Response;
+      const left = (req.deadline ?? Date.now() + 280_000) - Date.now();
+      if (left < 5000) throw lastErr || new GeminiError("Ran out of time waiting for the AI service. Try again.", 504);
       try {
         res = await fetch(`${BASE}/${model}:generateContent`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": key },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(left),
         });
       } catch (e: any) {
+        if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new GeminiError("The AI service took too long. Try again.", 504);
         lastErr = new GeminiError(`Network error calling Gemini: ${e?.message}`, 502);
         await sleep(800);
         continue;

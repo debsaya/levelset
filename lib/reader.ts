@@ -30,12 +30,13 @@ export function useReader() {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const res = await fetch("/api/extract", { method: "POST", headers: { "Content-Type": "application/json" }, body });
-          j = JSON.parse(await res.text());
+          const txt = (await res.text()).trim();
+          j = txt ? JSON.parse(txt) : { error: "The reader timed out (network)." };
         } catch (e: any) {
           j = { error: e?.message || "Network error" };
         }
         // retry when the model service is busy or the connection dropped
-        if (!j.error || !/high demand|overloaded|503|429|quota|fetch|network/i.test(j.error)) break;
+        if (!j.error || !/high demand|overloaded|503|504|429|quota|fetch|network|timed out|too long|time/i.test(j.error)) break;
         await new Promise((ok) => setTimeout(ok, 5000 * (attempt + 1)));
       }
       if (j.error) throw new Error(/high demand|503/i.test(j.error) ? "Google's AI service is busy right now. Try reading this quote again in a minute." : j.error);
