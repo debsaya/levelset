@@ -42,8 +42,8 @@ ${r.buyer.role}, ${r.buyer.company}`
     <div className="grid h-full grid-cols-[360px_1fr] gap-4 p-4">
       <Card className="flex min-h-0 flex-col">
         <div className="border-b border-line px-4 py-3">
-          <div className="font-semibold">Vendors invited</div>
-          <div className="text-xs text-muted">Channel: email. Each vendor gets a unique reply-to address so replies route to this event automatically.</div>
+          <div className="font-semibold">Send the request</div>
+          <div className="text-xs text-muted">Each vendor below gets the email on the right. Each has its own reply-to address, so replies land in the right place automatically.</div>
         </div>
         <div className="flex-1 divide-y divide-line overflow-y-auto">
           {vendors.map((x) => (
@@ -64,7 +64,7 @@ ${r.buyer.role}, ${r.buyer.company}`
             <div className="space-y-2">
               <div className="text-xs text-good">✓ Sent {new Date(s.sentAt).toLocaleString("en-IN")} · SMTP is stubbed in this prototype</div>
               <Button variant="primary" className="w-full justify-center" onClick={onNext}>
-                Go to responses →
+                Back to collected quotes →
               </Button>
             </div>
           ) : (
@@ -76,7 +76,7 @@ ${r.buyer.role}, ${r.buyer.company}`
       </Card>
       <Card className="flex min-h-0 flex-col">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
-          <div className="font-semibold">Email preview</div>
+          <div className="font-semibold">The email vendors will get</div>
           <Badge tone="warn" title="The prototype fakes the SMTP server, as the brief allows. Extraction and reasoning are real.">plumbing stubbed</Badge>
         </div>
         <pre className="flex-1 overflow-auto whitespace-pre-wrap p-5 font-sans text-[13px] leading-relaxed">{email}</pre>

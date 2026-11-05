@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { StoreProvider, useStore } from "@/lib/store";
 import { normalize } from "@/lib/normalize";
 import OverviewStep from "@/components/OverviewStep";
-import RfxStep from "@/components/RfxStep";
+import CollectStep from "@/components/CollectStep";
 import SendStep from "@/components/SendStep";
 import InboxStep from "@/components/InboxStep";
 import CompareStep from "@/components/CompareStep";
@@ -41,8 +41,8 @@ function App() {
   // The four steps of the buyer's job, in order. "Ask AI" is a helper, not a step.
   type St = "done" | "active" | "todo";
   const steps: { id: Page; label: string; hint: string; state: St; note?: string }[] = [
-    { id: "rfx", label: "Request", hint: "Draft what you need and send it to vendors (the industry calls this an RFx).", state: s.sentAt ? "done" : "active", note: s.sentAt ? "sent" : "draft" },
-    { id: "quotes", label: "Replies", hint: "Collect what each vendor sent back, in any format, and let the AI read it.", state: total && read === total ? "done" : s.sentAt || read ? "active" : "todo", note: total && s.sentAt ? `${read}/${total} read` : undefined },
+    { id: "rfx", label: "Collect quotes", hint: "See which vendor quotes and documents have come in, and what each one still needs to give us. Change what you ask for with the co-pilot.", state: s.sentAt ? "done" : "active", note: s.sentAt ? `${total} in` : "not sent" },
+    { id: "quotes", label: "Read quotes", hint: "The AI reads each quote, in any format, into one standard layout. Every price shows where it was found.", state: total && read === total ? "done" : s.sentAt || read ? "active" : "todo", note: total && s.sentAt ? `${read}/${total} read` : undefined },
     { id: "compare", label: "Compare", hint: "Every vendor side by side, on the same items, units and currency. Check anything flagged.", state: read === 0 ? "todo" : read === total && review === 0 ? "done" : "active", note: read > 0 && review > 0 ? `${review} to check` : undefined },
     { id: "overview", label: "Decision", hint: "Your recommended award and the reasons behind it.", state: read === 0 ? "todo" : "active" },
   ];
@@ -103,8 +103,8 @@ function App() {
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
-        {page === "rfx" && <RfxStep onNext={() => go("send")} />}
-        {page === "send" && <SendStep onNext={() => go("quotes")} />}
+        {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={() => go("quotes")} onNext={() => go("compare")} />}
+        {page === "send" && <SendStep onNext={() => go("rfx")} />}
         {page === "quotes" && <InboxStep n={n} onNext={() => go("compare")} />}
         {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} initialReview={!!opts.review} />}
         {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
