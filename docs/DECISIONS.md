@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 139 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 149 tests, ~1 second, no API key needed).
 
 ---
 
@@ -79,6 +79,9 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 44 | **A discount the reader called unconditional but whose wording sets a condition** ("5% on annual offtake above ₹1 Cr"). Giving credit they may never earn is the costlier mistake. | Not counted; the "if earned" price is shown. A percentage that looks like a fraction (0.05) or is huge (40) is flagged. A surcharge is the opposite: never hidden by condition wording. | `ADJ_CONDITION`, `ADJ_SCALE` | the discount tests |
 | 45 | **A price that could belong to two similar items** (a rounded size fits two lines). | Flagged on the cell, naming both lines. | `AMBIGUOUS_MATCH` | the two similar-item tests |
 
+| 46 | **A misread digit or slipped row on a photo or scan** that stays in a believable range. The checks above can't see it. | Treat the *source* as a risk: any winning price read from a photo or scan counts as "still needs your check" in every award summary until the buyer accepts or corrects it against the original. The analyst is told to say so. | `fromPhoto()` / `needsCheck()` | the five photo tests |
+| 47 | **The vendor is the only one who knows what they meant.** | A **read-back** is added to the clarification email: for the items we'd award them, what they wrote and what we read, built by code (exact numbers, never retyped by the AI), asking them to reply "correct" or give the right price. It never says they are winning and never shows other vendors' prices. | `lib/readback.ts` | the five read-back tests |
+
 ---
 
 ## 3. The review queue: when a number is "amber"
@@ -135,7 +138,7 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 - Box weight is **computed from the spec**, so per-kg quotes are accurate to a few percent, and the tool says so on each converted cell.
 - "Needs proof" and "not approved" depend on questions the RFx marks as must-haves. A badly written must-have gives a badly drawn line.
 - The size re-match assumes the vendor's written size is reliable; a mis-read size can still send a price to review or drop it (both visible, neither silent).
-- **What the checks cannot see:** a misread that stays in a believable range, such as 3.40 read as 3.04, or a few-percent GST or freight error with consistent wording. These are only caught indirectly: by confidence scores, the peer comparison when 3+ vendors quoted the line, the 15% winner check, and the citation next to every price so the buyer can look. If the vendor quotes the only price on a line there is no peer to compare with.
+- **What the checks cannot see:** a misread that stays in a believable range, such as 3.40 read as 3.04, or a few-percent GST or freight error with consistent wording. These are caught indirectly, and for photos and scans by process (rows 46 and 47): by confidence scores, the peer comparison when 3+ vendors quoted the line, the 15% winner check, and the citation next to every price so the buyer can look. If the vendor quotes the only price on a line there is no peer to compare with.
 - **Not modelled yet:** quantity price breaks as a structure (they arrive as duplicates and the buyer picks), and minimum order quantities. Both would need new fields in the reading step, which I chose not to risk this close to the demo.
 - Number formats such as decimal commas are a reading problem, not a code problem; they belong in the extraction accuracy checks above, not in unit tests.
 - Free-tier model limits can slow a live read. The app retries and shows a clear message rather than failing silently.
@@ -148,7 +151,7 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 139 checks, no API key needed
+npm test        # 149 checks, no API key needed
 ```
 
 I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.

@@ -1,5 +1,5 @@
 // Deterministic award scenarios over the normalised comparison. No model involved.
-import type { Normalized } from "./normalize";
+import type { Cell, Normalized } from "./normalize";
 import type { PriorContracts, Rfx } from "./types";
 
 export type Scenario = {
@@ -19,6 +19,16 @@ export function savingOnCommon(a: Scenario, b: Scenario) {
   let s = 0;
   for (const [l, v] of Object.entries(a.byLine)) if (b.byLine[l] !== undefined) s += v - b.byLine[l];
   return s;
+}
+
+const IMAGE_FILE = /\.(png|jpe?g|webp|heic|gif|bmp|tiff?)$/i;
+/** A price read from a photo or scan: the likeliest place for a misread digit or a slipped row. */
+export function fromPhoto(c: Cell, n: Normalized): boolean {
+  return IMAGE_FILE.test(c.source?.file || "") || /photo|image|scan|handwrit/i.test(n.vendors.find((v) => v.vendor_id === c.vendor_id)?.format || "");
+}
+/** A winning price still needs the buyer's eye if it is amber, or if it came from a photo/scan the buyer hasn't confirmed. */
+export function needsCheck(c: Cell, n: Normalized): boolean {
+  return c.status === "review" || (fromPhoto(c, n) && !c.override);
 }
 
 function usable(c: { unit_inr: number | null; status: string }) {
@@ -43,7 +53,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       const best = cs.sort((a, b) => a.unit_inr! - b.unit_inr!)[0];
       total += best.annual_inr || 0;
       byLine[l.id] = best.annual_inr || 0;
-      if (best.status === "review") unverified++;
+      if (needsCheck(best, n)) unverified++;
       used[best.vendor_id] ||= { lines: 0, value: 0 };
       used[best.vendor_id].lines++;
       used[best.vendor_id].value += best.annual_inr || 0;
@@ -112,7 +122,7 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
   const pool = n.vendors.filter((v) => (a.vendor_ids?.length ? a.vendor_ids.includes(v.vendor_id) : elig === "all" ? true : elig === "qualified" ? v.qualification === "qualified" : v.qualification !== "not_qualified"));
   const excluded = n.vendors.filter((v) => !pool.includes(v)).map((v) => ({ vendor: v.name, qualification: v.qualification, why: v.qual_reasons.join("; ") || "not selected" }));
   const price = (c: any) => (a.count_conditional_rebates ? c.unit_inr_if_rebate ?? c.unit_inr : c.unit_inr);
-  const rows: { line_id: string; vendor_id: string; vendor_name: string; unit_price_inr: number; annual_value_inr: number; status: string }[] = [];
+  const rows: { line_id: string; vendor_id: string; vendor_name: string; unit_price_inr: number; annual_value_inr: number; status: string; from_photo: boolean; needs_check: boolean }[] = [];
   const missing: string[] = [];
   const pick = (ids: string[]) => {
     rows.length = 0;
@@ -124,7 +134,7 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
         continue;
       }
       const c = cs[0];
-      rows.push({ line_id: l.id, vendor_id: c.vendor_id, vendor_name: n.vendors.find((v) => v.vendor_id === c.vendor_id)!.name, unit_price_inr: Math.round(price(c) * 100) / 100, annual_value_inr: Math.round(price(c) * l.annual_qty), status: c.status });
+      rows.push({ line_id: l.id, vendor_id: c.vendor_id, vendor_name: n.vendors.find((v) => v.vendor_id === c.vendor_id)!.name, unit_price_inr: Math.round(price(c) * 100) / 100, annual_value_inr: Math.round(price(c) * l.annual_qty), status: c.status, from_photo: fromPhoto(c, n), needs_check: needsCheck(c, n) });
     }
   };
   let chosen = pool.map((v) => v.vendor_id);
@@ -158,5 +168,5 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
       return m;
     }, {})
   ).sort((x, y) => y.annual_value_inr - x.annual_value_inr);
-  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.status === "review").length, winning_prices_far_below_next_best: winnersFarBelowNext, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
+  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.needs_check).length, prices_read_from_photos: rows.filter((r) => r.from_photo).length, winning_prices_far_below_next_best: winnersFarBelowNext, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
 }

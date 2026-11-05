@@ -18,6 +18,7 @@ const SYSTEM = `You write clarification emails from an Indian manufacturing comp
 - Polite, direct, plain English that a small-business owner will understand. No legalese.
 - One numbered question per open issue, each answerable in one line. Quote the vendor's own words where it helps ("you wrote '...'").
 - Ask for exactly what is needed to compare fairly (e.g. price per piece in INR, delivered to plant, ex-GST).
+- An issue that starts with "READ-BACK" is a price confirmation. Put it in the email as a short list, one line per item, with the line ID, description and both figures EXACTLY as given (never round, reword or recompute a number), and ask the vendor to reply "correct" or give the right price per item. Do not say which items they are winning, that they are cheapest, or that an award is decided.
 - Do not reveal other vendors' prices or names. Do not promise an award.
 - Ask them to reply by a specific date: two working days after today.
 - Sign off with the buyer's name and role.`;

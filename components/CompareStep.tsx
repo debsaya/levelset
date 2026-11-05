@@ -1,4 +1,5 @@
 "use client";
+import { readBackIssue } from "@/lib/readback";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, inr, key, type Cell, type Normalized, type QCell, type VendorSummary } from "@/lib/normalize";
@@ -505,6 +506,8 @@ export function vendorIssues(v: VendorSummary, n: Normalized, rfx: any, response
   if (v.terms.currency !== "INR") out.push(`Quote is in ${v.terms.currency}. Ask for a firm INR price, or how currency movement will be shared.`);
   for (const r of v.qual_reasons) out.push(`Questionnaire must-have: ${r}. Ask for evidence or a corrective plan.`);
   for (const f of v.flags.filter((f) => f.code === "TOTAL_MISMATCH")) out.push(`${f.msg} Ask them to confirm which lines their total covers.`);
+  const rb = readBackIssue(v.vendor_id, n, rfx);
+  if (rb) out.push(rb);
   void responses;
   return out;
 }
