@@ -246,12 +246,12 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               <h2 className="mb-3 text-[15px] font-semibold">Vendors</h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 {[...n.vendors]
-                  .sort((a, b) => (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
+                  .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
                   .map((v, i) => (
                     <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="text-[13.5px] font-semibold leading-snug">{v.name}</div>
-                        {done >= 2 && <span className="text-[11px] text-muted tabular">#{i + 1}</span>}
+                        {done >= 2 && v.qualification !== "not_qualified" && <span className="text-[11px] text-muted tabular">#{i + 1}</span>}
                       </div>
                       <div className="mt-1.5">
                         <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
