@@ -222,3 +222,33 @@ describe("Defaults", () => {
     assert.equal(JSON.stringify(A), before);
   });
 });
+
+describe("A response with nothing in it", () => {
+  const blank = () =>
+    extraction([], {
+      tax: { basis: "unclear", gst_rate_pct: null, note: "", source: null },
+      freight: { included: null, note: "", source: null },
+      payment_terms_days: null,
+      lead_time_days: null,
+      validity_days: null,
+      documents: [],
+      not_quoted: RFX.lines.map((l) => ({ rfx_line_id: l.id, reason: "Nothing quoted" })),
+      questionnaire: RFX.questionnaire.map((q) => ({ question_id: q.id, answer: "Not answered", assessment: "unanswered" as const, reasoning: "", source: null })),
+    });
+
+  it("is not approved, prices nothing and costs nothing, rather than crashing or showing zero", () => {
+    const n = run({ V1: extraction([line("L01", BASE)]), V9: blank() });
+    const v = vendorOf(n, "V9");
+    assert.equal(v.quoted, 0);
+    assert.equal(v.qualification, "not_qualified");
+    assert.equal(v.total_inr, 0);
+  });
+
+  it("can never win a line in any award scenario", () => {
+    const n = run({ V1: extraction([line("L01", BASE)]), V9: blank() });
+    for (const strategy of ["cheapest_per_line", "single_vendor"] as const) {
+      const r = runScenario(RFX, n, { eligibility: "all", strategy });
+      assert.ok(r.rows.every((x) => x.vendor_id !== "V9"));
+    }
+  });
+});

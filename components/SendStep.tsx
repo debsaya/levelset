@@ -20,13 +20,13 @@ Dear ${v.contact.split(" ")[0]},
 
 ${r.buyer.company} invites ${v.name} to quote for our ${r.title.toLowerCase()}.
 
-• ${r.lines.length} line items (specs and annual volumes attached as Request_${r.id}.xlsx)
+• ${r.lines.length} line items (specs and annual volumes in the attached bid sheet, ${r.id}_bid_sheet.xlsx; using it is optional)
 • A ${r.questionnaire.length}-question supplier questionnaire (${r.questionnaire.filter((q) => q.must_have).length} must-haves)
 • Quotes due by ${r.due_date}
 
 Our preferred basis: ${r.terms.format || "price per piece in INR"}; ${r.terms.delivery || ""}; ${r.terms.taxes || ""}.
 
-Reply in whatever format suits you — your own price list, a PDF, a photo, or just this email. Please keep the subject line so your reply reaches the right event.
+Reply in whatever format suits you: the bid sheet, your own price list, a PDF, a photo, or just this email. Please keep the subject line so your reply reaches the right event.
 
 Regards,
 ${r.buyer.name}

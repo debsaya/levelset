@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
-import { Badge, Button, Card, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { Badge, Button, Card, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
 import { fileName, useReader } from "@/lib/reader";
 import type { Normalized } from "@/lib/normalize";
 
@@ -10,16 +10,33 @@ export { fileName };
 
 const FORMAT_ICON: Record<string, string> = {};
 
-export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => void }) {
+export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normalized; onNext: () => void; initialAdd?: boolean }) {
   const { s, set, log } = useStore();
   const [sel, setSel] = useState<string | undefined>(s.responses[0]?.vendor.id);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(initialAdd);
+  const [replacing, setReplacing] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const visible = s.sentAt || s.mode === "blank" ? s.responses : [];
   const cur = s.responses.find((r) => r.vendor.id === sel);
 
   const { read, readAll } = useReader();
 
   const doneCount = visible.filter((r) => r.status === "done").length;
+  const nextId = `V${Math.max(0, ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
+
+  const dropVendorKeys = <T,>(o: Record<string, T>, id: string) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}|`))) as Record<string, T>;
+  function removeVendor(id: string) {
+    const name = s.responses.find((r) => r.vendor.id === id)?.vendor.name;
+    set((x) => ({ ...x, responses: x.responses.filter((r) => r.vendor.id !== id), overrides: dropVendorKeys(x.overrides, id), qOverrides: dropVendorKeys(x.qOverrides, id) }));
+    log(`Removed the response from ${name}`);
+    if (sel === id) setSel(s.responses.find((r) => r.vendor.id !== id)?.vendor.id);
+    setDeleting(null);
+  }
+  const menuFor = (r: VendorResponse) => [
+    { label: r.status === "done" ? "Read again" : "Read with AI", hint: r.status === "done" ? "Runs the AI over the same files again and replaces the prices. Your accept / override choices are kept." : "Runs the AI over this vendor's files.", onClick: () => read(r), disabled: r.status === "reading" },
+    { label: "Replace response…", hint: "Swap in different files or email text. Your choices on the old prices are cleared.", onClick: () => (setAdding(false), setReplacing(r.vendor.id), setSel(r.vendor.id)) },
+    { label: "Delete response", hint: "Removes this vendor from the comparison.", onClick: () => setDeleting(r.vendor.id), danger: true },
+  ];
 
   return (
     <div className="grid h-full grid-cols-[380px_1fr] gap-4 p-4">
@@ -43,22 +60,25 @@ export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => 
             </div>
           )}
           {visible.map((r) => (
-            <button key={r.vendor.id} onClick={() => setSel(r.vendor.id)} className={cx("block w-full px-4 py-3 text-left", sel === r.vendor.id && "bg-kraft-soft")}>
+            <div key={r.vendor.id} role="button" tabIndex={0} onClick={() => (setAdding(false), setReplacing(null), setSel(r.vendor.id))} onKeyDown={(e) => e.key === "Enter" && (setAdding(false), setReplacing(null), setSel(r.vendor.id))} className={cx("block w-full cursor-pointer px-4 py-3 text-left", sel === r.vendor.id && "bg-kraft-soft")}>
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate font-medium">
                   {r.vendor.name}
                 </span>
-                <StatusBadge r={r} n={n} />
+                <span className="flex shrink-0 items-center gap-1">
+                  <StatusBadge r={r} n={n} />
+                  <MoreMenu items={menuFor(r)} title={`Actions for ${r.vendor.name}`} />
+                </span>
               </div>
               <div className="truncate text-xs text-muted">{r.vendor.subject}</div>
               <div className="mt-0.5 text-[11px] text-muted">
                 {new Date(r.vendor.received_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })} · {r.vendor.format}
               </div>
-            </button>
+            </div>
           ))}
         </div>
         <div className="space-y-2 border-t border-line p-3">
-          <Button className="w-full justify-center" onClick={() => setAdding(true)}>
+          <Button className="w-full justify-center" onClick={() => (setReplacing(null), setAdding(true))}>
             + Add a vendor response (upload any file)
           </Button>
           {doneCount > 0 && (
@@ -70,23 +90,51 @@ export default function InboxStep({ n, onNext }: { n: Normalized; onNext: () => 
       </Card>
 
       <Card className="flex min-h-0 flex-col overflow-hidden">
-        {adding ? (
+        {adding || replacing ? (
           <AddResponse
-            onCancel={() => setAdding(false)}
+            key={replacing || "new"}
+            replacing={replacing ? s.responses.find((r) => r.vendor.id === replacing)?.vendor : undefined}
+            onCancel={() => (setAdding(false), setReplacing(null))}
             onAdd={(vendor, files) => {
+              if (replacing) {
+                const id = replacing;
+                const v = { ...vendor, id };
+                set((x) => ({ ...x, responses: x.responses.map((r) => (r.vendor.id === id ? { vendor: v, status: "new" as const } : r)), overrides: dropVendorKeys(x.overrides, id), qOverrides: dropVendorKeys(x.qOverrides, id) }));
+                log(`Replaced the response from ${v.name}`);
+                setReplacing(null);
+                setSel(id);
+                setTimeout(() => read({ vendor: v, status: "new" }, files), 50);
+                return;
+              }
               set((x) => ({ ...x, responses: [...x.responses, { vendor, status: "new" }] }));
               setAdding(false);
               setSel(vendor.id);
               setTimeout(() => read({ vendor, status: "new" }, files), 50);
             }}
-            nextId={`V${s.responses.length + 1}`}
+            nextId={nextId}
           />
         ) : cur ? (
-          <ResponseDetail r={cur} onRead={() => read(cur)} />
+          <ResponseDetail r={cur} onRead={() => read(cur)} menu={menuFor(cur)} />
         ) : (
           <div className="p-8 text-muted">Select a response.</div>
         )}
       </Card>
+      {deleting && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setDeleting(null)}>
+          <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[15px] font-semibold">Delete the response from {s.responses.find((r) => r.vendor.id === deleting)?.vendor.name}?</div>
+            <p className="mt-1.5 text-[13px] text-muted">This vendor leaves the comparison, along with its prices and any accept / override choices you made on them. You can add the response again later.</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setDeleting(null)}>
+                Cancel
+              </button>
+              <button className="rounded-lg bg-bad px-3.5 py-2 text-[13px] font-medium text-white" onClick={() => removeVendor(deleting)}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -111,7 +159,7 @@ function StatusBadge({ r, n }: { r: VendorResponse; n: Normalized }) {
   return <Badge>unread</Badge>;
 }
 
-function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }) {
+function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => void; menu: { label: string; hint?: string; onClick: () => void; danger?: boolean; disabled?: boolean }[] }) {
   const ex = r.extraction;
   const [showRaw, setShowRaw] = useState(false);
   return (
@@ -130,10 +178,11 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
                 read by AI in {((r.ms || 0) / 1000).toFixed(0)}s
               </span>
             )}
-            <Button onClick={onRead} disabled={r.status === "reading"}>
+            <Button onClick={onRead} disabled={r.status === "reading"} title={r.status === "done" ? "Runs the AI over the same files again and replaces the prices. Your accept / override choices are kept." : "Runs the AI over this vendor's files."}>
               {r.status === "reading" ? <Spinner /> : null}
-              {r.status === "done" ? "Re-read" : "Read with AI"}
+              {r.status === "done" ? "Read again" : "Read with AI"}
             </Button>
+            <MoreMenu items={menu.slice(1)} title="More actions for this response" />
           </div>
         </div>
       </div>
@@ -163,12 +212,7 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
         )}
         {ex && (
           <>
-            <div className="grid grid-cols-4 gap-2 text-[12.5px]">
-              <Fact k="Currency" v={`${ex.currency}${ex.fx_rate_stated ? ` (ref ₹${ex.fx_rate_stated})` : ""}`} />
-              <Fact k="Tax" v={`${ex.tax.basis}${ex.tax.gst_rate_pct ? `, GST ${ex.tax.gst_rate_pct}%` : ""}`} />
-              <Fact k="Freight" v={ex.freight.included === true ? "Delivered" : ex.freight.included === false ? "Extra / ex-works" : "Not stated"} />
-              <Fact k="Payment / lead" v={`${ex.payment_terms_days ?? "–"} d / ${ex.lead_time_days ?? "–"} d`} />
-            </div>
+            <Terms ex={ex} />
             {(ex.unresolved?.length > 0 || ex.adjustments?.length > 0) && (
               <div className="space-y-1.5">
                 {ex.adjustments.map((a, i) => (
@@ -245,24 +289,53 @@ function ResponseDetail({ r, onRead }: { r: VendorResponse; onRead: () => void }
   );
 }
 
-function Fact({ k, v }: { k: string; v: string }) {
+const askedDays = (s: string | undefined) => {
+  const m = /(\d+)\s*days?/i.exec(s || "");
+  return m ? parseInt(m[1], 10) : null;
+};
+
+/** The commercial terms read from the quote, laid out quietly. Where the vendor differs from what the buyer asked for, say so. */
+function Terms({ ex }: { ex: NonNullable<VendorResponse["extraction"]> }) {
+  const { s } = useStore();
+  const askPay = askedDays(s.rfx.terms.payment);
+  const askValid = askedDays(s.rfx.terms.validity);
+  const taxV = ex.tax.basis === "exclusive" ? `Extra${ex.tax.gst_rate_pct ? `, ${ex.tax.gst_rate_pct}%` : ""}` : ex.tax.basis === "inclusive" ? "Included in prices" : ex.tax.basis === "mixed" ? "Mixed" : "Not stated";
+  const items: { k: string; v: string; sub?: string; warn?: boolean }[] = [
+    { k: "Currency", v: ex.currency, sub: ex.fx_rate_stated ? `vendor's rate ₹${ex.fx_rate_stated}` : undefined },
+    { k: "GST", v: taxV, sub: ex.tax.basis === "exclusive" ? "we compare without GST" : ex.tax.basis === "inclusive" ? "we take it out" : "we assume it is extra", warn: ex.tax.basis === "unclear" || ex.tax.basis === "mixed" },
+    { k: "Delivery", v: ex.freight.included === true ? "To your plant, freight paid" : ex.freight.included === false ? "Ex-works, freight extra" : "Not stated", sub: ex.freight.included === false ? "we add freight" : undefined, warn: ex.freight.included === null },
+    { k: "Payment", v: ex.payment_terms_days != null ? `${ex.payment_terms_days} days` : "Not stated", sub: askPay != null ? `you asked ${askPay} days` : undefined, warn: ex.payment_terms_days == null || (askPay != null && ex.payment_terms_days !== askPay) },
+    { k: "Lead time", v: ex.lead_time_days != null ? `${ex.lead_time_days} days` : "Not stated", sub: "from order to delivery", warn: ex.lead_time_days == null },
+    { k: "Price valid for", v: ex.validity_days != null ? `${ex.validity_days} days` : "Not stated", sub: askValid != null ? `you asked ${askValid} days` : undefined, warn: ex.validity_days == null || (askValid != null && ex.validity_days < askValid) },
+  ];
   return (
-    <div className="rounded-md border border-line px-3 py-2">
-      <div className="text-[11px] text-muted">{k}</div>
-      <div className="font-medium">{v}</div>
+    <div>
+      <div className="mb-2 flex items-baseline gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted">Terms in this quote</span>
+        <span className="text-[11.5px] text-muted">Read from the quote so every price is compared on the same basis.</span>
+      </div>
+      <dl className="grid grid-cols-3 gap-x-6 gap-y-3 border-y border-line py-3 lg:grid-cols-6">
+        {items.map((i) => (
+          <div key={i.k} className="min-w-0">
+            <dt className="text-[11px] text-muted">{i.k}</dt>
+            <dd className={cx("mt-0.5 text-[13px] font-medium", i.warn && "text-warn")}>{i.v}</dd>
+            {i.sub && <div className={cx("text-[11px]", i.warn ? "text-warn" : "text-muted")}>{i.sub}</div>}
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }
 
-function AddResponse({ onCancel, onAdd, nextId }: { onCancel: () => void; onAdd: (v: VendorMsg, files: File[]) => void; nextId: string }) {
+function AddResponse({ onCancel, onAdd, nextId, replacing }: { onCancel: () => void; onAdd: (v: VendorMsg, files: File[]) => void; nextId: string; replacing?: VendorMsg }) {
   const [busy, setBusy] = useState(false);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(replacing?.name || "");
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   return (
     <div className="space-y-3 p-5">
-      <div className="font-semibold">Add a vendor response</div>
-      <div className="text-xs text-muted">Drop in anything — a PDF, Excel, Word file, phone photo, or paste the email text. It is read against your current request exactly like the others.</div>
+      <div className="font-semibold">{replacing ? `Replace the response from ${replacing.name}` : "Add a vendor response"}</div>
+      <div className="text-xs text-muted">Add whatever the vendor sent: a PDF, Excel or CSV file, a Word document, a phone photo, or paste the email text. It is read against your request exactly like the others.</div>
       <input className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
       <textarea className="h-36 w-full rounded-md border border-line px-3 py-2 text-[13px]" placeholder="Paste the email body (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
       <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
@@ -278,9 +351,9 @@ function AddResponse({ onCancel, onAdd, nextId }: { onCancel: () => void; onAdd:
               {
                 id: nextId,
                 name: name.trim(),
-                city: "",
-                contact: name.trim(),
-                email: "uploaded@manual",
+                city: replacing?.city || "",
+                contact: replacing?.contact || name.trim(),
+                email: replacing?.email || "uploaded@manual",
                 format: files.length ? files.map((f) => f.name.split(".").pop()?.toUpperCase()).join(" + ") : "Email text",
                 subject: `Response from ${name.trim()}`,
                 received_at: new Date().toISOString(),
@@ -291,7 +364,7 @@ function AddResponse({ onCancel, onAdd, nextId }: { onCancel: () => void; onAdd:
             );
           }}
         >
-          Add &amp; read
+          {replacing ? "Replace & read" : "Add & read"}
         </Button>
         <Button variant="ghost" onClick={onCancel}>
           Cancel

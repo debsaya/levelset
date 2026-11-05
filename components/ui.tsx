@@ -170,3 +170,37 @@ export function Disclosure({ title, summary, defaultOpen = false, children }: { 
     </section>
   );
 }
+
+/** The three-dots menu: quiet until needed. Each item can carry a one-line hint saying what it does. */
+export function MoreMenu({ items, title = "More actions" }: { items: { label: string; hint?: string; onClick: () => void; danger?: boolean; disabled?: boolean }[]; title?: string }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <span className="relative inline-block" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <button aria-label={title} title={title} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} className={cx("grid h-7 w-7 place-items-center rounded-md text-[16px] leading-none text-muted hover:bg-panel hover:text-ink", open && "bg-panel text-ink")}>
+        ⋯
+      </button>
+      {open && (
+        <>
+          <span className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div role="menu" className="absolute right-0 top-8 z-50 w-64 rounded-xl border border-line bg-white p-1 text-left text-[13px] shadow-lg">
+            {items.map((it) => (
+              <button
+                key={it.label}
+                role="menuitem"
+                disabled={it.disabled}
+                onClick={() => {
+                  setOpen(false);
+                  it.onClick();
+                }}
+                className={cx("block w-full rounded-lg px-3 py-2 text-left hover:bg-panel disabled:opacity-40", it.danger && "text-bad")}
+              >
+                <div className="font-medium">{it.label}</div>
+                {it.hint && <div className="text-[11.5px] font-normal text-muted">{it.hint}</div>}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </span>
+  );
+}

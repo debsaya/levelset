@@ -164,6 +164,29 @@ const TRANSCRIBE_SCHEMA = {
   required: ["header", "rows", "notes"],
 };
 
+/** What a quote with nothing in it looks like: no prices, nothing answered. Same shape the AI returns, so the rest of the app needs no special case. */
+function emptyExtraction(vendorName: string, rfx: any, why: string) {
+  return {
+    vendor_name: vendorName,
+    quote_ref: null,
+    quote_date: null,
+    currency: rfx.currency || "INR",
+    fx_rate_stated: null,
+    tax: { basis: "unclear", gst_rate_pct: null, note: "", source: null },
+    freight: { included: null, note: "", source: null },
+    payment_terms_days: null,
+    lead_time_days: null,
+    validity_days: null,
+    adjustments: [],
+    lines: [],
+    not_quoted: rfx.lines.map((l: any) => ({ rfx_line_id: l.id, reason: "Nothing quoted" })),
+    questionnaire: rfx.questionnaire.map((q: any) => ({ question_id: q.id, answer: "Not answered", assessment: "unanswered", reasoning: "Nothing to read in this response", source: null })),
+    documents: [],
+    stated_total: null,
+    unresolved: [why],
+  };
+}
+
 export async function POST(req: Request) {
   const input = await req.json();
   return heartbeatJson(() => extract(input));
@@ -177,6 +200,13 @@ async function extract(input: any) {
       rfx: any;
       prior: { contract_ref: string; period: string; line_ids: string[] } | null;
     };
+    // Nothing to read: no files and no figures in a short message. No need to wake the AI for that.
+    const body = (vendor.body || "").trim();
+    if (!files.length && body.length < 300 && !/\d/.test(body)) {
+      return { extraction: emptyExtraction(vendor.name, rfx, "Nothing to read: no attachments and no figures in the message. Add the vendor's quote file, or replace this response."), model: "no AI needed", ms: 0, attempts: [] };
+    }
+    // A short message with no files is a quick read: use the fast model first.
+    const quick = !files.length && body.length < 600;
     const rfxBrief = {
       id: rfx.id,
       title: rfx.title,
@@ -229,7 +259,7 @@ async function extract(input: any) {
         /* fall back to the image alone */
       }
     }
-    const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000, deadline });
+    const out = await generate({ system: SYSTEM, contents: [{ role: "user", parts }], responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 32000, deadline, fast: quick });
     const extraction = parseJson(out.text);
     return { extraction, model: out.model, ms: Date.now() - t0, attempts: out.attempts };
   }

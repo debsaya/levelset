@@ -15,14 +15,14 @@ type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 function App() {
   const { s, reset, hydrated } = useStore();
   const [page, setPage] = useState<Page>("rfx");
-  const [opts, setOpts] = useState<{ review?: boolean; ask?: string; nonce: number }>({ nonce: 0 });
+  const [opts, setOpts] = useState<{ review?: boolean; ask?: string; add?: boolean; nonce: number }>({ nonce: 0 });
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState<null | "demo" | "blank">(null);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
   const review = n.cells.filter((c) => c.status === "review").length;
   const total = s.responses.length;
   const read = s.responses.filter((r) => r.status === "done").length;
-  const go = (p: Page, o?: { review?: boolean; ask?: string }) => {
+  const go = (p: Page, o?: { review?: boolean; ask?: string; add?: boolean }) => {
     setOpts({ ...o, nonce: Date.now() });
     setPage(p);
   };
@@ -103,9 +103,9 @@ function App() {
       </header>
       <main className="min-h-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
-        {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={() => go("quotes")} onNext={() => go("compare")} />}
+        {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
         {page === "send" && <SendStep onNext={() => go("rfx")} />}
-        {page === "quotes" && <InboxStep n={n} onNext={() => go("compare")} />}
+        {page === "quotes" && <InboxStep key={opts.nonce} n={n} onNext={() => go("compare")} initialAdd={!!opts.add} />}
         {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} initialReview={!!opts.review} />}
         {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
       </main>

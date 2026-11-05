@@ -7,6 +7,17 @@ import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Disclosure, Md, Spinner, cx } from "./ui";
+import { downloadBidSheet } from "@/lib/bidsheet";
+
+const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
+const HEADS = [
+  { label: "Prices", tip: "A price for every item you asked for." },
+  { label: "GST", tip: "Whether prices are with or without GST, and the rate. You asked for prices excluding GST." },
+  { label: "Freight", tip: "Whether delivery to your plant is included in the price, or charged extra (ex-works)." },
+  { label: "Pay · lead", tip: "Payment terms (days to pay after delivery) and lead time (days from order to delivery)." },
+  { label: "Certificate", tip: "A valid ISO 9001 certificate, still in date on the quote due date." },
+  { label: "Questions", tip: "Answers to your supplier questionnaire, including the must-haves." },
+];
 
 const SUGGESTIONS = ["Add a 2-colour die-cut tray 300×220×50, ~80k a year", "Make FSC certification a must-have", "Cut volumes on all 7-ply lines by 20%"];
 
@@ -43,7 +54,7 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
   return [{ label: "Prices", state: quoted === total ? "ok" : quoted > 0 ? "warn" : "bad", text: `${quoted}/${total} lines` }, tax, freight, terms, cert, qn];
 }
 
-export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normalized; onSend: () => void; onRead: () => void; onNext: () => void }) {
+export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void }) {
   const { s, set, log } = useStore();
   const { readAll } = useReader();
   const r = s.rfx;
@@ -56,7 +67,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
 
   // main action: one clear next move
   let primary: { label: string; run: () => void; disabled?: boolean };
-  if (!vendorsInvited) primary = { label: "Add vendor quotes →", run: onRead };
+  if (!vendorsInvited) primary = { label: "Add vendor quotes →", run: () => onRead(true) };
   else if (!repliesIn) primary = { label: `Send request to ${vendorsInvited} vendors`, run: onSend, disabled: !r.lines.length };
   else if (unread > 0) primary = { label: `Read ${unread} ${unread === 1 ? "quote" : "quotes"} →`, run: () => (readAll(), onRead()) };
   else primary = { label: "Continue to compare →", run: onNext };
@@ -99,112 +110,87 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     <div className="grid h-full grid-cols-[1fr_minmax(300px,340px)] gap-4 p-4">
       {/* ---------- main: what has been collected ---------- */}
       <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
-        <Card className="p-5">
-          <div className="text-xs text-muted">
-            {r.id} · quotes due {due}
-          </div>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-[18px] font-semibold tracking-tight">Collect quotes</h1>
-              <div className="mt-0.5 text-[13px] text-muted">{r.title.replace(/\s*—\s*/, ": ")}</div>
-              <p className="mt-2 max-w-2xl text-[13px]">{status}</p>
+        {/* one quiet line of context, the state of play, and the one next move */}
+        <div className="flex items-end justify-between gap-4 px-1 pt-1">
+          <div className="min-w-0">
+            <div className="truncate text-xs text-muted">
+              {r.id} · {r.title.replace(/\s*—\s*/, ": ")} · quotes due {due}
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <Button variant="primary" onClick={primary.run} disabled={primary.disabled}>
-                {primary.label}
-              </Button>
-              {vendorsInvited > 0 && !repliesIn && (
-                <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))} title="Demo shortcut: email is simulated, so this makes the five vendor replies arrive">
-                  Demo: skip to replies arriving
-                </button>
-              )}
-              {repliesIn && vendorsInvited > 0 && (
-                <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={onSend}>
-                  View the request that was sent
-                </button>
-              )}
-            </div>
+            <p className="mt-1 text-[16px] font-semibold tracking-tight">{status}</p>
           </div>
-        </Card>
-
-        <Card className="px-5 py-3.5">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">What every quote needs</div>
-          <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px]">
-            <span>Prices for all {r.lines.length} items</span>
-            <span>Tax basis (GST)</span>
-            <span>Freight terms</span>
-            <span>Payment &amp; lead time</span>
-            <span>Valid ISO 9001 certificate</span>
-            <span>
-              Answers to {r.questionnaire.length} questions ({mustN} must-have)
-            </span>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <Button variant="primary" onClick={primary.run} disabled={primary.disabled}>
+              {primary.label}
+            </Button>
+            {vendorsInvited > 0 && !repliesIn && (
+              <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))} title="Demo shortcut: email is simulated, so this makes the five vendor replies arrive">
+                Demo: skip to replies arriving
+              </button>
+            )}
+            {repliesIn && vendorsInvited > 0 && (
+              <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={onSend}>
+                View the request that was sent
+              </button>
+            )}
           </div>
-        </Card>
+        </div>
 
-        <div className="space-y-3">
+        {/* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */}
+        <Card className="overflow-hidden">
+          <div className={cx("grid items-center gap-x-3 border-b border-line bg-panel px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted", COLS)}>
+            <span>Vendor</span>
+            {HEADS.map((h) => (
+              <span key={h.label} title={h.tip} className="cursor-help">
+                {h.label}
+              </span>
+            ))}
+          </div>
           {s.responses.map((v) => {
             const got = repliesIn;
             const reqs = got ? requirements(v, n, r) : [];
             const files = v.vendor.attachments.map(fileName);
             return (
-              <Card key={v.vendor.id} className="p-4">
-                <div className="grid grid-cols-[minmax(200px,260px)_1fr] gap-5">
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">{v.vendor.name}</div>
-                    <div className="text-xs text-muted">{v.vendor.city}</div>
-                    {got ? (
-                      <>
-                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <Badge tone="brand">{v.vendor.format}</Badge>
-                          {v.status === "reading" && (
-                            <Badge tone="brand">
-                              <Spinner className="h-2.5 w-2.5" /> reading
-                            </Badge>
-                          )}
-                          {v.status === "error" && <Badge tone="bad">couldn&apos;t read</Badge>}
-                        </div>
-                        <div className="mt-1 text-[11.5px] text-muted">Received {new Date(v.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {files.length ? (
-                            files.map((f) => (
-                              <span key={f} className="max-w-full truncate rounded-md bg-panel px-2 py-0.5 text-[11px] text-muted" title={f}>
-                                {f}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="rounded-md bg-panel px-2 py-0.5 text-[11.5px] text-muted">Email text only</span>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="mt-2">
-                        <Badge>waiting for your request</Badge>
-                        <div className="mt-1 truncate text-[11.5px] text-muted">{v.vendor.email}</div>
-                      </div>
-                    )}
-                  </div>
+              <div key={v.vendor.id} className={cx("grid items-center gap-x-3 border-b border-line px-4 py-3 last:border-b-0", COLS)}>
+                <div className="min-w-0">
+                  <div className="truncate text-[13.5px] font-medium">{v.vendor.name}</div>
                   {got ? (
-                    <div className="grid grid-cols-3 gap-x-4 gap-y-2.5 self-center">
-                      {reqs.map((q) => (
-                        <div key={q.label} className="min-w-0">
-                          <div className="flex items-center gap-1.5 text-[11.5px] font-medium">
-                            <span className={cx("grid h-4 w-4 place-items-center rounded-full text-[10px] text-white", q.state === "ok" && "bg-good", q.state === "warn" && "bg-warn", q.state === "bad" && "bg-bad", q.state === "none" && "bg-line text-muted")}>{q.state === "ok" ? "✓" : q.state === "none" ? "–" : q.state === "bad" ? "✕" : "!"}</span>
-                            {q.label}
-                          </div>
-                          <div className={cx("mt-0.5 truncate pl-[22px] text-[12px]", q.state === "ok" ? "text-muted" : q.state === "none" ? "text-muted" : q.state === "bad" ? "text-bad" : "text-warn")} title={q.text}>
-                            {q.text}
-                          </div>
-                        </div>
-                      ))}
+                    <div className="mt-0.5 truncate text-[11.5px] text-muted" title={files.join(", ") || "Email text only"}>
+                      {v.status === "reading" ? "Reading… · " : v.status === "error" ? "Couldn't read · " : ""}
+                      {v.vendor.format} · {new Date(v.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {files.length ? `${files.length} ${files.length === 1 ? "file" : "files"}` : "email text"}
                     </div>
                   ) : (
-                    <div className="self-center text-[12.5px] text-muted">We&apos;ll list the files and check these details here as soon as this vendor replies.</div>
+                    <div className="mt-0.5 truncate text-[11.5px] text-muted">Waiting for the request · {v.vendor.email}</div>
                   )}
                 </div>
-              </Card>
+                {got
+                  ? reqs.map((q) => (
+                      <div key={q.label} className="flex min-w-0 items-start gap-1.5" title={q.text}>
+                        <span className={cx("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] text-white", q.state === "ok" && "bg-good", q.state === "warn" && "bg-warn", q.state === "bad" && "bg-bad", q.state === "none" && "bg-line text-muted")}>{q.state === "ok" ? "✓" : q.state === "none" ? "–" : q.state === "bad" ? "✕" : "!"}</span>
+                        <span className={cx("min-w-0 text-[12px] leading-snug", q.state === "bad" ? "text-bad" : q.state === "warn" ? "text-warn" : "text-muted")}>{q.text}</span>
+                      </div>
+                    ))
+                  : HEADS.map((h) => (
+                      <span key={h.label} className="text-[12px] text-line">
+                        –
+                      </span>
+                    ))}
+              </div>
             );
           })}
-        </div>
+        </Card>
+
+        {/* other ways a quote can arrive */}
+        {repliesIn && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed border-line px-4 py-3 text-[12.5px]">
+            <span className="text-muted">Quotes arrive by reply to the request email. Got one another way?</span>
+            <span className="ml-auto flex flex-wrap gap-2">
+              <Button onClick={() => onRead(true)}>Add a quote file or email text</Button>
+              <Button onClick={() => downloadBidSheet(r)} title="Optional. The items and questions pre-filled, for vendors who prefer a form. Vendors can still reply in any format.">
+                Download Excel bid sheet
+              </Button>
+            </span>
+          </div>
+        )}
 
         <Disclosure title="What we asked vendors" summary={`${r.lines.length} items · ${r.questionnaire.length} questions (${mustN} must-have) · terms`} defaultOpen={flash.length > 0}>
           <RequestDetail r={r} flash={flash} />

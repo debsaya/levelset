@@ -26,6 +26,8 @@ type Req = {
   maxOutputTokens?: number;
   /** epoch ms after which no new attempt starts and in-flight calls are cut */
   deadline?: number;
+  /** small, simple input: try the lightest model first (it answers in seconds) and fall back to the stronger ones */
+  fast?: boolean;
 };
 
 export class GeminiError extends Error {
@@ -51,7 +53,9 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new GeminiError("GEMINI_API_KEY is not set on the server.", 500);
   let lastErr: GeminiError | null = null;
-  for (const model of modelChain()) {
+  const chain = modelChain();
+  const order = req.fast ? [...chain.filter((m) => /lite/.test(m)), ...chain.filter((m) => !/lite/.test(m))] : chain;
+  for (const model of order) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const generationConfig: Record<string, unknown> = {};
       if (req.responseSchema) {
