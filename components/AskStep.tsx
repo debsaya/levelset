@@ -123,6 +123,8 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
     } catch (e: any) {
       error = e.message;
     }
+    // figures the analyst was given as context (FX, freight, terms) also count as traceable
+    for (const m of (contextDoc(s.assumptions, n) + vendorFacts(n, s.assumptions)).matchAll(/\d[\d,]*\.?\d*/g)) nums.push(parseFloat(m[0].replace(/,/g, "")));
     const grounding = finalText ? checkGrounding(finalText, nums) : undefined;
     const msg: AnalystMsg = { role: "assistant", text: finalText, blocks, trace, grounding, model, error };
     // keep history bounded: last 24 contents, starting on a user text turn
