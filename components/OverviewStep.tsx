@@ -106,7 +106,9 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               />
               {(() => {
                 const alt = sc.find((x) => x.key === "split_qc");
-                return alt && best && alt.total < best.total ? (
+                return done < 2 ? (
+                  <Kpi label="Saving from splitting" value="–" sub="Needs at least 2 quotes read" />
+                ) : alt && best && alt.total < best.total ? (
                   <Kpi label="If you accept conditional vendors" value={`−${crore(best.total - alt.total)}`} sub={`${alt.unverified} of those prices still need checking`} tone="good" onClick={() => go("ask", { ask: "What would it take to safely include the conditional vendors in the award, and how much would it save? Show the lines that move." })} />
                 ) : (
                   <Kpi
@@ -127,7 +129,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
             {done < total && (
               <div className="flex items-center justify-between rounded-xl bg-kraft-soft px-4 py-3 text-[13px]">
                 <span>
-                  {done} of {total} quotes read. Numbers above cover only those.
+                  {done} of {total} quotes read. {errors > 0 ? `${errors} couldn't be read (connection or busy AI). Press Read the rest to retry.` : "Numbers above cover only those."}
                 </span>
                 <Button onClick={readAll} disabled={reading > 0}>
                   {reading ? <Spinner /> : null} Read the rest
@@ -224,13 +226,13 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="text-[13.5px] font-semibold leading-snug">{v.name}</div>
-                        <span className="text-[11px] text-muted tabular">#{i + 1}</span>
+                        {done >= 2 && <span className="text-[11px] text-muted tabular">#{i + 1}</span>}
                       </div>
                       <div className="mt-1.5">
                         <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                       </div>
                       <div className="mt-3 text-[20px] font-semibold tabular">{n.basket.length ? crore(v.basket_total_inr) : "–"}</div>
-                      <div className="text-[11.5px] text-muted">on the {n.basket.length} items everyone quoted</div>
+                      <div className="text-[11.5px] text-muted">{done >= 2 ? `on the ${n.basket.length} items everyone quoted` : `on the ${n.basket.length} items quoted`}</div>
                       <div className="mt-3 grid grid-cols-2 gap-1 text-[12px]">
                         <span className="text-muted">Priced</span>
                         <span className="text-right tabular">
