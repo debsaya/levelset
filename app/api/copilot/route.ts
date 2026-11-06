@@ -118,6 +118,43 @@ export async function POST(req: Request) {
         /* keep the first answer; the app reports what could not be applied */
       }
     }
-    return { ...parsed, model: out.model, attempts: out.attempts };
+    // Last resort for an update that is still empty: ask for just that one item, with its current values in front of the model.
+    const lastAsk = [...messages].reverse().find((m: any) => m.role === "user")?.text || "";
+    let repaired = 0;
+    for (const o of parsed.ops || []) {
+      if (!incomplete(o)) continue;
+      try {
+        if (o.op === "update_question" && o.target_id) {
+          const cur = rfx.questionnaire.find((q: any) => q.id === o.target_id);
+          if (!cur) continue;
+          const fix = await generate({
+            system: "You change one questionnaire item as the buyer asked. Reply with the COMPLETE updated question: its text, kind and must_have. Change only what the buyer asked.",
+            contents: [{ role: "user" as const, parts: [{ text: `Current question: ${JSON.stringify(cur)}\nBuyer said: ${lastAsk}\nIntended change: ${o.why}` }] }],
+            responseSchema: { type: "object", properties: { text: { type: "string" }, kind: { type: "string", enum: ["yes_no", "number", "text"] }, must_have: { type: "boolean" } }, required: ["text", "kind", "must_have"] },
+            thinking: "low",
+            maxOutputTokens: 2000,
+            fast: true,
+          });
+          o.question = parseJson<any>(fix.text);
+          repaired++;
+        } else if (o.op === "update_line" && o.target_id) {
+          const cur = rfx.lines.find((l: any) => l.id === o.target_id);
+          if (!cur) continue;
+          const fix = await generate({
+            system: "You change one item of a corrugated-packaging request as the buyer asked. Reply with the COMPLETE updated line, copying every unchanged value from the current one.",
+            contents: [{ role: "user" as const, parts: [{ text: `Current line: ${JSON.stringify({ id: cur.id, type: cur.type, ply: cur.ply, flute: cur.flute, length_mm: cur.dimensions_mm?.L, width_mm: cur.dimensions_mm?.W, height_mm: cur.dimensions_mm?.H, print: cur.print, end_use: cur.end_use, annual_qty: cur.annual_qty, uom: cur.uom })}\nBuyer said: ${lastAsk}\nIntended change: ${o.why}` }] }],
+            responseSchema: LINE,
+            thinking: "low",
+            maxOutputTokens: 2000,
+            fast: true,
+          });
+          o.line = parseJson<any>(fix.text);
+          repaired++;
+        }
+      } catch {
+        /* leave it empty: the app will say it did not come through */
+      }
+    }
+    return { ...parsed, model: out.model, attempts: out.attempts, repaired };
   });
 }
