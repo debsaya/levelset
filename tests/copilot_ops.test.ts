@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { applyOps, cleanScope, cleanTitle, incomplete, type Op } from "../lib/rfxOps";
-import { buildLine, describeLine } from "../lib/spec";
+import { buildLine, describeLine, tidyLines } from "../lib/spec";
 import { RFX } from "./helpers";
 
 const op = (o: Partial<Op>): Op => ({ op: "set_meta", why: "test", ...o });
@@ -100,5 +100,19 @@ describe("Co-pilot edits: a repeated item is not added twice", () => {
     assert.ok(!/flute-flute/.test(line.description));
     const stale = { ...line, flute: "BC-flute" };
     assert.ok(!/flute-flute/.test(describeLine(stale)));
+  });
+});
+
+describe("Saved data from an older version is tidied when loaded", () => {
+  it("fixes a saved line whose flute and description read flute-flute", () => {
+    const stale = { ...RFX, lines: RFX.lines.map((l, i) => (i === 0 ? { ...l, flute: "BC-flute", description: "5-ply RSC 600 x 400 x 300 mm, BC-flute-flute, 1 colour" } : l)) };
+    const out = tidyLines(stale);
+    assert.equal(out.lines[0].flute, "BC");
+    assert.ok(!/flute-flute/.test(out.lines[0].description));
+    assert.match(out.lines[0].description, /BC-flute/);
+  });
+  it("leaves already-clean lines unchanged", () => {
+    const out = tidyLines(RFX);
+    assert.deepEqual(out.lines.map((l) => l.description), RFX.lines.map((l) => l.description));
   });
 });
