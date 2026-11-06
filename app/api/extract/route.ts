@@ -1,5 +1,6 @@
 import { generate, parseJson } from "@/lib/gemini";
 import { toParts, type InFile } from "@/lib/fileText";
+import { guard, need } from "@/lib/guard";
 import { heartbeatJson } from "@/lib/stream";
 
 export const runtime = "nodejs";
@@ -188,7 +189,9 @@ function emptyExtraction(vendorName: string, rfx: any, why: string) {
 }
 
 export async function POST(req: Request) {
-  const input = await req.json();
+  const g = await guard(req, "ai", (b) => (b.vendor && typeof b.vendor === "object" && b.rfx && typeof b.rfx === "object" ? null : "Missing vendor or rfx."), 60);
+  if (g instanceof Response) return g;
+  const input = g;
   return heartbeatJson(() => extract(input));
 }
 

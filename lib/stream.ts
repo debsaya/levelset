@@ -1,3 +1,4 @@
+import { friendly } from "./guard";
 // Long model calls can sit silent for a minute; some networks drop idle connections.
 // Stream a space every few seconds, then the JSON. JSON.parse ignores the leading whitespace.
 export function heartbeatJson(work: () => Promise<unknown>) {
@@ -9,7 +10,7 @@ export function heartbeatJson(work: () => Promise<unknown>) {
       try {
         ctrl.enqueue(enc.encode(JSON.stringify(await work())));
       } catch (e: any) {
-        ctrl.enqueue(enc.encode(JSON.stringify({ error: e?.message || String(e), status: e?.status || 500 })));
+        ctrl.enqueue(enc.encode(JSON.stringify({ error: friendly(e?.message || String(e)), status: e?.status || 500 })));
       } finally {
         clearInterval(t);
         ctrl.close();

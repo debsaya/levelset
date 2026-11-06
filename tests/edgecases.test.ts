@@ -181,3 +181,11 @@ describe("Safety net: shape of the output", () => {
     assert.equal(JSON.stringify([rfx, ex]), snapshot);
   });
 });
+
+import { runQuery } from "../lib/db";
+describe("Ask AI only runs read-only queries", () => {
+  const db = { exec: () => [] };
+  const blocked = ["SELECT 1; DROP TABLE prices", "WITH a AS (SELECT 1) DELETE FROM prices", "SeLeCt 1 ; UPDATE prices SET unit_price_inr=0", "PRAGMA table_info(prices)", "ATTACH DATABASE 'x' AS y", "VACUUM", "select readfile('/etc/passwd')", "SELECT load_extension('x')"];
+  for (const q of blocked) it(`blocks ${q}`, () => assert.ok(runQuery(db, q).error));
+  for (const q of ["SELECT 'a;b' AS x", "SELECT * FROM prices WHERE note LIKE '%drop%'", "select created_at, updated_at from t", "  select 1 ;;;  "]) it(`allows ${q}`, () => assert.equal(runQuery(db, q).error, undefined));
+});

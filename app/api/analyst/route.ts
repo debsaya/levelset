@@ -1,3 +1,4 @@
+import { guard, need } from "@/lib/guard";
 import { heartbeatJson } from "@/lib/stream";
 import { generate } from "@/lib/gemini";
 
@@ -84,7 +85,9 @@ How to work:
 - Use the buyer's words for vendor status: say "approved" (qualified), "needs proof" (conditional) and "not approved" (not_qualified); never say "conditional vendor" or "qualified" to the buyer. Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not qualified", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const g = await guard(req, "ai", (b) => (Array.isArray(b.contents) && b.contents.length ? null : "Missing contents."), 80);
+  if (g instanceof Response) return g;
+  const body = g;
   return heartbeatJson(async () => {
     const { contents, context, facts } = body;
     const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000 });

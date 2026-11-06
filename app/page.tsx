@@ -87,14 +87,14 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
 
   return (
     <div className="flex h-screen min-h-0 flex-col">
-      <header className="flex h-14 shrink-0 items-center gap-6 border-b border-line bg-white px-5">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-white px-3 md:gap-6 md:px-5">
         <button onClick={here} className="flex items-center gap-2" title="Back to where you left off">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-[13px] font-bold text-white">L</span>
-          <span className="text-[15px] font-semibold tracking-tight">Levelset</span>
+          <span className="hidden text-[15px] font-semibold tracking-tight sm:inline">Levelset</span>
         </button>
-        <nav className="flex h-full items-stretch gap-1">
+        <nav className="flex h-full min-w-0 items-stretch gap-1 overflow-x-auto [scrollbar-width:none]">
           {steps.map((t, i) => (
-            <div key={t.id} className="flex items-center">
+            <div key={t.id} className="flex shrink-0 items-center">
               {i > 0 && <span className="px-1 text-line">—</span>}
               <button onClick={() => go(t.id)} title={t.hint} className={cx("relative flex h-full items-center gap-2 px-2.5 text-[13.5px]", cur === t.id ? "font-semibold text-ink" : "text-muted hover:text-ink")}>
                 <span className={cx("grid h-5 w-5 place-items-center rounded-full text-[11px] font-semibold", t.state === "done" ? "bg-ink text-white" : cur === t.id ? "bg-kraft text-white" : "bg-panel text-muted")}>{t.state === "done" ? "✓" : i + 1}</span>
@@ -105,7 +105,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
             </div>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
           <button onClick={() => setAskUi((a) => ({ ...a, open: !a.open, q: undefined }))} title="Ask questions about your quotes in plain English. Opens beside the step you are on." aria-expanded={askUi.open} className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", askUi.open ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
             Ask AI
           </button>
@@ -155,8 +155,8 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
         </div>
       </header>
       <EventBar next={(() => { const nx = nextStep(s, review); return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
-      <main className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="min-w-0 flex-1 overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+        <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
         {page === "send" && <SendStep onNext={() => go("rfx")} />}

@@ -41,7 +41,7 @@ ${r.buyer.role}, ${r.buyer.company}`
   }
 
   return (
-    <div className="grid h-full grid-cols-[360px_1fr] gap-4 p-4">
+    <div className="grid w-full grid-cols-1 gap-4 p-4 lg:h-full lg:grid-cols-[360px_1fr]">
       <Card className="flex min-h-0 flex-col">
         <div className="border-b border-line px-4 py-3">
           <div className="font-semibold">Send the request</div>

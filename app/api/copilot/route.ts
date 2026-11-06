@@ -1,3 +1,4 @@
+import { guard, need } from "@/lib/guard";
 import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
 import { toParts, type InFile } from "@/lib/fileText";
@@ -77,7 +78,9 @@ How you work:
 - Keep replies under 100 words, plain language, no jargon.`;
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const g = await guard(req, "ai", (b) => (Array.isArray(b.messages) && b.messages.length ? need.rfx(b) : "Missing messages."));
+  if (g instanceof Response) return g;
+  const body = g;
   return heartbeatJson(async () => {
     const { messages, rfx, files = [], amending = false } = body as { messages: any[]; rfx: any; files?: InFile[]; amending?: boolean };
     const draft = {

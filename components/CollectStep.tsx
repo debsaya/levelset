@@ -183,7 +183,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [{ text: `${readN} read`, tone: "plain" }, ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : []), ...(noReply ? [{ text: pastDue ? `${noReply} no reply by the due date` : `${noReply} no reply yet`, tone: pastDue ? ("warn" as const) : ("plain" as const) }] : [])] : [];
 
   return (
-    <div className="grid h-full grid-cols-[1fr_minmax(300px,340px)] gap-4 p-4">
+    <div className="grid w-full grid-cols-1 gap-4 p-4 lg:h-full lg:grid-cols-[1fr_minmax(300px,340px)]">
       {/* ---------- main: what has been collected ---------- */}
       <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
         {/* the state of play, and the one next move */}

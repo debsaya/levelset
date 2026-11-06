@@ -90,7 +90,8 @@ export type QueryResult = { columns: string[]; rows: any[][]; error?: string };
 
 export function runQuery(db: any, sql: string, limit = 500): QueryResult {
   const clean = sql.trim().replace(/;+\s*$/, "");
-  if (!/^(select|with)\b/i.test(clean) || /;\s*\S/.test(clean) || /\b(insert|update|delete|drop|alter|create|attach|pragma)\b/i.test(clean.replace(/'[^']*'/g, "")))
+  const bare = clean.replace(/'[^']*'/g, "''"); // text inside quotes is data, not commands
+  if (!/^(select|with)\b/i.test(clean) || /;\s*\S/.test(bare) || /\b(insert|update|delete|drop|alter|create|attach|pragma|replace|vacuum|load_extension|readfile|writefile)\b/i.test(bare))
     return { columns: [], rows: [], error: "Only a single read-only SELECT/WITH query is allowed." };
   try {
     const res = db.exec(clean);

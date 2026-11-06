@@ -1,3 +1,4 @@
+import { guard, need } from "@/lib/guard";
 import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
 
@@ -24,7 +25,9 @@ const SYSTEM = `You write clarification emails from an Indian manufacturing comp
 - Sign off with the buyer's name and role.`;
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const g = await guard(req, "ai", (b) => (b.vendor && typeof b.vendor === "object" && Array.isArray(b.issues) ? null : "Missing vendor or issues."));
+  if (g instanceof Response) return g;
+  const body = g;
   return heartbeatJson(async () => {
     const { vendor, buyer, rfx_id, rfx_title, issues, today } = body;
     const out = await generate({
