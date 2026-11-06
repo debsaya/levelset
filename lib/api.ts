@@ -1,7 +1,16 @@
 "use client";
+import { endJob, startJob, type Kind } from "./aiActivity";
+
 /** POST JSON to our API. Responses are heartbeat-streamed, so read text and parse.
  *  Retries when the network drops or the model service is busy. Returns {error} on failure. */
-export async function postJson<T = any>(url: string, body: unknown, tries = 3): Promise<T & { error?: string }> {
+export async function postJson<T = any>(url: string, body: unknown, tries = 3, track?: { kind: Kind; label: string }): Promise<T & { error?: string }> {
+  const job = track ? startJob(track.kind, track.label) : 0;
+  const res = await attempt<T>(url, body, tries);
+  if (track) endJob(job, !res.error, res as any);
+  return res;
+}
+
+async function attempt<T>(url: string, body: unknown, tries: number): Promise<T & { error?: string }> {
   const payload = JSON.stringify(body);
   let last: any = { error: "Request failed" };
   for (let i = 0; i < tries; i++) {

@@ -1,4 +1,5 @@
 "use client";
+import AiActivity from "@/components/AiActivity";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StoreProvider, hasSavedReading, useStore } from "@/lib/store";
 import Login from "@/components/Login";
@@ -242,6 +243,8 @@ function Gate() {
       />
     );
   return (
+    <>
+    <AiActivity />
     <App
       email={auth.email}
       onSignOut={() => {
@@ -251,6 +254,7 @@ function Gate() {
         setAuth(null);
       }}
     />
+    </>
   );
 }
 

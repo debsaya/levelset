@@ -107,7 +107,7 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     let error: string | undefined;
     try {
       for (let step = 0; step < 10; step++) {
-        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) });
+        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) }, 3, { kind: "analyst", label: "Ask AI" });
         if (j.error) throw new Error(j.error);
         model = j.model;
         history.push(j.content);

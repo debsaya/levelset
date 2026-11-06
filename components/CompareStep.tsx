@@ -531,7 +531,7 @@ export function ClarifyModal({ v, issues, onClose }: { v: VendorSummary; issues:
     setBusy(true);
     setErr("");
     try {
-      const j = await postJson("/api/clarify", { vendor: { name: v.name, contact: vendor?.contact }, buyer: s.rfx.buyer, rfx_id: s.rfx.id, rfx_title: s.rfx.title, issues, today: new Date().toISOString().slice(0, 10) });
+      const j = await postJson("/api/clarify", { vendor: { name: v.name, contact: vendor?.contact }, buyer: s.rfx.buyer, rfx_id: s.rfx.id, rfx_title: s.rfx.title, issues, today: new Date().toISOString().slice(0, 10) }, 3, { kind: "clarify", label: "Email" });
       if (j.error) throw new Error(j.error);
       setDraft(j);
       log(`Drafted clarification email to ${v.name} (${issues.length} issues)`);
