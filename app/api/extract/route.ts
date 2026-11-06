@@ -197,14 +197,29 @@ export async function POST(req: Request) {
 
 async function extract(input: any) {
   {
-    const { vendor, files, rfx, prior } = input as {
+    const { vendor, rfx, prior } = input as {
       vendor: { id: string; name: string; email: string; subject: string; body: string; received_at: string };
-      files: InFile[];
+      files?: InFile[];
       rfx: any;
       prior: { contract_ref: string; period: string; line_ids: string[] } | null;
     };
+    // Files that cannot be read at all (empty, or called a PDF but not one) are set aside with a plain reason, not sent to the AI.
+    const rejected: string[] = [];
+    const usable = (Array.isArray(input.files) ? (input.files as InFile[]) : []).filter((f) => {
+      const name = String(f?.name || "file");
+      if (!f?.data) return (rejected.push(`${name} is empty.`), false);
+      if (/pdf/i.test(f.mime || "") || /\.pdf$/i.test(name)) {
+        if (!Buffer.from(String(f.data).slice(0, 16), "base64").toString("latin1").startsWith("%PDF")) return (rejected.push(`${name} is not a valid PDF.`), false);
+      }
+      return true;
+    });
+    input.files = usable;
+    const files = usable;
     // Nothing to read: no files and no figures in a short message. No need to wake the AI for that.
     const body = (vendor.body || "").trim();
+    if (rejected.length && !files.length && body.length < 300 && !/\d/.test(body)) {
+      return { extraction: emptyExtraction(vendor.name, rfx, `${rejected.join(" ")} Ask the vendor to send it again, or add a different file.`), model: "no AI needed", ms: 0, attempts: [] };
+    }
     if (!files.length && body.length < 300 && !/\d/.test(body)) {
       return { extraction: emptyExtraction(vendor.name, rfx, "Nothing to read: no attachments and no figures in the message. Add the vendor's quote file, or replace this response."), model: "no AI needed", ms: 0, attempts: [] };
     }
