@@ -356,8 +356,10 @@ function Terms({ ex }: { ex: NonNullable<VendorResponse["extraction"]> }) {
         {items.map((i) => (
           <div key={i.k} className="min-w-0">
             <dt className="text-[11px] text-muted">{i.k}</dt>
-            <dd className={cx("mt-0.5 text-[13px] font-medium", i.warn && "text-warn")}>{i.v}</dd>
-            {i.sub && <div className={cx("text-[11px]", i.warn ? "text-warn" : "text-muted")}>{i.sub}</div>}
+            <dd className={cx("mt-0.5 text-[13px] font-medium", i.warn && "text-warn")}>
+              {i.v}
+              {i.sub && <div className={cx("text-[11px] font-normal", i.warn ? "text-warn" : "text-muted")}>{i.sub}</div>}
+            </dd>
           </div>
         ))}
       </dl>
