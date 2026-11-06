@@ -9,7 +9,7 @@ import { runScenario } from "@/lib/award";
 import { postJson } from "@/lib/api";
 import { endJob, startJob } from "@/lib/aiActivity";
 import { downloadTable } from "@/lib/export";
-import { Badge, Button, Card, Dots, Md, cx } from "./ui";
+import { Badge, Button, Card, CopyButton, Dots, Md, cx } from "./ui";
 
 const SUGGESTED = [
   { short: "Who is cheapest, and can I trust it?", q: "Who is cheapest on a like-for-like basis, and how much should I trust that?" },
@@ -322,9 +322,7 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
           </button>
         )}
         {m.text && (
-          <button className="text-kraft" onClick={() => navigator.clipboard?.writeText(plain(m.text))}>
-            Copy text
-          </button>
+          <CopyButton link text={() => plain(m.text)} label="Copy text" />
         )}
       </div>
       {showSql && (
