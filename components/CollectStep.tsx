@@ -12,6 +12,8 @@ import InviteList from "./InviteList";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
 import { downloadBidSheet } from "@/lib/bidsheet";
 import { greeting, requestSummary } from "@/lib/greeting";
+import { buildAmendmentEmail, buildReminderEmail } from "@/lib/clarify";
+import { EmailDraftModal } from "./EmailDraftModal";
 
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
@@ -100,9 +102,12 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const pastDue = r.due_date < new Date().toISOString().slice(0, 10);
   const showStart = blank && !sent && !s.responses.length && !r.lines.length;
   const showInvite = !sent && !showStart && !(blank && s.responses.length > 0);
-  const remind = (v: { id: string; name: string }) => {
+  // The reminder and the amendment each open an email the buyer sends from their own mail, then marks as sent.
+  const [draft, setDraft] = useState<null | { kind: "remind"; id: string; name: string; email: string; contact: string } | { kind: "amend" }>(null);
+  const markReminded = (v: { id: string; name: string }) => {
     set((x) => ({ ...x, reminded: { ...(x.reminded || {}), [v.id]: new Date().toISOString() } }));
-    log(`${pastDue ? "Chased" : "Sent a reminder to"} ${v.name} (email, simulated)`);
+    log(`${pastDue ? "Chased" : "Reminded"} ${v.name} (email marked as sent)`);
+    setDraft(null);
   };
 
   // main action: one clear next move
@@ -161,8 +166,9 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     if (!s.rfxDraft || !amend) return;
     const rev = (s.revision || 1) + 1;
     set((x) => ({ ...x, rfx: x.rfxDraft!, rfxDraft: null, revision: rev }));
-    log(`Sent amendment (revision ${rev}) to ${vendorsInvited} vendors (email, simulated): ${amend.parts.join(", ")}`);
+    log(`Amendment (revision ${rev}) marked as sent to ${vendorsInvited} vendors: ${amend.parts.join(", ")}`);
     setFlash([]);
+    setDraft(null);
   }
   function discardAmendment() {
     set((x) => ({ ...x, rfxDraft: null }));
@@ -227,11 +233,18 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             </div>
             <div className="flex shrink-0 gap-2">
               <Button onClick={discardAmendment}>Discard</Button>
-              <Button variant="primary" onClick={sendAmendment}>
-                Send amendment to {vendorsInvited} vendors
+              <Button variant="primary" onClick={() => setDraft({ kind: "amend" })}>
+                Email amendment to {vendorsInvited} vendors
               </Button>
             </div>
           </div>
+        )}
+
+        {draft?.kind === "remind" && (
+          <EmailDraftModal title={`${pastDue ? "Chase" : "Remind"} ${draft.name}`} to={draft.email} initial={buildReminderEmail({ rfx: r, vendorName: draft.name, contact: draft.contact, pastDue })} sentLabel="Mark as sent" onSent={() => markReminded(draft)} onClose={() => setDraft(null)} />
+        )}
+        {draft?.kind === "amend" && amend && (
+          <EmailDraftModal title="Email the amendment to your vendors" hint="One email to everyone you invited. Check it, send it from your own mail, then mark it as sent. Marking it sent makes the changes the live request." to={invitees.map((v) => v.email).filter(Boolean).join(",")} initial={buildAmendmentEmail({ rfx: s.rfxDraft || r, revision: (s.revision || 1) + 1, parts: amend.parts })} sentLabel="Mark as sent and update the request" onSent={sendAmendment} onClose={() => setDraft(null)} />
         )}
 
         {showStart ? (
@@ -265,8 +278,8 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
                         {pastDue ? "No reply by the due date" : `Sent ${new Date(s.sentAt!).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · no reply yet`}
                         {when ? ` · ${pastDue ? "chased" : "reminded"} ${new Date(when).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
                       </span>
-                      <Button onClick={() => remind(v)} title="Emails the vendor again. Simulated in this prototype.">
-                        {pastDue ? "Chase" : "Send a reminder"}
+                      <Button onClick={() => setDraft({ kind: "remind", id: v.id, name: v.name, email: v.email, contact: (v as { contact?: string }).contact || pool.find((p) => p.id === v.id)?.contact || "" })} title="Opens a reminder email you can send from your own mail.">
+                        {pastDue ? "Chase by email" : "Email a reminder"}
                       </Button>
                     </div>
                   </div>
