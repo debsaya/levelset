@@ -65,7 +65,7 @@ ${r.buyer.role}, ${r.buyer.company}`
         <div className="border-t border-line p-3">
           {s.sentAt ? (
             <div className="space-y-2">
-              <div className="text-xs text-good">✓ Sent {new Date(s.sentAt).toLocaleString("en-IN")} · SMTP is stubbed in this prototype</div>
+              <div className="text-xs text-good">✓ Marked as sent {new Date(s.sentAt).toLocaleString("en-IN")}. Demo only: no real email left this app.</div>
               <Button variant="primary" className="w-full justify-center" onClick={onNext}>
                 Back to collected quotes →
               </Button>
@@ -85,7 +85,7 @@ ${r.buyer.role}, ${r.buyer.company}`
       <Card className="flex min-h-0 flex-col">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div className="font-semibold">The email vendors will get</div>
-          <Badge tone="warn" title="The prototype fakes the SMTP server, as the brief allows. Extraction and reasoning are real.">plumbing stubbed</Badge>
+          <Badge tone="warn" title="Sending email is simulated in this prototype, as the brief allows. Reading the replies and the reasoning are real.">preview only</Badge>
         </div>
         <pre className="flex-1 overflow-auto whitespace-pre-wrap p-5 font-sans text-[13px] leading-relaxed">{email}</pre>
         <div className="border-t border-line bg-panel px-4 py-2.5 text-xs text-muted">
