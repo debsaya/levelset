@@ -45,9 +45,9 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
       <Card className="px-4 py-2.5 text-[12.5px]">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <button onClick={() => setShowBasis(!showBasis)} aria-expanded={showBasis} className="flex items-center gap-2 text-left" title="The assumptions behind every price. Open to change them.">
-            <span className={cx("text-[10px] text-muted transition-transform", showBasis && "rotate-90")}>▶</span>
+            <span aria-hidden="true" className={cx("text-[10px] text-muted transition-transform", showBasis && "rotate-90")}>▶</span>
             <span className="font-semibold">Prices are ₹ per piece, delivered to Bidadi, ex-GST</span>
-            <span className="text-muted">· USD at ₹{a.fx_usd_inr}{showBasis ? "" : " · change assumptions"}</span>
+            <span className="text-muted">· USD at ₹{a.fx_usd_inr} (your assumption, not a live rate){showBasis ? "" : " · change assumptions"}</span>
           </button>
           <div className="ml-auto flex gap-2">
             <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>
@@ -96,7 +96,7 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
         {tab === "prices" && (
           <label className="ml-auto flex items-center gap-1.5 text-[12.5px]">
             <input type="checkbox" checked={onlyReview} onChange={(e) => setOnlyReview(e.target.checked)} />
-            Show only lines needing review <Badge tone="warn">{reviewCount} prices</Badge>
+            Show only lines needing review <Badge tone="warn" title="Prices flagged for a second look, across all vendors">{reviewCount} {reviewCount === 1 ? "price" : "prices"} to check</Badge>
           </label>
         )}
       </div>
@@ -136,7 +136,7 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
     <div className="space-y-1 text-left font-normal normal-case tracking-normal">
       <div className="text-[12.5px] font-semibold text-ink">{v.name}</div>
       <div className="flex flex-wrap gap-1">
-        <Badge tone={q.tone} title={v.qual_reasons.join("\n") || "All must-haves met"}>
+        <Badge tone={q.tone} title={`${q.label}: ${v.qualification === "qualified" ? "answered every must-have question and the documents are in date." : v.qualification === "conditional" ? "something still needs proof before this vendor can be approved." : "failed at least one must-have."}${v.qual_reasons.length ? "\n" + v.qual_reasons.join("\n") : ""}`}>
           {q.label}
         </Badge>
       </div>
@@ -197,20 +197,8 @@ function PriceGrid({ n, rows, sel, onSel, onClarify }: { n: Normalized; rows: an
       <tfoot className="sticky bottom-0 z-20 bg-panel">
         <tr>
           <td className="sticky left-0 z-30 border-t border-line bg-panel px-3 py-2 font-semibold">
-            Annual value, lines priced
-            <div className="text-[11px] font-normal text-muted">different lines per vendor — not comparable</div>
-          </td>
-          {vs.map((v) => (
-            <td key={v.vendor_id} className="border-l border-t border-line px-3 py-2">
-              <div className="font-semibold">{crore(v.total_inr)}</div>
-              {v.total_if_rebate_inr < v.total_inr - 1 && <div className="text-[11px] text-muted">{crore(v.total_if_rebate_inr)} if rebate earned</div>}
-            </td>
-          ))}
-        </tr>
-        <tr>
-          <td className="sticky left-0 z-30 border-t border-line bg-panel px-3 py-2 font-semibold">
             Like-for-like basket
-            <div className="text-[11px] font-normal text-muted">{n.basket.length} lines every vendor priced at spec</div>
+            <div className="text-[11px] font-normal text-muted">{n.basket.length} lines every vendor priced at spec. Compare vendors on this row.</div>
           </td>
           {vs.map((v) => {
             const min = Math.min(...vs.map((x) => x.basket_total_inr));
@@ -221,6 +209,18 @@ function PriceGrid({ n, rows, sel, onSel, onClarify }: { n: Normalized; rows: an
             );
           })}
         </tr>
+        <tr>
+          <td className="sticky left-0 z-30 border-t border-line bg-panel px-3 py-2 text-muted">
+            Annual value of the lines each vendor priced
+            <div className="text-[11px] text-muted">Not for comparing: each vendor priced a different number of lines ({vs.map((v) => `${v.quoted}`).join(" / ")}).</div>
+          </td>
+          {vs.map((v) => (
+            <td key={v.vendor_id} className="border-l border-t border-line px-3 py-2 text-muted">
+              <div>{crore(v.total_inr)}</div>
+              {v.total_if_rebate_inr < v.total_inr - 1 && <div className="text-[11px]">{crore(v.total_if_rebate_inr)} if rebate earned</div>}
+            </td>
+          ))}
+        </tr>
       </tfoot>
     </table>
   );
@@ -230,7 +230,7 @@ function CellView({ c, best, bestQ }: { c: Cell; best: number | null; bestQ: num
   if (c.status === "missing")
     return (
       <div className="text-[11.5px] text-muted" title={c.missing_reason}>
-        — {c.flags.some((f) => f.code === "NO_PRIOR_PRICE") ? <Badge tone="warn">ask vendor</Badge> : <span>not quoted</span>}
+        — {c.flags.some((f) => f.code === "NO_PRIOR_PRICE") ? <Badge tone="warn" title="The vendor said 'same as last year', but there is no last-year price for this line. Ask them for a price.">ask vendor</Badge> : <span>not quoted</span>}
       </div>
     );
   if (c.status === "excluded") return <div className="text-[11.5px] text-muted line-through">excluded</div>;
@@ -245,8 +245,8 @@ function CellView({ c, best, bestQ }: { c: Cell; best: number | null; bestQ: num
           {c.status === "review" && <span title="Needs review" className="h-1.5 w-1.5 self-center rounded-full bg-warn" />}
           {c.status === "deviation" && <Badge tone="warn">alt spec</Badge>}
           {c.override && <span title="Buyer decided" className="text-[10px] font-medium text-good">checked</span>}
-          {c.derived_from === "prior_contract" && <Badge>FY26</Badge>}
-          {c.derived_from === "rule" && <Badge>₹/kg</Badge>}
+          {c.derived_from === "prior_contract" && <Badge title="The vendor wrote 'same as last year', so this is the FY26 contract price (plus freight if they quoted ex-works).">FY26</Badge>}
+          {c.derived_from === "rule" && <Badge title="The vendor gave one ₹/kg rate for a group of items. The price per piece is that rate times the estimated box weight.">₹/kg</Badge>}
         </span>
       </div>
       <div className="truncate text-[10.5px] text-muted">{c.quoted_as}</div>
