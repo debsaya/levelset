@@ -61,17 +61,24 @@ export default function InviteList() {
     }
   }
 
+  const expired = invitees.filter((v) => v.source === "master" && certificate(v, due).tone === "bad").length;
   const shortlist = suggest(pool, due);
   const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
   const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
 
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-line px-5 py-3.5">
-        <div className="text-[15px] font-semibold">
-          {invitees.length ? `${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"} will receive this request` : "No vendors selected yet"}
+      <div className="flex items-center gap-3.5 border-b border-kraft/25 border-l-4 border-l-kraft bg-kraft-soft px-5 py-3.5">
+        <span className="tabular grid h-10 w-10 shrink-0 place-items-center rounded-full bg-kraft text-[17px] font-semibold text-white" aria-hidden>
+          {invitees.length}
+        </span>
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold text-ink">{invitees.length ? `${invitees.length === 1 ? "vendor" : "vendors"} will receive this request` : "No vendors selected yet"}</div>
+          <div className="mt-0.5 text-[12.5px] text-kraft">
+            {invitees.length ? "Remove anyone you do not want to invite, or add more below." : "Pick one of the options below to add vendors."}
+            {expired > 0 && <span className="ml-1.5 font-medium text-bad">{expired === 1 ? "1 has an expired ISO certificate." : `${expired} have an expired ISO certificate.`}</span>}
+          </div>
         </div>
-        <div className="mt-0.5 text-[12.5px] text-muted">Check the list below. Remove anyone you do not want to invite, or add vendors underneath.</div>
       </div>
 
       <div className="divide-y divide-line">

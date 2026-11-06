@@ -189,7 +189,6 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         <div className="flex items-end justify-between gap-4 px-1 pt-1">
           <div className="min-w-0">
             <p className="text-[18px] font-semibold tracking-tight">{headline}</p>
-            {showInvite && invitees.length > 0 && <p className="mt-0.5 text-[12.5px] text-muted">Remove anyone you don&apos;t want to include.</p>}
             {chips.length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {chips.map((c) => (
