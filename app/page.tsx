@@ -48,8 +48,19 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
   const [page, setPage] = useState<Page>("rfx");
   const [opts, setOpts] = useState<{ review?: boolean; ask?: string; add?: boolean; nonce: number }>({ nonce: 0 });
   const [menu, setMenu] = useState(false);
-  const [askUi, setAskUi] = useState<{ open: boolean; q?: string; k: number }>({ open: false, k: 0 });
   const [confirm, setConfirm] = useState<null | "demo" | "blank" | "example">(null);
+  const [askUi, setAskUi] = useState<{ open: boolean; q?: string; k: number }>({ open: false, k: 0 });
+  // Escape closes whatever is on top: the confirm box, then the menu, then the Ask AI drawer.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (confirm) setConfirm(null);
+      else if (menu) setMenu(false);
+      else if (askUi.open) setAskUi((a) => ({ ...a, open: false }));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [confirm, menu, askUi.open]);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
   const review = n.cells.filter((c) => c.status === "review").length;
   const total = s.responses.length;
@@ -87,6 +98,9 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
 
   return (
     <div className="flex h-screen min-h-0 flex-col">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-ink focus:px-3 focus:py-2 focus:text-[13px] focus:text-white">
+        Skip to the main content
+      </a>
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line bg-white px-3 md:gap-6 md:px-5">
         <button onClick={here} className="flex items-center gap-2" title="Back to where you left off">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink text-[13px] font-bold text-white">L</span>
@@ -155,7 +169,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
         </div>
       </header>
       <EventBar next={(() => { const nx = nextStep(s, review); return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+      <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
         <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
@@ -182,15 +196,15 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
       </main>
       {confirm && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
-          <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Start the sample event over?" : confirm === "example" ? "Load the finished example?" : "Start a new request?"}</div>
+          <div role="dialog" aria-modal="true" aria-labelledby="confirm-title" className="w-[420px] max-w-full rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div id="confirm-title" className="text-[15px] font-semibold">{confirm === "demo" ? "Start the sample event over?" : confirm === "example" ? "Load the finished example?" : "Start a new request?"}</div>
             <p className="mt-1.5 text-[13px] text-muted">
               {confirm === "demo" && "You go back to the draft request for corrugated packaging with the five vendors chosen. Nothing is sent yet. This clears the quotes you have read, your review decisions and your questions to Ask AI."}
               {confirm === "example" && "You land on the same event after it was sent, with five vendor replies in. This replaces everything in this browser: your request, quotes, decisions and notes."}
               {confirm === "blank" && "You get an empty request. Tell the co-pilot what you are buying, choose vendors, and send. This replaces everything in this browser."}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
+              <button autoFocus className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
                 Cancel
               </button>
               <button
