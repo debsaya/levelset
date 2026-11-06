@@ -27,10 +27,10 @@ export function nextStep(s: State, review: number): NextStep {
   if (!s.sentAt && !n) {
     if (!s.rfx.lines.length) return { text: "tell the co-pilot what you are buying", cta: "Go to Collect quotes", to: "rfx" };
     if (!s.sentTo.length) return { text: "choose who gets the request", cta: "Choose vendors", to: "rfx" };
-    return { text: `check the vendor list, then send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
+    return { text: `send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
   }
   if (!s.sentAt && s.mode === "demo" && !s.sentTo.length) return { text: "choose who gets the request", cta: "Choose vendors", to: "rfx" };
-  if (!s.sentAt && s.mode === "demo") return { text: `check the vendor list, then send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
+  if (!s.sentAt && s.mode === "demo") return { text: `send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
   if (!n) return { text: "wait for vendor replies, or add a quote you already have", cta: "Add a quote", to: "rfx" };
   if (reading) return { text: `${plural(reading, "quote")} being read`, cta: "Watch in Read quotes", to: "quotes" };
   if (read < n) return { text: `read the ${plural(n - read, "quote")} that came in`, cta: "Go to Read quotes", to: "quotes" };
