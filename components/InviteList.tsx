@@ -1,0 +1,244 @@
+"use client";
+import { useRef, useState } from "react";
+import * as XLSX from "xlsx";
+import { useStore } from "@/lib/store";
+import { MASTER, certificate, isCategory, parseVendorLines, suggest, type PoolVendor } from "@/lib/vendorpool";
+import { Badge, Button, Card, cx } from "./ui";
+
+type Channel = "list" | "suggest" | "lastyear" | "upload" | "paste" | "email";
+
+const CHANNELS: { id: Channel; label: string; tip: string }[] = [
+  { id: "list", label: "Vendor list", tip: "Pick from the vendors your company already works with." },
+  { id: "suggest", label: "Suggest a shortlist", tip: "A shortlist chosen by rules you can read: right category, valid certificate, near the plant, plus the incumbent." },
+  { id: "lastyear", label: "Last year's vendors", tip: "Invite everyone who held the previous contract." },
+  { id: "upload", label: "Upload a list", tip: "An Excel or CSV file with vendor names and emails." },
+  { id: "paste", label: "Paste emails", tip: "Paste names and emails from anywhere: an email, a chat, a sheet." },
+  { id: "email", label: "Add one by email", tip: "A vendor that is not on any list yet." },
+];
+
+const SOURCE: Record<PoolVendor["source"], string> = { master: "Vendor list", upload: "Uploaded", paste: "Pasted", manual: "Added by hand" };
+
+/** Step 1, before sending: who gets this request, and the ways to bring vendors in. */
+export default function InviteList() {
+  const { s, set, log } = useStore();
+  const pool = s.pool ?? MASTER;
+  const due = s.rfx.due_date;
+  const invitees = s.sentTo.map((id) => pool.find((v) => v.id === id)).filter(Boolean) as PoolVendor[];
+  const [ch, setCh] = useState<Channel | null>(invitees.length ? null : "suggest");
+  const [why, setWhy] = useState<Record<string, string>>({});
+  const [q, setQ] = useState("");
+  const [paste, setPaste] = useState("");
+  const [one, setOne] = useState({ name: "", email: "" });
+  const [msg, setMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const nextNum = () => Math.max(0, ...pool.map((v) => parseInt(v.id.replace(/\D/g, ""), 10) || 0)) + 1;
+  const invite = (ids: string[]) => set((x) => ({ ...x, sentTo: Array.from(new Set([...x.sentTo, ...ids])) }));
+  const remove = (id: string) => set((x) => ({ ...x, sentTo: x.sentTo.filter((i) => i !== id) }));
+
+  /** New vendors from an upload, paste or form: add to the pool (skipping ones already there) and invite them. */
+  function addNew(found: PoolVendor[], skipped: string[], from: string) {
+    const fresh: PoolVendor[] = [];
+    const existing: string[] = [];
+    for (const v of found) {
+      const dup = pool.find((p) => p.email.toLowerCase() === v.email.toLowerCase()) || fresh.find((p) => p.email.toLowerCase() === v.email.toLowerCase());
+      if (dup) existing.push(dup.id);
+      else fresh.push(v);
+    }
+    set((x) => ({ ...x, pool: [...(x.pool ?? MASTER), ...fresh], sentTo: Array.from(new Set([...x.sentTo, ...fresh.map((v) => v.id), ...existing])) }));
+    setMsg(`${found.length ? `Added ${found.length} ${found.length === 1 ? "vendor" : "vendors"}${existing.length ? ` (${existing.length} already on your list)` : ""}.` : "No vendors found."}${skipped.length ? ` Skipped ${skipped.length} without an email: ${skipped.slice(0, 2).join("; ")}${skipped.length > 2 ? "…" : ""}` : ""}`);
+    if (found.length) log(`Added ${found.length} vendor(s) from ${from}`);
+  }
+
+  async function onFile(f: File) {
+    try {
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      const rows = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1, blankrows: false });
+      const { vendors, skipped } = parseVendorLines(rows, nextNum(), "upload");
+      addNew(vendors, skipped, `the file ${f.name}`);
+    } catch {
+      setMsg("That file could not be read. Use Excel or CSV with a name and an email on each row.");
+    }
+  }
+
+  const shortlist = suggest(pool, due);
+  const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
+  const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="border-b border-line px-5 py-3.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="text-[15px] font-semibold">Who gets this request</div>
+          <div className="text-[12.5px] text-muted">
+            {invitees.length} {invitees.length === 1 ? "vendor" : "vendors"} chosen
+          </div>
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[11.5px] text-muted">Add vendors from</span>
+          {CHANNELS.map((c) => (
+            <button key={c.id} title={c.tip} onClick={() => (setCh(ch === c.id ? null : c.id), setMsg(null))} className={cx("rounded-full border px-2.5 py-1 text-[12px]", ch === c.id ? "border-ink bg-ink text-white" : "border-line text-muted hover:bg-panel hover:text-ink")}>
+              {c.label}
+            </button>
+          ))}
+          <span title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-full border border-dashed border-line px-2.5 py-1 text-[12px] text-muted/70">
+            Connect ERP · planned
+          </span>
+        </div>
+      </div>
+
+      {ch && (
+        <div className="border-b border-line bg-panel px-5 py-3.5 text-[12.5px]">
+          {ch === "list" && (
+            <div>
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your vendors by name or city" className="mb-2 w-full rounded-md border border-line bg-white px-3 py-1.5 text-[13px] outline-none focus:border-kraft" />
+              <div className="max-h-52 divide-y divide-line overflow-y-auto rounded-md border border-line bg-white">
+                {available.map((v) => {
+                  const fit = certificate(v, due);
+                  const off = !isCategory(v);
+                  return (
+                    <div key={v.id} className="flex items-center gap-3 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium">{v.name}</div>
+                        <div className="truncate text-[11.5px] text-muted">
+                          {v.city}
+                          {v.km != null ? ` · ${v.km} km` : ""} · {v.history}
+                        </div>
+                      </div>
+                      <span className={cx("hidden text-[11.5px] sm:inline", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>{off ? "Not a corrugated maker" : fit.text}</span>
+                      <Button onClick={() => invite([v.id])}>Add</Button>
+                    </div>
+                  );
+                })}
+                {!available.length && <div className="px-3 py-4 text-center text-muted">{q ? "No vendor matches." : "Everyone on your list is already chosen."}</div>}
+              </div>
+            </div>
+          )}
+          {ch === "suggest" && (
+            <div>
+              <p className="text-muted">Chosen by rules you can read: makes corrugated, no expired certificate, within 400 km of the plant, and the incumbent is always in.</p>
+              <div className="mt-2 divide-y divide-line rounded-md border border-line bg-white">
+                {shortlist.map((p) => {
+                  const v = pool.find((x) => x.id === p.id)!;
+                  return (
+                    <div key={p.id} className="flex items-baseline justify-between gap-3 px-3 py-1.5">
+                      <span className="font-medium">{v.name}</span>
+                      <span className="truncate text-[11.5px] text-muted">{p.why}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <Button
+                variant="primary"
+                className="mt-2.5"
+                onClick={() => {
+                  setWhy(Object.fromEntries(shortlist.map((p) => [p.id, p.why])));
+                  set((x) => ({ ...x, sentTo: shortlist.map((p) => p.id) }));
+                  log(`Chose the suggested shortlist of ${shortlist.length} vendors`);
+                  setCh(null);
+                }}
+              >
+                Use this shortlist of {shortlist.length}
+              </Button>
+              <span className="ml-3 text-[11.5px] text-muted">Replaces the current choice. You can still add or remove after.</span>
+            </div>
+          )}
+          {ch === "lastyear" && (
+            <div>
+              {lastYear.length ? (
+                <>
+                  <p className="text-muted">Held the previous contract: {lastYear.map((v) => `${v.name} (${s.prior[v.id]?.period ?? "FY26"})`).join(", ")}.</p>
+                  <Button
+                    className="mt-2.5"
+                    onClick={() => {
+                      invite(lastYear.map((v) => v.id));
+                      setCh(null);
+                    }}
+                  >
+                    Invite {lastYear.length === 1 ? "this vendor" : `these ${lastYear.length} vendors`}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-muted">No previous contract on file for this category.</p>
+              )}
+            </div>
+          )}
+          {ch === "upload" && (
+            <div>
+              <p className="text-muted">Excel or CSV, one vendor per row: name and email, and optionally city. A header row is fine. Your own vendor-master export works as it is.</p>
+              <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv,.txt" onChange={(e) => (e.target.files?.[0] && onFile(e.target.files[0]), (e.target.value = ""))} />
+              <Button className="mt-2.5" onClick={() => fileRef.current?.click()}>
+                Choose a file
+              </Button>
+            </div>
+          )}
+          {ch === "paste" && (
+            <div>
+              <textarea value={paste} onChange={(e) => setPaste(e.target.value)} placeholder={"One per line, for example:\nAsha Traders <asha@ashatraders.in>\nBharat Cartons, bharat@cartons.co.in, Pune\nsales@xyzpack.com"} className="h-24 w-full rounded-md border border-line bg-white px-3 py-2 text-[13px] outline-none focus:border-kraft" />
+              <Button
+                className="mt-2"
+                variant="primary"
+                disabled={!paste.trim()}
+                onClick={() => {
+                  const { vendors, skipped } = parseVendorLines(paste.split(/\n|;/).map((l) => l.split(/\t|,(?![^<]*>)/)), nextNum(), "paste");
+                  addNew(vendors, skipped, "pasted text");
+                  setPaste("");
+                }}
+              >
+                Add these vendors
+              </Button>
+            </div>
+          )}
+          {ch === "email" && (
+            <form
+              className="flex flex-wrap gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const { vendors, skipped } = parseVendorLines([[one.name, one.email]], nextNum(), "manual");
+                addNew(vendors, skipped, "a hand-typed address");
+                setOne({ name: "", email: "" });
+              }}
+            >
+              <input value={one.name} onChange={(e) => setOne({ ...one, name: e.target.value })} placeholder="Company name" className="min-w-[180px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-[13px] outline-none focus:border-kraft" />
+              <input value={one.email} onChange={(e) => setOne({ ...one, email: e.target.value })} placeholder="Email address" type="email" className="min-w-[200px] flex-1 rounded-md border border-line bg-white px-3 py-1.5 text-[13px] outline-none focus:border-kraft" />
+              <Button variant="primary" disabled={!/.+@.+\..+/.test(one.email)}>
+                Add
+              </Button>
+            </form>
+          )}
+          {msg && <div className="mt-2 text-[12px] text-ink">{msg}</div>}
+        </div>
+      )}
+
+      <div className="divide-y divide-line">
+        {invitees.map((v) => {
+          const fit = certificate(v, due);
+          return (
+            <div key={v.id} className="flex items-center gap-4 px-5 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[13.5px] font-medium">{v.name}</span>
+                  {s.prior[v.id] && <Badge tone="brand">incumbent</Badge>}
+                  {v.source !== "master" && <Badge>{SOURCE[v.source]}</Badge>}
+                </div>
+                <div className="truncate text-[11.5px] text-muted">
+                  {why[v.id] ? why[v.id] : `${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
+                </div>
+              </div>
+              {v.source === "master" && (
+                <span className={cx("hidden shrink-0 items-center gap-1.5 text-[12px] md:flex", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
+                  <span className={cx("grid h-4 w-4 place-items-center rounded-full text-[10px] text-white", fit.tone === "good" ? "bg-good" : fit.tone === "bad" ? "bg-bad" : "bg-warn")}>{fit.tone === "good" ? "✓" : fit.tone === "bad" ? "✕" : "!"}</span>
+                  {fit.text}
+                </span>
+              )}
+              <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted hover:bg-panel hover:text-ink">
+                ✕
+              </button>
+            </div>
+          );
+        })}
+        {!invitees.length && <div className="px-5 py-8 text-center text-[13px] text-muted">No vendors chosen yet. Use one of the options above to bring vendors in.</div>}
+      </div>
+    </Card>
+  );
+}

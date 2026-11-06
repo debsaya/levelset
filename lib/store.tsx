@@ -5,6 +5,7 @@ import seedRfx from "@/data/rfx.json";
 import seedVendors from "@/data/vendors.json";
 import seedPrior from "@/data/prior_contracts.json";
 import savedRaw from "@/data/saved_reading.json";
+import { MASTER, type PoolVendor } from "./vendorpool";
 
 const savedReading = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
 /** true once a real reading of the five demo quotes has been recorded (see scripts/record_reading.mjs) */
@@ -28,7 +29,12 @@ export type State = {
   /** 1 for the request as first sent; goes up by one each time an amendment is sent */
   revision?: number;
   sentAt: string | null;
+  /** the vendors this request goes to. Editable until it is sent. */
   sentTo: string[];
+  /** every vendor the buyer can pick from: the vendor list plus anyone added by upload, paste or hand */
+  pool?: PoolVendor[];
+  /** vendor id → when the buyer last sent a reminder */
+  reminded?: Record<string, string>;
   responses: VendorResponse[];
   assumptions: Assumptions;
   overrides: Record<string, CellOverride>;
@@ -60,6 +66,8 @@ export function demoState(): State {
     revision: 1,
     sentAt: null,
     sentTo: (seedVendors as VendorMsg[]).map((v) => v.id),
+    pool: structuredClone(MASTER),
+    reminded: {},
     responses: (seedVendors as VendorMsg[]).map((v) => ({ vendor: v, status: "new" })),
     assumptions: structuredClone(DEMO_ASSUMPTIONS),
     overrides: {},
@@ -84,6 +92,12 @@ export function exampleState(): State {
   };
 }
 
+/** Sending the request: from here the vendor list is fixed, and only invited vendors can reply. */
+export function markSent(x: State): State {
+  if (x.sentAt) return x;
+  return { ...x, sentAt: new Date().toISOString(), responses: x.mode === "demo" ? x.responses.filter((r) => x.sentTo.includes(r.vendor.id)) : x.responses };
+}
+
 export function blankState(): State {
   const s = demoState();
   return {
@@ -102,6 +116,8 @@ export function blankState(): State {
     },
     copilot: [],
     sentTo: [],
+    pool: structuredClone(MASTER),
+    reminded: {},
     responses: [],
     prior: {},
     assumptions: { ...s.assumptions, freight_inr_per_kg: {} },
@@ -126,7 +142,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.version === 3) dispatch({ type: "replace", state: { ...parsed, copilot: (parsed.copilot || []).filter((m: ChatMsg, i: number) => !(i === 0 && m.role === "assistant" && /^(I.ve loaded the|Tell me what you need to buy)/.test(m.text))), responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)) } });
+        if (parsed?.version === 3) dispatch({ type: "replace", state: { ...parsed, pool: parsed.pool || structuredClone(MASTER), reminded: parsed.reminded || {}, copilot: (parsed.copilot || []).filter((m: ChatMsg, i: number) => !(i === 0 && m.role === "assistant" && /^(I.ve loaded the|Tell me what you need to buy)/.test(m.text))), responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)) } });
       }
     } catch {}
     setHydrated(true);

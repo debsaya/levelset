@@ -1,5 +1,5 @@
 "use client";
-import { useStore } from "./store";
+import { markSent, useStore } from "./store";
 import type { VendorResponse } from "./types";
 import { fileToB64, mimeFor } from "@/components/ui";
 import { postJson } from "./api";
@@ -40,8 +40,8 @@ export function useReader() {
 
   /** Reads every unread quote at once. All of them show "reading" straight away, so nothing looks stuck waiting its turn. */
   async function readAll() {
-    if (!s.sentAt && s.mode === "demo") set((x) => ({ ...x, sentAt: new Date().toISOString() }));
-    const queue = s.responses.filter((r) => r.status !== "done" && r.status !== "reading");
+    if (!s.sentAt && s.mode === "demo") set(markSent);
+    const queue = s.responses.filter((r) => r.status !== "done" && r.status !== "reading" && (s.mode !== "demo" || s.sentAt || s.sentTo.includes(r.vendor.id)));
     if (!queue.length) return;
     set((x) => ({ ...x, responses: x.responses.map((r) => (queue.some((q) => q.vendor.id === r.vendor.id) ? { ...r, status: "reading" as const, error: undefined } : r)) }));
     await Promise.all(queue.map((r) => read(r)));

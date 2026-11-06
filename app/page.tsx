@@ -182,7 +182,11 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
           <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
             <div className="text-[15px] font-semibold">{confirm === "demo" ? "Start the sample event over?" : confirm === "example" ? "Load the finished example?" : "Start a new request?"}</div>
-            <p className="mt-1.5 text-[13px] text-muted">This clears the quotes you've read, your review decisions and the analyst conversation in this browser.</p>
+            <p className="mt-1.5 text-[13px] text-muted">
+              {confirm === "demo" && "You go back to the draft request for corrugated packaging with the five vendors chosen. Nothing is sent yet. This clears the quotes you have read, your review decisions and your questions to Ask AI."}
+              {confirm === "example" && "You land on the same event after it was sent, with five vendor replies in. This replaces everything in this browser: your request, quotes, decisions and notes."}
+              {confirm === "blank" && "You get an empty request. Tell the co-pilot what you are buying, choose vendors, and send. This replaces everything in this browser."}
+            </p>
             <div className="mt-5 flex justify-end gap-2">
               <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
                 Cancel

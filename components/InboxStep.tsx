@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
 import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
 import { blocker } from "@/lib/flow";
-import seedVendors from "@/data/vendors.json";
+import { MASTER } from "@/lib/vendorpool";
 import { fileName, useReader } from "@/lib/reader";
 import type { Normalized } from "@/lib/normalize";
 
@@ -24,7 +24,8 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
   const { read, readAll, hasSaved, loadSaved } = useReader();
 
   const doneCount = visible.filter((r) => r.status === "done").length;
-  const nextId = `V${Math.max(seedVendors.length, ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
+  const pool = s.pool ?? MASTER;
+  const nextId = `V${Math.max(...pool.map((v) => parseInt(v.id.replace(/\D/g, ""), 10) || 0), ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
 
   const dropVendorKeys = <T,>(o: Record<string, T>, id: string) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}|`))) as Record<string, T>;
   function removeVendor(id: string) {
@@ -114,6 +115,7 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
         {adding || replacing ? (
           <AddResponse
             key={replacing || "new"}
+            names={pool.map((v) => v.name)}
             replacing={replacing ? s.responses.find((r) => r.vendor.id === replacing)?.vendor : undefined}
             onCancel={() => (setAdding(false), setReplacing(null))}
             onAdd={(vendor, files) => {
@@ -127,10 +129,13 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
                 setTimeout(() => read({ vendor: v, status: "new" }, files), 50);
                 return;
               }
-              set((x) => ({ ...x, responses: [...x.responses, { vendor, status: "new" }] }));
+              // A reply from someone on the vendor list is filed under that vendor, so their row in Collect quotes fills in.
+              const m = pool.find((p) => p.name.toLowerCase() === vendor.name.toLowerCase() && !s.responses.some((r) => r.vendor.id === p.id));
+              const v = m ? { ...vendor, id: m.id, name: m.name, email: m.email, city: m.city, contact: m.contact } : vendor;
+              set((x) => ({ ...x, responses: [...x.responses, { vendor: v, status: "new" }] }));
               setAdding(false);
-              setSel(vendor.id);
-              setTimeout(() => read({ vendor, status: "new" }, files), 50);
+              setSel(v.id);
+              setTimeout(() => read({ vendor: v, status: "new" }, files), 50);
             }}
             nextId={nextId}
           />
@@ -352,7 +357,7 @@ function Terms({ ex }: { ex: NonNullable<VendorResponse["extraction"]> }) {
   );
 }
 
-function AddResponse({ onCancel, onAdd, nextId, replacing }: { onCancel: () => void; onAdd: (v: VendorMsg, files: File[]) => void; nextId: string; replacing?: VendorMsg }) {
+function AddResponse({ onCancel, onAdd, nextId, replacing, names }: { onCancel: () => void; onAdd: (v: VendorMsg, files: File[]) => void; nextId: string; replacing?: VendorMsg; names: string[] }) {
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState(replacing?.name || "");
   const [body, setBody] = useState("");
@@ -362,7 +367,7 @@ function AddResponse({ onCancel, onAdd, nextId, replacing }: { onCancel: () => v
       <div className="font-semibold">{replacing ? `Replace the response from ${replacing.name}` : "Add a vendor response"}</div>
       <div className="text-xs text-muted">Add whatever the vendor sent: a PDF, Excel or CSV file, a Word document, a phone photo, or paste the email text. It is read against your request exactly like the others.</div>
       <input list="levelset-vendors" className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
-      <datalist id="levelset-vendors">{(seedVendors as { name: string }[]).map((v) => <option key={v.name} value={v.name} />)}</datalist>
+      <datalist id="levelset-vendors">{names.map((n) => <option key={n} value={n} />)}</datalist>
       <textarea className="h-36 w-full rounded-md border border-line px-3 py-2 text-[13px]" placeholder="Paste the email body (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
       <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
       <div className="flex gap-2">

@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useStore } from "@/lib/store";
+import { markSent, useStore } from "@/lib/store";
 import { applyOps } from "@/lib/rfxOps";
 import { postJson } from "@/lib/api";
 import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
-import type { Rfx, VendorMsg, VendorResponse } from "@/lib/types";
+import type { Rfx, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Disclosure, Md, Spinner, cx, fileToB64, mimeFor } from "./ui";
-import seedVendors from "@/data/vendors.json";
+import InviteList from "./InviteList";
+import { MASTER, type PoolVendor } from "@/lib/vendorpool";
 import { downloadBidSheet } from "@/lib/bidsheet";
 import { greeting } from "@/lib/greeting";
 
@@ -82,25 +83,34 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const { readAll } = useReader();
   const r = s.rfx;
   const blank = s.mode === "blank";
-  const repliesIn = !!s.sentAt || (blank && s.responses.length > 0);
+  const pool = s.pool ?? MASTER;
+  const invitees = s.sentTo.map((id) => pool.find((v) => v.id === id)).filter(Boolean) as PoolVendor[];
+  const sent = !!s.sentAt;
+  const repliesIn = sent || (blank && s.responses.length > 0);
   const replies = repliesIn ? s.responses : [];
-  // In a request started from scratch, vendors are the ones picked when sending; replies are added as they arrive.
-  const invited = blank ? (seedVendors as VendorMsg[]).filter((v) => s.sentTo.includes(v.id)) : [];
-  const waiting = blank && s.sentAt ? invited.filter((v) => !s.responses.some((x) => x.vendor.name.toLowerCase().startsWith(v.name.toLowerCase().split(" ")[0]))) : [];
   const unread = replies.filter((x) => x.status !== "done").length;
   const readN = replies.filter((x) => x.status === "done").length;
-  const vendorsInvited = blank ? invited.length || s.responses.length : s.responses.length;
+  const vendorsInvited = invitees.length || s.responses.length;
   const followUp = replies.filter((x) => x.status === "done" && requirements(x, n, s.rfx).some((q) => q.state === "warn" || q.state === "bad")).length;
+  // One row per invited vendor, with their reply if one has come; replies from vendors nobody invited get a row too.
+  const matchResp = (v: { id: string; name: string }) => s.responses.find((x) => x.vendor.id === v.id || x.vendor.name.toLowerCase() === v.name.toLowerCase());
+  const rows: { v: { id: string; name: string; email: string }; resp?: VendorResponse }[] = repliesIn ? [...invitees.map((v) => ({ v, resp: matchResp(v) })), ...s.responses.filter((x) => !invitees.some((v) => matchResp(v) === x)).map((x) => ({ v: x.vendor, resp: x }))] : [];
+  const noReply = rows.filter((x) => !x.resp).length;
+  const pastDue = r.due_date < new Date().toISOString().slice(0, 10);
+  const showStart = blank && !sent && !s.responses.length && !r.lines.length;
+  const showInvite = !sent && !showStart && !(blank && s.responses.length > 0);
+  const remind = (v: { id: string; name: string }) => {
+    set((x) => ({ ...x, reminded: { ...(x.reminded || {}), [v.id]: new Date().toISOString() } }));
+    log(`${pastDue ? "Chased" : "Sent a reminder to"} ${v.name} (email, simulated)`);
+  };
 
   // main action: one clear next move
   let primary: { label: string; run: () => void; disabled?: boolean };
-  if (blank && !s.sentAt && !s.responses.length) primary = { label: r.lines.length ? "Choose vendors and send →" : "Send request →", run: onSend, disabled: !r.lines.length };
-  else if (!blank && !vendorsInvited) primary = { label: "Add vendor quotes →", run: () => onRead(true) };
-  else if (!repliesIn) primary = { label: `Send request to ${vendorsInvited} vendors`, run: onSend, disabled: !r.lines.length };
+  if (showStart) primary = { label: "Send request →", run: onSend, disabled: true };
+  else if (showInvite) primary = { label: `Send request to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`, run: onSend, disabled: !r.lines.length || !invitees.length };
   else if (!replies.length) primary = { label: "Add a quote file or email text", run: () => onRead(true) };
   else if (unread > 0) primary = { label: `Read ${unread} ${unread === 1 ? "quote" : "quotes"} →`, run: () => (readAll(), onRead()) };
   else primary = { label: "Continue to compare →", run: onNext };
-  const getStarted = blank && !s.sentAt && !s.responses.length;
 
   // ---------- request co-pilot (side panel) ----------
   const [input, setInput] = useState("");
@@ -161,18 +171,16 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
 
   const due = new Date(r.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   const mustN = r.questionnaire.filter((q) => q.must_have).length;
-  const headline = getStarted
-    ? r.lines.length
-      ? `Your request is ready: ${r.lines.length} ${r.lines.length === 1 ? "item" : "items"}. Choose vendors and send it.`
-      : "Start by telling the co-pilot what you are buying."
-    : !repliesIn
-      ? blank
-        ? `Sent to ${invited.length} ${invited.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
-        : "Not sent yet. Vendors reply in any format: Excel, PDF, Word, a photo or a one-line email."
-      : blank && !replies.length
-        ? `Sent to ${invited.length} ${invited.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
+  const headline = showStart
+    ? "Start by telling the co-pilot what you are buying."
+    : showInvite
+      ? invitees.length
+        ? `Check who gets this request, then send it to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}.`
+        : "Choose the vendors who should get this request."
+      : !replies.length
+        ? `Sent to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
         : `${replies.length} of ${vendorsInvited} vendors replied`;
-  const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [{ text: `${readN} read`, tone: "plain" }, ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : [])] : [];
+  const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [{ text: `${readN} read`, tone: "plain" }, ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : []), ...(noReply ? [{ text: pastDue ? `${noReply} no reply by the due date` : `${noReply} no reply yet`, tone: pastDue ? ("warn" as const) : ("plain" as const) }] : [])] : [];
 
   return (
     <div className="grid h-full grid-cols-[1fr_minmax(300px,340px)] gap-4 p-4">
@@ -197,8 +205,8 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             <Button variant="primary" onClick={primary.run} disabled={primary.disabled}>
               {primary.label}
             </Button>
-            {!blank && vendorsInvited > 0 && !repliesIn && (
-              <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))} title="Demo shortcut: email is simulated, so this makes the five vendor replies arrive">
+            {!blank && showInvite && invitees.length > 0 && (
+              <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={() => set(markSent)} title="Demo shortcut: email is simulated, so this makes the five vendor replies arrive">
                 Demo: skip to replies arriving
               </button>
             )}
@@ -227,56 +235,69 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           </div>
         )}
 
-        {/* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */}
-        {getStarted ? (
-          <GetStarted hasLines={r.lines.length > 0} onSample={() => reset("demo")} onExample={() => loadExample()} onAdd={() => onRead(true)} onSend={onSend} />
+        {showStart ? (
+          <GetStarted onSample={() => reset("demo")} onExample={() => loadExample()} onAdd={() => onRead(true)} />
+        ) : showInvite ? (
+          <InviteList />
         ) : (
-        <Card className="overflow-hidden">
-          <div className={cx("grid items-center gap-x-3 border-b border-line bg-panel px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted", COLS)}>
-            <span>Vendor</span>
-            {HEADS.map((h) => (
-              <span key={h.label} title={h.tip} className="cursor-help">
-                {h.label}
-              </span>
-            ))}
-          </div>
-          {[...s.responses, ...waiting.map((v) => ({ vendor: v, status: "new" as const, waiting: true }))].map((v: any) => {
-            const got = repliesIn && !v.waiting;
-            const reqs = got ? requirements(v, n, r) : [];
-            const files = v.vendor.attachments.map(fileName);
-            return (
-              <div key={v.vendor.id} className={cx("grid items-center gap-x-3 border-b border-line px-4 py-3 last:border-b-0", COLS)}>
-                <div className="min-w-0">
-                  <div className="truncate text-[13.5px] font-medium">{v.vendor.name}</div>
-                  {got ? (
-                    <div className="mt-0.5 truncate text-[11.5px] text-muted" title={files.join(", ") || "Email text only"}>
-                      {v.status === "reading" ? "Reading… · " : v.status === "error" ? "Couldn't read · " : ""}
-                      {v.vendor.format} · {new Date(v.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {files.length ? `${files.length} ${files.length === 1 ? "file" : "files"}` : "email text"}
-                    </div>
-                  ) : (
-                    <div className="mt-0.5 truncate text-[11.5px] text-muted">{v.waiting ? "Waiting for a reply" : "Waiting for the request"} · {v.vendor.email}</div>
-                  )}
-                </div>
-                {got
-                  ? reqs.map((q) => (
-                      <div key={q.label} className="flex min-w-0 items-start gap-1.5" title={q.text}>
-                        <span className={cx("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] text-white", q.state === "ok" && "bg-good", q.state === "warn" && "bg-warn", q.state === "bad" && "bg-bad", q.state === "none" && "bg-line text-muted")}>{q.state === "ok" ? "✓" : q.state === "none" ? "–" : q.state === "bad" ? "✕" : "!"}</span>
-                        <span className={cx("min-w-0 text-[12px] leading-snug", q.state === "bad" ? "text-bad" : q.state === "warn" ? "text-warn" : "text-muted")}>{q.text}</span>
-                      </div>
-                    ))
-                  : HEADS.map((h) => (
-                      <span key={h.label} className="text-[12px] text-line">
-                        –
-                      </span>
-                    ))}
+          /* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */
+          <Card className="overflow-hidden">
+            {replies.length > 0 && (
+              <div className={cx("grid items-center gap-x-3 border-b border-line bg-panel px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted", COLS)}>
+                <span>Vendor</span>
+                {HEADS.map((h) => (
+                  <span key={h.label} title={h.tip} className="cursor-help">
+                    {h.label}
+                  </span>
+                ))}
               </div>
-            );
-          })}
-        </Card>
+            )}
+            {rows.map(({ v, resp }) => {
+              if (!resp) {
+                const when = s.reminded?.[v.id];
+                return (
+                  <div key={v.id} className={cx("grid items-center gap-x-3 border-b border-line px-4 py-3 last:border-b-0", COLS)}>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13.5px] font-medium">{v.name}</div>
+                      <div className="mt-0.5 truncate text-[11.5px] text-muted">{v.email}</div>
+                    </div>
+                    <div className="col-span-6 flex items-center justify-between gap-3 text-[12px]">
+                      <span className={cx(pastDue ? "text-warn" : "text-muted")}>
+                        {pastDue ? "No reply by the due date" : `Sent ${new Date(s.sentAt!).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · no reply yet`}
+                        {when ? ` · ${pastDue ? "chased" : "reminded"} ${new Date(when).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
+                      </span>
+                      <Button onClick={() => remind(v)} title="Emails the vendor again. Simulated in this prototype.">
+                        {pastDue ? "Chase" : "Send a reminder"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+              const files = resp.vendor.attachments.map(fileName);
+              const reqs = requirements(resp, n, r);
+              return (
+                <div key={v.id} className={cx("grid items-center gap-x-3 border-b border-line px-4 py-3 last:border-b-0", COLS)}>
+                  <div className="min-w-0">
+                    <div className="truncate text-[13.5px] font-medium">{resp.vendor.name}</div>
+                    <div className="mt-0.5 truncate text-[11.5px] text-muted" title={files.join(", ") || "Email text only"}>
+                      {resp.status === "reading" ? "Reading… · " : resp.status === "error" ? "Couldn't read · " : ""}
+                      {resp.vendor.format} · {new Date(resp.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {files.length ? `${files.length} ${files.length === 1 ? "file" : "files"}` : "email text"}
+                    </div>
+                  </div>
+                  {reqs.map((q) => (
+                    <div key={q.label} className="flex min-w-0 items-start gap-1.5" title={q.text}>
+                      <span className={cx("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] text-white", q.state === "ok" && "bg-good", q.state === "warn" && "bg-warn", q.state === "bad" && "bg-bad", q.state === "none" && "bg-line text-muted")}>{q.state === "ok" ? "✓" : q.state === "none" ? "–" : q.state === "bad" ? "✕" : "!"}</span>
+                      <span className={cx("min-w-0 text-[12px] leading-snug", q.state === "bad" ? "text-bad" : q.state === "warn" ? "text-warn" : "text-muted")}>{q.text}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </Card>
         )}
 
         {/* other ways a quote can arrive */}
-        {(repliesIn || (blank && !!s.sentAt)) && (
+        {(repliesIn || sent) && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed border-line px-4 py-3 text-[12.5px]">
             <span className="text-muted">Quotes arrive by reply to the request email. Got one another way?</span>
             <span className="ml-auto flex flex-wrap gap-2">
@@ -370,25 +391,18 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
 }
 
 /** A new request has nothing to show yet: say what to do, and let the buyer start from sample data instead. */
-function GetStarted({ hasLines, onSample, onExample, onAdd, onSend }: { hasLines: boolean; onSample: () => void; onExample: () => void; onAdd: () => void; onSend: () => void }) {
+function GetStarted({ onSample, onExample, onAdd }: { onSample: () => void; onExample: () => void; onAdd: () => void }) {
   return (
     <Card className="p-6">
-      <div className="text-[15px] font-semibold">{hasLines ? "Next: pick vendors and send" : "How do you want to start?"}</div>
+      <div className="text-[15px] font-semibold">How do you want to start?</div>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {hasLines ? (
-          <button onClick={onSend} className="rounded-xl border border-ink bg-ink p-4 text-left text-white sm:col-span-2">
-            <div className="text-[13.5px] font-semibold">Choose vendors and send the request</div>
-            <div className="mt-0.5 text-[12px] text-white/70">Pick from your vendor list. Vendors get one email each and reply in any format.</div>
-          </button>
-        ) : (
-          <div className="rounded-xl border border-line p-4 sm:col-span-2">
-            <div className="text-[13.5px] font-semibold">Describe it to the co-pilot</div>
-            <div className="mt-0.5 text-[12px] text-muted">Type what you need in the box on the right, or attach a spec sheet or last year&apos;s order with the paperclip. The items it adds show up here.</div>
-          </div>
-        )}
+        <div className="rounded-xl border border-line p-4 sm:col-span-2">
+          <div className="text-[13.5px] font-semibold">Describe it to the co-pilot</div>
+          <div className="mt-0.5 text-[12px] text-muted">Type what you need in the box on the right, or attach a spec sheet or last year&apos;s order with the paperclip. The items it adds show up here, and then you choose which vendors get the request.</div>
+        </div>
         <button onClick={onSample} className="rounded-xl border border-line p-4 text-left hover:bg-panel">
           <div className="text-[13.5px] font-semibold">Load the sample event</div>
-          <div className="mt-0.5 text-[12px] text-muted">A ready request for corrugated packaging, 30 items and a questionnaire. Nothing sent yet.</div>
+          <div className="mt-0.5 text-[12px] text-muted">A ready request for corrugated packaging, 30 items and a questionnaire, with five vendors chosen. Nothing sent yet.</div>
         </button>
         <button onClick={onExample} className="rounded-xl border border-line p-4 text-left hover:bg-panel">
           <div className="text-[13.5px] font-semibold">Load the finished example</div>
