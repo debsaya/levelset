@@ -31,7 +31,7 @@ export function estWeightKg(type: string, ply: number, flute: string, L: number,
 export function describeLine(l: Pick<RfxLine, "type" | "ply" | "dimensions_mm" | "flute" | "print">) {
   const { L, W, H } = l.dimensions_mm;
   const dims = H ? `${L} x ${W} x ${H} mm` : `${L} x ${W} mm`;
-  return `${l.ply}-ply ${l.type} ${dims}, ${l.flute}-flute, ${l.print}`;
+  return `${l.ply}-ply ${l.type} ${dims}, ${String(l.flute).replace(/[-\s]*flute/gi, "")}-flute, ${l.print}`;
 }
 
 export function buildLine(p: any, id: string): RfxLine {
