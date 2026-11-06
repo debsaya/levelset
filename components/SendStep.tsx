@@ -3,6 +3,7 @@ import { useState } from "react";
 import { markSent, useStore } from "@/lib/store";
 import { Badge, Button, Card, cx } from "./ui";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
+import { titleInSentence } from "@/lib/spec";
 
 export default function SendStep({ onNext }: { onNext: () => void }) {
   const { s, set, log } = useStore();
@@ -20,7 +21,7 @@ Subject: [${r.id}] Request for quotation — ${r.title}
 
 Dear ${v.contact.split(" ")[0]},
 
-${r.buyer.company} invites ${v.name} to quote for our ${r.title.toLowerCase()}.
+${r.buyer.company} invites ${v.name} to quote for our ${titleInSentence(r.title)}.
 
 • ${r.lines.length} line items (specs and annual volumes in the attached bid sheet, ${r.id}_bid_sheet.xlsx; using it is optional)
 • A ${r.questionnaire.length}-question supplier questionnaire (${r.questionnaire.filter((q) => q.must_have).length} must-haves)
