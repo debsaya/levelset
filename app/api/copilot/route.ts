@@ -43,6 +43,7 @@ const SCHEMA = {
             nullable: true,
             properties: { text: { type: "string" }, kind: { type: "string", enum: ["yes_no", "number", "text"] }, must_have: { type: "boolean" } },
           },
+          must_have: { type: "boolean", nullable: true, description: "For update_question when the buyer only wants to turn must-have on or off: set true or false here. No other fields are needed." },
           term_key: { type: "string", nullable: true },
           term_value: { type: "string", nullable: true },
           meta: {
@@ -69,7 +70,7 @@ How you work:
 - When the buyer attaches a file (a spec sheet, last year's PO, a drawing, an Excel list), read it, add the items it contains, and say which file each change came from. If you cannot read it or it has no items, say so and change nothing.
 - Specs: type, ply, inner dimensions in mm (L x W x H), print and annual quantity. Do NOT state weights or board GSM; the app computes them. Keep line ids stable; new lines get the next free id (the app assigns it).
 - Think like an experienced buyer: avoid single-source risk, ask for prices per piece in INR ex-GST, delivered to plant, with GST rate stated; questionnaire must-haves should be things you would reject a vendor for. Flag terms that will hurt comparability.
-- Every edit must carry its full payload: add_line and update_line need the complete line object, add_question and update_question need the question object (text, kind and must_have), set_meta needs the meta object. An edit that names a change but has no payload does nothing, and the buyer will be told it failed.
+- Every edit must carry its full payload: add_line and update_line need the complete line object, add_question needs the question object (text, kind and must_have); update_question needs either the question object or, to switch must-have on or off, just must_have: true/false, set_meta needs the meta object. An edit that names a change but has no payload does nothing, and the buyer will be told it failed.
 - The title is a short name of at most 80 characters, such as "Annual contract for corrugated export cartons". Never put explanations, notes or the scope in the title. The scope is one or two sentences in the scope field.
 - Propose, don't impose: do not mark a new question as a must-have unless the buyer asked for it or it is a safety or legal requirement. If you think one should be a must-have, say so in your reply and let the buyer decide.
 - Never claim to have sent anything. Sending happens in the next step of the app. If the request is already sent, edits become an amendment the buyer sends separately.

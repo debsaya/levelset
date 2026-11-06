@@ -6,6 +6,7 @@ export type Op = {
   target_id?: string | null;
   line?: any;
   question?: { text: string; kind: "yes_no" | "number" | "text"; must_have: boolean } | null;
+  must_have?: boolean | null;
   term_key?: string | null;
   term_value?: string | null;
   meta?: { title?: string | null; scope?: string | null; due_date?: string | null } | null;
@@ -23,6 +24,7 @@ const hasVals = (x: any) => !!x && Object.values(x).some((v) => v !== null && v 
 /** An edit that names a change but carries nothing to change. The model does this now and then: it says "updated" and sends an empty edit. */
 export function incomplete(o: Op): string | null {
   if ((o.op === "add_line" || o.op === "update_line") && !hasVals(o.line)) return `${o.op === "add_line" ? "a new item" : o.target_id}: no details came through`;
+  if (o.op === "update_question" && typeof o.must_have === "boolean") return null;
   if ((o.op === "add_question" || o.op === "update_question") && !hasVals(o.question)) return `${o.op === "add_question" ? "a new question" : o.target_id}: no details came through`;
   if (o.op === "set_meta" && !hasVals(o.meta)) return "event details: no details came through";
   if (o.op === "set_term" && (!o.term_key || o.term_value == null)) return "a term: no value came through";
@@ -104,7 +106,7 @@ export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[]; fail
       } else if (o.op === "update_question" && o.target_id) {
         const q = r.questionnaire.find((x) => x.id === o.target_id);
         if (!q) continue;
-        const ch = changesOf(q, o.question || {});
+        const ch = changesOf(q, { ...(o.question || {}), ...(typeof o.must_have === "boolean" ? { must_have: o.must_have } : {}) });
         if (!ch.length) {
           failed.push(`${q.id}: the change did not come through`);
           continue;

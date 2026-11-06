@@ -65,3 +65,15 @@ describe("Flute text is sanitised", () => {
   }
   it("falls back to a default for junk", () => assert.equal(buildLine({ ...base, flute: "???" }, "L98").flute, "BC"));
 });
+
+describe("Must-have switch without a full question object", () => {
+  it("is accepted as a complete edit and applied", () => {
+    const q = RFX.questionnaire.find((x) => !x.must_have)!;
+    const o = op({ op: "update_question", target_id: q.id, must_have: true });
+    assert.equal(incomplete(o), null);
+    const { rfx, notes, failed } = applyOps(RFX, [o]);
+    assert.equal(rfx.questionnaire.find((x) => x.id === q.id)!.must_have, true);
+    assert.match(notes[0], /now a must-have/);
+    assert.equal(failed.length, 0);
+  });
+});
