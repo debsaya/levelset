@@ -5,8 +5,9 @@ import { applyOps } from "@/lib/rfxOps";
 import { postJson } from "@/lib/api";
 import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
-import type { Rfx, VendorResponse } from "@/lib/types";
-import { Badge, Button, Card, Disclosure, Md, Spinner, cx } from "./ui";
+import type { Rfx, VendorMsg, VendorResponse } from "@/lib/types";
+import { Badge, Button, Card, Disclosure, Md, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import seedVendors from "@/data/vendors.json";
 import { downloadBidSheet } from "@/lib/bidsheet";
 import { greeting } from "@/lib/greeting";
 
@@ -21,7 +22,7 @@ const HEADS = [
 ];
 
 const SUGGESTIONS = ["Add a 2-colour die-cut tray 300×220×50, ~80k a year", "Make FSC certification a must-have", "Cut volumes on all 7-ply lines by 20%"];
-const BLANK_SUGGESTIONS = ["I need 20,000 steel pallets a year delivered to Pune", "Quote for 500 office chairs, delivered in 6 weeks", "Annual contract for 40 tonnes of PET resin"];
+const BLANK_SUGGESTIONS = ["5-ply export carton 600×400×300, 30,000 a year", "Printed 3-ply mono cartons 300×200×150, 4-colour, 80k a year", "Layer pads 1100×1100 for pallets, 50,000 a year"];
 
 /** What an unsent amendment changes compared with the request that went out. */
 function diffRfx(sent: Rfx, draft: Rfx) {
@@ -77,22 +78,29 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
 }
 
 export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void }) {
-  const { s, set, log } = useStore();
+  const { s, set, log, reset, loadExample } = useStore();
   const { readAll } = useReader();
   const r = s.rfx;
-  const repliesIn = !!s.sentAt || s.mode === "blank";
+  const blank = s.mode === "blank";
+  const repliesIn = !!s.sentAt || (blank && s.responses.length > 0);
   const replies = repliesIn ? s.responses : [];
+  // In a request started from scratch, vendors are the ones picked when sending; replies are added as they arrive.
+  const invited = blank ? (seedVendors as VendorMsg[]).filter((v) => s.sentTo.includes(v.id)) : [];
+  const waiting = blank && s.sentAt ? invited.filter((v) => !s.responses.some((x) => x.vendor.name.toLowerCase().startsWith(v.name.toLowerCase().split(" ")[0]))) : [];
   const unread = replies.filter((x) => x.status !== "done").length;
   const readN = replies.filter((x) => x.status === "done").length;
-  const vendorsInvited = s.responses.length;
+  const vendorsInvited = blank ? invited.length || s.responses.length : s.responses.length;
   const followUp = replies.filter((x) => x.status === "done" && requirements(x, n, s.rfx).some((q) => q.state === "warn" || q.state === "bad")).length;
 
   // main action: one clear next move
   let primary: { label: string; run: () => void; disabled?: boolean };
-  if (!vendorsInvited) primary = { label: "Add vendor quotes →", run: () => onRead(true) };
+  if (blank && !s.sentAt && !s.responses.length) primary = { label: r.lines.length ? "Choose vendors and send →" : "Send request →", run: onSend, disabled: !r.lines.length };
+  else if (!blank && !vendorsInvited) primary = { label: "Add vendor quotes →", run: () => onRead(true) };
   else if (!repliesIn) primary = { label: `Send request to ${vendorsInvited} vendors`, run: onSend, disabled: !r.lines.length };
+  else if (!replies.length) primary = { label: "Add a quote file or email text", run: () => onRead(true) };
   else if (unread > 0) primary = { label: `Read ${unread} ${unread === 1 ? "quote" : "quotes"} →`, run: () => (readAll(), onRead()) };
   else primary = { label: "Continue to compare →", run: onNext };
+  const getStarted = blank && !s.sentAt && !s.responses.length;
 
   // ---------- request co-pilot (side panel) ----------
   const [input, setInput] = useState("");
@@ -108,15 +116,22 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const shown = locked && s.rfxDraft ? s.rfxDraft : s.rfx;
   const amend = s.rfxDraft ? diffRfx(s.rfx, s.rfxDraft) : null;
 
-  async function send(text: string) {
-    if (!text.trim() || busy) return;
+  const [files, setFiles] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function send(raw: string) {
+    const text = raw.trim() || (files.length ? "I've attached a file. Add what it contains to the request." : "");
+    if (!text || busy) return;
     const base = locked ? s.rfxDraft ?? s.rfx : s.rfx;
-    const msgs = [...s.copilot, { role: "user" as const, text }];
+    const sentFiles = files;
+    const msgs = [...s.copilot, { role: "user" as const, text, ...(sentFiles.length ? { files: sentFiles.map((f) => f.name) } : {}) }];
     set((x) => ({ ...x, copilot: msgs }));
     setInput("");
+    setFiles([]);
     setBusy(true);
     try {
-      const j = await postJson("/api/copilot", { messages: msgs, rfx: base });
+      const enc = await Promise.all(sentFiles.map(async (f) => ({ name: f.name, mime: f.type || mimeFor(f.name), data: await fileToB64(f) })));
+      const j = await postJson("/api/copilot", { messages: msgs.map((m) => ({ role: m.role, text: m.text })), rfx: base, files: enc });
       if (j.error) throw new Error(j.error);
       const before = new Set(base.lines.map((l) => JSON.stringify(l)));
       const { rfx, notes } = applyOps(base, j.ops || []);
@@ -146,30 +161,48 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
 
   const due = new Date(r.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   const mustN = r.questionnaire.filter((q) => q.must_have).length;
-  const status = !vendorsInvited ? "No vendors yet. Add a quote from any vendor, in any file." : !repliesIn ? "Nothing collected yet. Send the request, and vendors reply in whatever format suits them: Excel, PDF, Word, a photo or a one-line email." : `${replies.length} of ${vendorsInvited} vendors have replied · ${readN} read so far${followUp ? ` · ${followUp} need a follow-up (marked below)` : ""}`;
+  const headline = getStarted
+    ? r.lines.length
+      ? `Your request is ready: ${r.lines.length} ${r.lines.length === 1 ? "item" : "items"}. Choose vendors and send it.`
+      : "Start by telling the co-pilot what you are buying."
+    : !repliesIn
+      ? blank
+        ? `Sent to ${invited.length} ${invited.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
+        : "Not sent yet. Vendors reply in any format: Excel, PDF, Word, a photo or a one-line email."
+      : blank && !replies.length
+        ? `Sent to ${invited.length} ${invited.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
+        : `${replies.length} of ${vendorsInvited} vendors replied`;
+  const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [{ text: `${readN} read`, tone: "plain" }, ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : [])] : [];
 
   return (
     <div className="grid h-full grid-cols-[1fr_minmax(300px,340px)] gap-4 p-4">
       {/* ---------- main: what has been collected ---------- */}
       <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
-        {/* one quiet line of context, the state of play, and the one next move */}
+        {/* the state of play, and the one next move */}
         <div className="flex items-end justify-between gap-4 px-1 pt-1">
           <div className="min-w-0">
-            <div className="truncate text-xs text-muted">
-              {r.id}{(s.revision || 1) > 1 ? ` (revision ${s.revision})` : ""} · {r.title.replace(/\s*—\s*/, ": ")} · quotes due {due}
-            </div>
-            <p className="mt-1 text-[16px] font-semibold tracking-tight">{status}</p>
+            <p className="text-[18px] font-semibold tracking-tight">{headline}</p>
+            {chips.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                {chips.map((c) => (
+                  <span key={c.text} className={cx("rounded-full border px-2.5 py-0.5 text-[12px]", c.tone === "warn" ? "border-warn/40 bg-warn-soft font-medium text-warn" : "border-line bg-white text-muted")}>
+                    {c.text}
+                  </span>
+                ))}
+                {followUp > 0 && <span className="text-[11.5px] text-muted">marked ! in the table</span>}
+              </div>
+            )}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
             <Button variant="primary" onClick={primary.run} disabled={primary.disabled}>
               {primary.label}
             </Button>
-            {vendorsInvited > 0 && !repliesIn && (
+            {!blank && vendorsInvited > 0 && !repliesIn && (
               <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))} title="Demo shortcut: email is simulated, so this makes the five vendor replies arrive">
                 Demo: skip to replies arriving
               </button>
             )}
-            {repliesIn && vendorsInvited > 0 && (
+            {s.sentAt && vendorsInvited > 0 && (
               <button className="text-[12px] text-muted underline-offset-2 hover:underline" onClick={onSend}>
                 View the request that was sent
               </button>
@@ -195,6 +228,9 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         )}
 
         {/* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */}
+        {getStarted ? (
+          <GetStarted hasLines={r.lines.length > 0} onSample={() => reset("demo")} onExample={() => loadExample()} onAdd={() => onRead(true)} onSend={onSend} />
+        ) : (
         <Card className="overflow-hidden">
           <div className={cx("grid items-center gap-x-3 border-b border-line bg-panel px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted", COLS)}>
             <span>Vendor</span>
@@ -204,8 +240,8 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
               </span>
             ))}
           </div>
-          {s.responses.map((v) => {
-            const got = repliesIn;
+          {[...s.responses, ...waiting.map((v) => ({ vendor: v, status: "new" as const, waiting: true }))].map((v: any) => {
+            const got = repliesIn && !v.waiting;
             const reqs = got ? requirements(v, n, r) : [];
             const files = v.vendor.attachments.map(fileName);
             return (
@@ -218,7 +254,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
                       {v.vendor.format} · {new Date(v.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {files.length ? `${files.length} ${files.length === 1 ? "file" : "files"}` : "email text"}
                     </div>
                   ) : (
-                    <div className="mt-0.5 truncate text-[11.5px] text-muted">Waiting for the request · {v.vendor.email}</div>
+                    <div className="mt-0.5 truncate text-[11.5px] text-muted">{v.waiting ? "Waiting for a reply" : "Waiting for the request"} · {v.vendor.email}</div>
                   )}
                 </div>
                 {got
@@ -237,9 +273,10 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             );
           })}
         </Card>
+        )}
 
         {/* other ways a quote can arrive */}
-        {repliesIn && (
+        {(repliesIn || (blank && !!s.sentAt)) && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed border-line px-4 py-3 text-[12.5px]">
             <span className="text-muted">Quotes arrive by reply to the request email. Got one another way?</span>
             <span className="ml-auto flex flex-wrap gap-2">
@@ -251,9 +288,11 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           </div>
         )}
 
+        {(!blank || shown.lines.length > 0) && (
         <Disclosure key={s.rfxDraft ? "draft" : "sent"} title={s.rfxDraft ? "What we will ask vendors (amendment draft)" : "What we asked vendors"} summary={`${shown.lines.length} items · ${shown.questionnaire.length} questions (${shown.questionnaire.filter((q) => q.must_have).length} must-have) · terms`} defaultOpen={flash.length > 0 || !!s.rfxDraft}>
           <RequestDetail r={shown} flash={amend ? amend.flash : flash} />
         </Disclosure>
+        )}
       </div>
 
       {/* ---------- side: request co-pilot ---------- */}
@@ -269,6 +308,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           {s.copilot.map((m, i) => (
             <div key={i} className={cx("rounded-lg px-3 py-2 text-[12.5px] leading-relaxed", m.role === "user" ? "ml-6 bg-brand text-white" : "mr-2 bg-panel")}>
               <Md text={m.text} />
+              {m.files && m.files.length > 0 && <div className="mt-1.5 text-[11.5px] text-white/80">📎 {m.files.join(", ")}</div>}
               {m.ops && m.ops.length > 0 && (
                 <div className="mt-2 space-y-1 border-t border-line pt-2">
                   {m.ops.map((o, j) => (
@@ -295,6 +335,18 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
               </button>
             ))}
           </div>
+          {files.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {files.map((f, i) => (
+                <span key={i} className="inline-flex max-w-full items-center gap-1 rounded-md border border-line bg-panel px-2 py-0.5 text-[11.5px]">
+                  <span className="truncate">{f.name}</span>
+                  <button type="button" aria-label={`Remove ${f.name}`} className="text-muted hover:text-ink" onClick={() => setFiles(files.filter((_, j) => j !== i))}>
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -302,14 +354,52 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             }}
             className="flex gap-2"
           >
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Change the request…" className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-kraft" />
-            <Button variant="primary" disabled={busy || !input.trim()}>
+            <input ref={fileRef} type="file" multiple hidden accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => (setFiles((f) => [...f, ...Array.from(e.target.files || [])].slice(0, 5)), (e.target.value = ""))} />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} title="Attach a file for the co-pilot to read: a spec sheet, last year's order, an Excel list of items, a photo of a drawing" aria-label="Attach a file" className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-line text-[15px] text-muted hover:bg-panel hover:text-ink disabled:opacity-40">
+              📎
+            </button>
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={files.length ? "Say what to do with the file…" : "Change the request…"} className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-[13px] outline-none focus:border-kraft" />
+            <Button variant="primary" disabled={busy || (!input.trim() && !files.length)}>
               Send
             </Button>
           </form>
         </div>
       </Card>
     </div>
+  );
+}
+
+/** A new request has nothing to show yet: say what to do, and let the buyer start from sample data instead. */
+function GetStarted({ hasLines, onSample, onExample, onAdd, onSend }: { hasLines: boolean; onSample: () => void; onExample: () => void; onAdd: () => void; onSend: () => void }) {
+  return (
+    <Card className="p-6">
+      <div className="text-[15px] font-semibold">{hasLines ? "Next: pick vendors and send" : "How do you want to start?"}</div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {hasLines ? (
+          <button onClick={onSend} className="rounded-xl border border-ink bg-ink p-4 text-left text-white sm:col-span-2">
+            <div className="text-[13.5px] font-semibold">Choose vendors and send the request</div>
+            <div className="mt-0.5 text-[12px] text-white/70">Pick from your vendor list. Vendors get one email each and reply in any format.</div>
+          </button>
+        ) : (
+          <div className="rounded-xl border border-line p-4 sm:col-span-2">
+            <div className="text-[13.5px] font-semibold">Describe it to the co-pilot</div>
+            <div className="mt-0.5 text-[12px] text-muted">Type what you need in the box on the right, or attach a spec sheet or last year&apos;s order with the paperclip. The items it adds show up here.</div>
+          </div>
+        )}
+        <button onClick={onSample} className="rounded-xl border border-line p-4 text-left hover:bg-panel">
+          <div className="text-[13.5px] font-semibold">Load the sample event</div>
+          <div className="mt-0.5 text-[12px] text-muted">A ready request for corrugated packaging, 30 items and a questionnaire. Nothing sent yet.</div>
+        </button>
+        <button onClick={onExample} className="rounded-xl border border-line p-4 text-left hover:bg-panel">
+          <div className="text-[13.5px] font-semibold">Load the finished example</div>
+          <div className="mt-0.5 text-[12px] text-muted">The same event, already sent, with five vendor replies in.</div>
+        </button>
+        <button onClick={onAdd} className="rounded-xl border border-dashed border-line p-4 text-left hover:bg-panel sm:col-span-2">
+          <div className="text-[13.5px] font-semibold">I already have a vendor quote</div>
+          <div className="mt-0.5 text-[12px] text-muted">Upload a file or paste an email and read it directly.</div>
+        </button>
+      </div>
+    </Card>
   );
 }
 

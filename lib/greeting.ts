@@ -6,7 +6,7 @@ const tonnes = (r: Rfx) => r.lines.reduce((a, l) => a + l.annual_qty * l.est_wei
 /** What the request co-pilot says first. Worked out from the request as it stands now, so it can never go stale. */
 export function greeting(rfx: Rfx, o: { sentAt: string | null; vendors: number; hasDraft: boolean }): string {
   if (!rfx.lines.length)
-    return "Tell me what you need to buy: the category, rough yearly volumes, where it ships to and when you need quotes. I'll draft the items, a supplier questionnaire and terms, and ask only what I can't sensibly assume.";
+    return "Tell me what you need to buy. This prototype handles corrugated packaging: the box type and size (L×W×H in mm), print, and roughly how many a year. Or attach a spec sheet or last year's order with the paperclip. I'll draft the items, a supplier questionnaire and terms, and ask only what I can't sensibly assume.";
 
   const mustN = rfx.questionnaire.filter((q) => q.must_have).length;
   const items = `**${plural(rfx.lines.length, "item")}**${rfx.lines.some((l) => l.est_weight_kg > 0) ? ` (about ${Math.round(tonnes(rfx)).toLocaleString("en-IN")} tonnes a year)` : ""}`;

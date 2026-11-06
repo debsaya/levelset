@@ -204,3 +204,54 @@ export function MoreMenu({ items, title = "More actions" }: { items: { label: st
     </span>
   );
 }
+
+/** Shown on a step that has nothing to show yet: says why, in terms of the earlier steps, and offers the way forward. */
+export function Blocked({ b, go, bare = false }: { b: { title: string; text: string; to: "rfx" | "quotes"; cta: string }; go: (p: "rfx" | "quotes") => void; bare?: boolean }) {
+  const card = (
+    <div className="rounded-2xl border border-line bg-white p-8 text-center">
+      <div className="text-[20px] font-semibold tracking-tight">{b.title}</div>
+      <p className="mx-auto mt-2 max-w-md text-muted">{b.text}</p>
+      <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={() => go(b.to)}>
+        {b.cta}
+      </Button>
+    </div>
+  );
+  if (bare) return card;
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-[860px] px-6 py-8">{card}</div>
+    </div>
+  );
+}
+
+/** The request this whole session is about, shown the same way on every step. */
+export function EventBar({ id, title, due, revision, blank, sent }: { id: string; title: string; due: string; revision: number; blank: boolean; sent: boolean }) {
+  const d = new Date(due);
+  const days = Math.ceil((d.getTime() - Date.now()) / 864e5);
+  const dueText = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const left = days > 1 ? `${days} days left` : days === 1 ? "1 day left" : days === 0 ? "due today" : "past due";
+  const untitled = blank && /^untitled/i.test(title);
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-line bg-panel px-5 py-2">
+      <div className="flex min-w-0 items-baseline gap-2.5">
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted">Request</span>
+        <span className={cx("truncate text-[14.5px] font-semibold tracking-tight", untitled && "font-normal italic text-muted")} title={title}>
+          {untitled ? "Untitled request. Describe what you are buying in Collect quotes." : title.replace(/\s*—\s*/, ": ")}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-[12px] text-muted">
+        {!blank && (
+          <span className="rounded-md border border-line bg-white px-2 py-0.5 font-mono text-[11.5px] text-ink" title="The reference number of this request. It is in the subject line of the email vendors get, so their replies find their way back here.">
+            {id}
+            {revision > 1 ? ` · rev ${revision}` : ""}
+          </span>
+        )}
+        {blank && <span className="rounded-md border border-dashed border-line bg-white px-2 py-0.5 text-[11.5px]">Draft, not sent</span>}
+        <span className="rounded-md border border-line bg-white px-2 py-0.5" title="The date vendors have been asked to reply by.">
+          Quotes due <b className="font-semibold text-ink">{dueText}</b>
+          {!sent || days < 0 ? "" : <span className={cx("ml-1", days <= 3 && "text-warn")}>· {left}</span>}
+        </span>
+      </div>
+    </div>
+  );
+}

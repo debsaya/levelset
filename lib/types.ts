@@ -133,6 +133,6 @@ export type CellOverride = {
 
 export type AuditEntry = { at: string; who: string; what: string };
 
-export type ChatMsg = { role: "user" | "assistant"; text: string; ops?: string[] };
+export type ChatMsg = { role: "user" | "assistant"; text: string; ops?: string[]; files?: string[] };
 
 export type PriorContracts = Record<string, { vendor: string; contract_ref: string; period: string; basis: string; prices: Record<string, number> }>;

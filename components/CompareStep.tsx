@@ -6,7 +6,8 @@ import { crore, inr, key, type Cell, type Normalized, type QCell, type VendorSum
 import { exportWorkbook } from "@/lib/export";
 import { postJson } from "@/lib/api";
 import { fileName } from "./InboxStep";
-import { Badge, Button, Card, Spinner, cx } from "./ui";
+import { Badge, Blocked, Button, Card, Spinner, cx } from "./ui";
+import { blocker } from "@/lib/flow";
 
 const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
   qualified: { tone: "good", label: "Approved" },
@@ -14,7 +15,7 @@ const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
   not_qualified: { tone: "bad", label: "Not approved" },
 };
 
-export default function CompareStep({ n, onNext, onBack, initialReview }: { n: Normalized; onNext: () => void; onBack?: () => void; initialReview?: boolean }) {
+export default function CompareStep({ n, onNext, go, initialReview }: { n: Normalized; onNext: () => void; go: (p: "rfx" | "quotes") => void; initialReview?: boolean }) {
   const { s, set, log } = useStore();
   const [tab, setTab] = useState<"prices" | "questionnaire" | "audit">("prices");
   const [onlyReview, setOnlyReview] = useState(!!initialReview);
@@ -28,22 +29,10 @@ export default function CompareStep({ n, onNext, onBack, initialReview }: { n: N
 
   const rows = useMemo(() => s.rfx.lines.filter((l) => !onlyReview || vs.some((v) => ["review", "deviation"].includes(n.cellMap[key(v.vendor_id, l.id)]?.status))), [s.rfx.lines, onlyReview, n, vs]);
 
-  if (!vs.length)
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto max-w-[860px] px-6 py-8">
-          <div className="rounded-2xl border border-line bg-white p-8 text-center">
-            <div className="text-[20px] font-semibold">Nothing to compare yet</div>
-            <p className="mx-auto mt-2 max-w-md text-muted">Once the vendor quotes are read, every price lands side by side here, normalised to one basis.</p>
-            {onBack && (
-              <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={onBack}>
-                Go to Read quotes
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  if (!vs.length) {
+    const b = blocker(s);
+    return <Blocked b={b || { title: "Nothing to compare yet", text: "Read the quotes first. Every price then lands here side by side.", to: "quotes", cta: "Go to Read quotes" }} go={go} />;
+  }
 
   const setA = (patch: Partial<typeof a>, what: string) => {
     set((x) => ({ ...x, assumptions: { ...x.assumptions, ...patch } }));

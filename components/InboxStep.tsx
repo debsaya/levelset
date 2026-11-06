@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
-import { Badge, Button, Card, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { blocker } from "@/lib/flow";
+import seedVendors from "@/data/vendors.json";
 import { fileName, useReader } from "@/lib/reader";
 import type { Normalized } from "@/lib/normalize";
 
@@ -10,7 +12,7 @@ export { fileName };
 
 const FORMAT_ICON: Record<string, string> = {};
 
-export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normalized; onNext: () => void; initialAdd?: boolean }) {
+export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: Normalized; onNext: () => void; go: (p: "rfx" | "quotes") => void; initialAdd?: boolean }) {
   const { s, set, log } = useStore();
   const [sel, setSel] = useState<string | undefined>(s.responses[0]?.vendor.id);
   const [adding, setAdding] = useState(initialAdd);
@@ -22,7 +24,7 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
   const { read, readAll, hasSaved, loadSaved } = useReader();
 
   const doneCount = visible.filter((r) => r.status === "done").length;
-  const nextId = `V${Math.max(0, ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
+  const nextId = `V${Math.max(seedVendors.length, ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
 
   const dropVendorKeys = <T,>(o: Record<string, T>, id: string) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith(`${id}|`))) as Record<string, T>;
   function removeVendor(id: string) {
@@ -74,8 +76,8 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
         <div className="flex-1 divide-y divide-line overflow-y-auto">
           {!s.sentAt && s.mode === "demo" && (
             <div className="space-y-3 p-5 text-sm text-muted">
-              <p>Nothing yet — your request hasn&apos;t been sent.</p>
-              <Button onClick={() => set((x) => ({ ...x, sentAt: new Date().toISOString() }))}>Skip ahead: simulate replies arriving</Button>
+              <p>Nothing to read yet: the request has not been sent.</p>
+              <Button onClick={() => go("rfx")}>Go to Collect quotes</Button>
             </div>
           )}
           {visible.map((r) => (
@@ -135,7 +137,10 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
         ) : cur ? (
           <ResponseDetail r={cur} onRead={() => read(cur)} menu={menuFor(cur)} />
         ) : (
-          <div className="p-8 text-muted">Select a response.</div>
+          (() => {
+            const b = blocker(s);
+            return b ? <Blocked b={b} go={go} /> : <div className="p-8 text-muted">Select a response.</div>;
+          })()
         )}
       </Card>
       {deleting && (
@@ -250,8 +255,8 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
                 ))}
               </div>
             )}
-            <div>
-              <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Prices as read ({ex.lines.length})</div>
+            <Disclosure title="Prices as read" summary={`${ex.lines.length} ${ex.lines.length === 1 ? "price" : "prices"}${ex.lines.filter((l) => Math.min(l.match_confidence, l.read_confidence) < 0.8).length ? ` · ${ex.lines.filter((l) => Math.min(l.match_confidence, l.read_confidence) < 0.8).length} low confidence` : ""} · where each was found`}>
+              <div className="overflow-x-auto px-4 py-3">
               <table className="w-full text-[12px] tabular">
                 <thead className="text-left text-[11px] text-muted">
                   <tr className="border-b border-line">
@@ -296,7 +301,8 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
                   <b>Not quoted:</b> {ex.not_quoted.map((n) => `${n.rfx_line_id} (${n.reason})`).join("; ")}
                 </div>
               )}
-            </div>
+              </div>
+            </Disclosure>
             <button className="text-xs text-kraft" onClick={() => setShowRaw(!showRaw)}>
               {showRaw ? "Hide" : "Show"} raw extraction JSON
             </button>
@@ -355,7 +361,8 @@ function AddResponse({ onCancel, onAdd, nextId, replacing }: { onCancel: () => v
     <div className="space-y-3 p-5">
       <div className="font-semibold">{replacing ? `Replace the response from ${replacing.name}` : "Add a vendor response"}</div>
       <div className="text-xs text-muted">Add whatever the vendor sent: a PDF, Excel or CSV file, a Word document, a phone photo, or paste the email text. It is read against your request exactly like the others.</div>
-      <input className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
+      <input list="levelset-vendors" className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
+      <datalist id="levelset-vendors">{(seedVendors as { name: string }[]).map((v) => <option key={v.name} value={v.name} />)}</datalist>
       <textarea className="h-36 w-full rounded-md border border-line px-3 py-2 text-[13px]" placeholder="Paste the email body (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
       <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
       <div className="flex gap-2">

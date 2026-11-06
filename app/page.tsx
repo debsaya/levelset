@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StoreProvider, hasSavedReading, useStore } from "@/lib/store";
-import Login, { type Entry } from "@/components/Login";
+import Login from "@/components/Login";
 import { normalize } from "@/lib/normalize";
 import OverviewStep from "@/components/OverviewStep";
 import CollectStep from "@/components/CollectStep";
@@ -9,7 +9,7 @@ import SendStep from "@/components/SendStep";
 import InboxStep from "@/components/InboxStep";
 import CompareStep from "@/components/CompareStep";
 import AskStep, { type Suggestion } from "@/components/AskStep";
-import { cx } from "@/components/ui";
+import { EventBar, cx } from "@/components/ui";
 
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
@@ -41,13 +41,13 @@ const ASK_BY_STEP: Record<Exclude<Page, "ask" | "send">, Suggestion[]> = {
   ],
 };
 
-function App({ email, start, onSignOut }: { email: string; start?: Page; onSignOut: () => void }) {
-  const { s, reset, hydrated } = useStore();
+function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const { s, reset, loadExample, hydrated } = useStore();
   const [page, setPage] = useState<Page>("rfx");
   const [opts, setOpts] = useState<{ review?: boolean; ask?: string; add?: boolean; nonce: number }>({ nonce: 0 });
   const [menu, setMenu] = useState(false);
   const [askUi, setAskUi] = useState<{ open: boolean; q?: string; k: number }>({ open: false, k: 0 });
-  const [confirm, setConfirm] = useState<null | "demo" | "blank">(null);
+  const [confirm, setConfirm] = useState<null | "demo" | "blank" | "example">(null);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
   const review = n.cells.filter((c) => c.status === "review").length;
   const total = s.responses.length;
@@ -66,8 +66,7 @@ function App({ email, start, onSignOut }: { email: string; start?: Page; onSignO
   useEffect(() => {
     if (!hydrated || landed.current) return;
     landed.current = true;
-    if (start) setPage(start);
-    else if (!s.sentAt && s.mode === "demo") setPage("rfx");
+    if (!s.sentAt && s.mode === "demo") setPage("rfx");
     else if (total && read < total) setPage("quotes");
     else if (read > 0) setPage(review > 0 ? "compare" : "overview");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,14 +111,18 @@ function App({ email, start, onSignOut }: { email: string; start?: Page; onSignO
             Demo data
           </span>
           <div className="relative">
-            <button onClick={() => setMenu(!menu)} className="grid h-8 w-8 place-items-center rounded-full bg-kraft-soft text-[12px] font-semibold text-kraft" title={`${s.rfx.buyer.name}, ${s.rfx.buyer.role}`}>
-              {s.rfx.buyer.name
-                .split(" ")
-                .map((x) => x[0])
-                .join("")}
+            <button onClick={() => setMenu(!menu)} aria-expanded={menu} className="flex items-center gap-2 rounded-full border border-line py-0.5 pl-0.5 pr-3 hover:bg-panel" title={`${s.rfx.buyer.name}, ${s.rfx.buyer.role}`}>
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-kraft-soft text-[11.5px] font-semibold text-kraft">
+                {s.rfx.buyer.name
+                  .split(" ")
+                  .map((x) => x[0])
+                  .join("")}
+              </span>
+              <span className="hidden text-[12.5px] font-medium md:inline">{s.rfx.buyer.name.split(" ")[0]}</span>
+              <span className="text-[9px] text-muted">▾</span>
             </button>
             {menu && (
-              <div className="absolute right-0 top-10 z-50 w-60 rounded-xl border border-line bg-white p-1.5 text-[13px] shadow-lg">
+              <div className="absolute right-0 top-11 z-50 w-64 rounded-xl border border-line bg-white p-1.5 text-[13px] shadow-lg">
                 <div className="px-3 py-2 text-[12px] text-muted">
                   {s.rfx.buyer.name}
                   <br />
@@ -127,30 +130,39 @@ function App({ email, start, onSignOut }: { email: string; start?: Page; onSignO
                   <br />
                   <span className="text-[11.5px]">{email}</span>
                 </div>
+                <div className="my-1 border-t border-line" />
+                <div className="px-3 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-muted">Sample data</div>
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("demo"), setMenu(false))}>
-                  Reset the demo event
+                  Start the sample event over
+                  <span className="block text-[11.5px] text-muted">Request drafted, nothing sent yet</span>
                 </button>
+                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("example"), setMenu(false))}>
+                  Load the finished example
+                  <span className="block text-[11.5px] text-muted">Request sent, five replies in</span>
+                </button>
+                <div className="my-1 border-t border-line" />
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("blank"), setMenu(false))}>
                   Start a new request from scratch
-                </button>
-                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setMenu(false), onSignOut())}>
-                  Sign out
                 </button>
               </div>
             )}
           </div>
+          <button onClick={onSignOut} className="rounded-lg px-2.5 py-1.5 text-[13px] text-muted hover:bg-panel hover:text-ink" title={`Signed in as ${email}`}>
+            Sign out
+          </button>
         </div>
       </header>
+      <EventBar id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
       <main className="flex min-h-0 flex-1 overflow-hidden">
         <div className="min-w-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
         {page === "send" && <SendStep onNext={() => go("rfx")} />}
-        {page === "quotes" && <InboxStep key={opts.nonce} n={n} onNext={() => go("compare")} initialAdd={!!opts.add} />}
-        {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} onBack={() => go("quotes")} initialReview={!!opts.review} />}
+        {page === "quotes" && <InboxStep key={opts.nonce} n={n} onNext={() => go("compare")} go={(p) => go(p)} initialAdd={!!opts.add} />}
+        {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} go={(p) => go(p)} initialReview={!!opts.review} />}
         </div>
         {askUi.open && (
-          <aside className="fixed inset-y-14 right-0 z-40 flex w-[440px] max-w-full flex-col border-l border-line bg-white shadow-xl min-[1700px]:static min-[1700px]:z-auto min-[1700px]:shrink-0 min-[1700px]:shadow-none" aria-label="Ask AI">
+          <aside className="fixed bottom-0 right-0 top-[6.4rem] z-40 flex w-[440px] max-w-full flex-col border-l border-line bg-white shadow-xl min-[1700px]:static min-[1700px]:z-auto min-[1700px]:shrink-0 min-[1700px]:shadow-none" aria-label="Ask AI">
             <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
               <div>
                 <div className="text-[14px] font-semibold">Ask AI</div>
@@ -169,7 +181,7 @@ function App({ email, start, onSignOut }: { email: string; start?: Page; onSignO
       {confirm && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
           <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Reset the demo event?" : "Start a new request?"}</div>
+            <div className="text-[15px] font-semibold">{confirm === "demo" ? "Start the sample event over?" : confirm === "example" ? "Load the finished example?" : "Start a new request?"}</div>
             <p className="mt-1.5 text-[13px] text-muted">This clears the quotes you've read, your review decisions and the analyst conversation in this browser.</p>
             <div className="mt-5 flex justify-end gap-2">
               <button className="rounded-lg px-3.5 py-2 text-[13px] hover:bg-panel" onClick={() => setConfirm(null)}>
@@ -178,12 +190,17 @@ function App({ email, start, onSignOut }: { email: string; start?: Page; onSignO
               <button
                 className="rounded-lg bg-ink px-3.5 py-2 text-[13px] font-medium text-white"
                 onClick={() => {
-                  reset(confirm);
+                  if (confirm === "example") {
+                    loadExample();
+                    go(hasSavedReading ? "overview" : "quotes");
+                  } else {
+                    reset(confirm);
+                    go("rfx");
+                  }
                   setConfirm(null);
-                  go("rfx");
                 }}
               >
-                {confirm === "demo" ? "Reset" : "Start new"}
+                {confirm === "demo" ? "Start over" : confirm === "example" ? "Load it" : "Start new"}
               </button>
             </div>
           </div>
@@ -197,9 +214,8 @@ const SESSION_KEY = "levelset-session";
 
 /** The front door: a demo sign-in, then the four-step app. */
 function Gate() {
-  const { s, reset, loadExample, hydrated } = useStore();
+  const { hydrated } = useStore();
   const [auth, setAuth] = useState<{ email: string } | null | undefined>(undefined);
-  const [start, setStart] = useState<Page | undefined>(undefined);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SESSION_KEY);
@@ -212,14 +228,10 @@ function Gate() {
   if (!auth)
     return (
       <Login
-        hasWork={!!s.sentAt || s.mode === "blank" || s.responses.some((r) => r.status === "done") || !!s.rfxDraft || s.analyst.length > 0}
-        onEnter={(email, entry: Entry) => {
+        onEnter={(email) => {
           try {
             localStorage.setItem(SESSION_KEY, JSON.stringify({ email, at: new Date().toISOString() }));
           } catch {}
-          if (entry === "fresh") reset("demo");
-          if (entry === "example") loadExample();
-          setStart(entry === "example" && hasSavedReading ? "overview" : undefined);
           setAuth({ email });
         }}
       />
@@ -227,12 +239,10 @@ function Gate() {
   return (
     <App
       email={auth.email}
-      start={start}
       onSignOut={() => {
         try {
           localStorage.removeItem(SESSION_KEY);
         } catch {}
-        setStart(undefined);
         setAuth(null);
       }}
     />

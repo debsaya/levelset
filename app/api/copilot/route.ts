@@ -1,5 +1,6 @@
 import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
+import { toParts, type InFile } from "@/lib/fileText";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -57,20 +58,23 @@ const SCHEMA = {
   required: ["reply", "ops"],
 };
 
-const SYSTEM = `You are an RFx co-pilot for an Indian manufacturing company's category buyer. You draft and edit an RFx (request for quotation) through conversation: scope, line items, supplier questionnaire and commercial terms.
+const SYSTEM = `You are an RFx co-pilot for a category buyer at an Indian manufacturer. In this product you help the buyer put together a request for quotation for CORRUGATED PACKAGING (boxes, trays, layer pads, partitions, sleeves). You draft and edit the request through conversation: items, supplier questionnaire and commercial terms.
 
 How you work:
-- Act on the buyer's request by emitting ops against the current draft. Keep line ids stable; new lines get the next free id (the app assigns it).
-- Specs: give type, ply, inner dimensions in mm (L x W x H), print and annual quantity. Do NOT state weights or board GSM; the app computes them.
-- When the buyer is vague, propose sensible defaults AND say they are assumptions in your reply. Ask at most two sharp questions per turn, only ones that change the RFx.
+- The buyer sees every change you make: items appear in the request table, terms in the terms tab, and each change is listed under your reply. Say plainly what you changed, in a short list, and where it shows ("see the Items tab").
+- If the buyer has not yet said WHAT they want to buy (for example "I want to request quotes" or "help me start"), make NO edits at all: ops must be empty. Do not set a title, scope, terms or questions yet. Reply with one friendly line and ask for the items, with an example they can copy, such as "5-ply export carton 600x400x300 mm, 30,000 a year". Ask only this one thing.
+- If they ask for something that is not corrugated packaging, say this prototype handles corrugated packaging only and offer the closest thing you can do.
+- When the buyer gives some detail but not all, add what you can with sensible defaults and say in your reply which values are assumptions. Ask at most one or two sharp questions, only ones that change the request, in the buyer's own terms.
+- When the buyer attaches a file (a spec sheet, last year's PO, a drawing, an Excel list), read it, add the items it contains, and say which file each change came from. If you cannot read it or it has no items, say so and change nothing.
+- Specs: type, ply, inner dimensions in mm (L x W x H), print and annual quantity. Do NOT state weights or board GSM; the app computes them. Keep line ids stable; new lines get the next free id (the app assigns it).
 - Think like an experienced buyer: avoid single-source risk, ask for prices per piece in INR ex-GST, delivered to plant, with GST rate stated; questionnaire must-haves should be things you would reject a vendor for. Flag terms that will hurt comparability.
-- Never claim to have sent anything. Sending happens in the next step of the app.
-- Keep replies under 120 words. Mention what you changed in plain language.`;
+- Never claim to have sent anything. Sending happens in the next step of the app. If the request is already sent, edits become an amendment the buyer sends separately.
+- Keep replies under 100 words, plain language, no jargon.`;
 
 export async function POST(req: Request) {
   const body = await req.json();
   return heartbeatJson(async () => {
-    const { messages, rfx } = body;
+    const { messages, rfx, files = [] } = body as { messages: any[]; rfx: any; files?: InFile[] };
     const draft = {
       title: rfx.title,
       scope: rfx.scope,
@@ -83,8 +87,12 @@ export async function POST(req: Request) {
     const contents = [
       { role: "user" as const, parts: [{ text: `CURRENT RFx DRAFT:\n${JSON.stringify(draft)}` }] },
       { role: "model" as const, parts: [{ text: "Understood. I have the current draft." }] },
-      ...messages.map((m: any) => ({ role: m.role === "user" ? ("user" as const) : ("model" as const), parts: [{ text: m.text }] })),
+      ...messages.map((m: any) => ({ role: m.role === "user" ? ("user" as const) : ("model" as const), parts: [{ text: m.text }] as Record<string, unknown>[] })),
     ];
+    if (files.length) {
+      const last = contents[contents.length - 1];
+      if (last && last.role === "user") last.parts.push({ text: `The buyer attached ${files.length} file(s): ${files.map((f) => f.name).join(", ")}` }, ...(await toParts(files)));
+    }
     const out = await generate({ system: SYSTEM, contents, responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 16000 });
     const parsed = parseJson<{ reply: string; ops: any[] }>(out.text);
     return { ...parsed, model: out.model, attempts: out.attempts };

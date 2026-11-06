@@ -6,7 +6,8 @@ import { lastYear, scenarios } from "@/lib/award";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal, vendorIssues } from "./CompareStep";
-import { Badge, Button, Disclosure, Spinner, cx } from "./ui";
+import { Badge, Blocked, Button, Disclosure, Spinner, cx } from "./ui";
+import { blocker } from "@/lib/flow";
 
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
 
@@ -44,13 +45,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-[860px] space-y-4 px-6 py-8">
         {done === 0 ? (
-          <div className="rounded-2xl border border-line bg-white p-8 text-center">
-            <div className="text-[20px] font-semibold">Nothing to decide yet</div>
-            <p className="mx-auto mt-2 max-w-md text-muted">Once the vendor replies are read, your recommended award appears here, with everything behind it one click away.</p>
-            <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={() => go("quotes")}>
-              Go to Read quotes
-            </Button>
-          </div>
+          <Blocked bare b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />
         ) : (
           <>
             {done < total && (

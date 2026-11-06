@@ -38,13 +38,13 @@ export function useReader() {
     }
   }
 
+  /** Reads every unread quote at once. All of them show "reading" straight away, so nothing looks stuck waiting its turn. */
   async function readAll() {
-    if (!s.sentAt) set((x) => ({ ...x, sentAt: new Date().toISOString() }));
+    if (!s.sentAt && s.mode === "demo") set((x) => ({ ...x, sentAt: new Date().toISOString() }));
     const queue = s.responses.filter((r) => r.status !== "done" && r.status !== "reading");
-    const worker = async () => {
-      while (queue.length) await read(queue.shift()!);
-    };
-    await Promise.all([worker(), worker()]);
+    if (!queue.length) return;
+    set((x) => ({ ...x, responses: x.responses.map((r) => (queue.some((q) => q.vendor.id === r.vendor.id) ? { ...r, status: "reading" as const, error: undefined } : r)) }));
+    await Promise.all(queue.map((r) => read(r)));
   }
   const hasSaved = Object.keys(saved.extractions).length > 0;
   /** Fallback for a flaky connection or an exhausted AI quota: real results from an earlier live run, labelled as such. */
