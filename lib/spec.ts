@@ -34,6 +34,19 @@ export function describeLine(l: Pick<RfxLine, "type" | "ply" | "dimensions_mm" |
   return `${l.ply}-ply ${l.type} ${dims}, ${String(l.flute).replace(/[-\s]*flute/gi, "")}-flute, ${l.print}`;
 }
 
+/** Lines saved by an older version of the app can carry a flute written as "BC-flute" and a description that reads "BC-flute-flute". Tidy both when saved data is loaded, so old data never shows the typo. */
+export function tidyLines<T extends { lines: RfxLine[] }>(r: T): T {
+  return {
+    ...r,
+    lines: r.lines.map((l) => {
+      const given = String(l.flute ?? "").replace(/flute/gi, "").replace(/[^A-Za-z]/g, "").toUpperCase();
+      const flute = /^[A-Z]{1,3}$/.test(given) ? given : l.flute;
+      const fixed = { ...l, flute };
+      return { ...fixed, description: describeLine(fixed) };
+    }),
+  };
+}
+
 export function buildLine(p: any, id: string): RfxLine {
   const ply = Number(p.ply) || 3;
   // The model sometimes writes "BC-flute" or "b flute"; keep only the letters so the description never reads "BC-flute-flute".
