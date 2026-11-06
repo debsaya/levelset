@@ -3,7 +3,7 @@ import { useState } from "react";
 import { markSent, useStore } from "@/lib/store";
 import { Badge, Button, Card, cx } from "./ui";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
-import { titleInSentence } from "@/lib/spec";
+import { buildRequestEmail } from "@/lib/clarify";
 
 export default function SendStep({ onNext }: { onNext: () => void }) {
   const { s, set, log } = useStore();
@@ -14,27 +14,8 @@ export default function SendStep({ onNext }: { onNext: () => void }) {
   const r = s.rfx;
   const replyTo = (id: string) => `${r.id.toLowerCase()}+${id.toLowerCase()}@inbound.levelset.app`;
 
-  const email = v
-    ? `To: ${v.contact} <${v.email}>
-Reply-To: ${replyTo(v.id)}
-Subject: [${r.id}] Request for quotation — ${r.title}
-
-Dear ${v.contact.split(" ")[0]},
-
-${r.buyer.company} invites ${v.name} to quote for our ${titleInSentence(r.title)}.
-
-• ${r.lines.length} line items (specs and annual volumes in the attached bid sheet, ${r.id}_bid_sheet.xlsx; using it is optional)
-• A ${r.questionnaire.length}-question supplier questionnaire (${r.questionnaire.filter((q) => q.must_have).length} must-haves)
-• Quotes due by ${r.due_date}
-
-Our preferred basis: ${r.terms.format || "price per piece in INR"}; ${r.terms.delivery || ""}; ${r.terms.taxes || ""}.
-
-Reply in whatever format suits you: the bid sheet, your own price list, a PDF, a photo, or just this email. Please keep the subject line so your reply reaches the right event.
-
-Regards,
-${r.buyer.name}
-${r.buyer.role}, ${r.buyer.company}`
-    : "";
+  const mail = v ? buildRequestEmail({ rfx: r, vendorName: v.name, contact: v.contact }) : null;
+  const email = v && mail ? `To: ${v.contact} <${v.email}>\nReply-To: ${replyTo(v.id)}\nSubject: ${mail.subject}\n\n${mail.body}` : "";
 
   function sendAll() {
     set(markSent);
