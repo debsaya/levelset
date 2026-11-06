@@ -10,6 +10,7 @@ import InboxStep from "@/components/InboxStep";
 import CompareStep from "@/components/CompareStep";
 import AskStep, { type Suggestion } from "@/components/AskStep";
 import { EventBar, cx } from "@/components/ui";
+import { nextStep } from "@/lib/flow";
 
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
@@ -152,7 +153,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
           </button>
         </div>
       </header>
-      <EventBar id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
+      <EventBar next={(() => { const nx = nextStep(s, review); return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
       <main className="flex min-h-0 flex-1 overflow-hidden">
         <div className="min-w-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}

@@ -142,7 +142,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.version === 3) dispatch({ type: "replace", state: { ...parsed, pool: parsed.pool || structuredClone(MASTER), reminded: parsed.reminded || {}, copilot: (parsed.copilot || []).filter((m: ChatMsg, i: number) => !(i === 0 && m.role === "assistant" && /^(I.ve loaded the|Tell me what you need to buy)/.test(m.text))), responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)) } });
+        const base = demoState();
+        const ok = parsed?.version === 3 && Array.isArray(parsed.rfx?.lines) && Array.isArray(parsed.rfx?.questionnaire) && parsed.rfx?.terms && typeof parsed.rfx.terms === "object" && Array.isArray(parsed.responses) && parsed.responses.every((r: any) => r?.vendor && typeof r.status === "string");
+        // Saved by an older or odd version of the app: start clean rather than draw a half-matching screen.
+        if (ok)
+          dispatch({
+            type: "replace",
+            state: {
+              ...base,
+              ...parsed,
+              assumptions: { ...base.assumptions, ...(parsed.assumptions || {}) },
+              sentTo: Array.isArray(parsed.sentTo) ? parsed.sentTo : base.sentTo,
+              pool: Array.isArray(parsed.pool) ? parsed.pool : structuredClone(MASTER),
+              reminded: parsed.reminded || {},
+              overrides: parsed.overrides || {},
+              qOverrides: parsed.qOverrides || {},
+              audit: Array.isArray(parsed.audit) ? parsed.audit : [],
+              analyst: Array.isArray(parsed.analyst) ? parsed.analyst : [],
+              analystHistory: Array.isArray(parsed.analystHistory) ? parsed.analystHistory : [],
+              prior: parsed.prior && typeof parsed.prior === "object" ? parsed.prior : base.prior,
+              copilot: (Array.isArray(parsed.copilot) ? parsed.copilot : []).filter((m: ChatMsg, i: number) => !(i === 0 && m.role === "assistant" && /^(I.ve loaded the|Tell me what you need to buy)/.test(m.text))),
+              responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)),
+            },
+          });
+        else localStorage.removeItem(KEY);
       }
     } catch {}
     setHydrated(true);

@@ -39,3 +39,28 @@ describe("Why a later step is empty follows steps 1 and 2", () => {
     assert.equal(blocker(s), null);
   });
 });
+
+import { nextStep } from "../lib/flow";
+describe("What to do next", () => {
+  it("a blank request says to describe what you are buying", () => {
+    assert.match(nextStep(blankState(), 0).text, /co-pilot/);
+  });
+  it("the reset sample event says to check vendors and send", () => {
+    const n = nextStep(demoState(), 0);
+    assert.equal(n.to, "send");
+    assert.match(n.text, /5 vendors/);
+  });
+  it("sent with unread quotes says to read them", () => {
+    const s = exampleState();
+    s.responses = s.responses.map((r) => ({ ...r, status: "new" as const, extraction: undefined }));
+    assert.equal(nextStep(s, 0).to, "quotes");
+    assert.match(nextStep(s, 0).text, /5 quotes/);
+  });
+  it("flagged prices send you to compare, and a clean comparison to the decision", () => {
+    const s = demoState();
+    s.sentAt = "2026-11-12T10:00:00+05:30";
+    s.responses = s.responses.map((r) => ({ ...r, status: "done" as const }));
+    assert.equal(nextStep(s, 3).to, "compare");
+    assert.equal(nextStep(s, 0).to, "overview");
+  });
+});

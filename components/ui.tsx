@@ -225,7 +225,7 @@ export function Blocked({ b, go, bare = false }: { b: { title: string; text: str
 }
 
 /** The request this whole session is about, shown the same way on every step. */
-export function EventBar({ id, title, due, revision, blank, sent }: { id: string; title: string; due: string; revision: number; blank: boolean; sent: boolean }) {
+export function EventBar({ id, title, due, revision, blank, sent, next }: { id: string; title: string; due: string; revision: number; blank: boolean; sent: boolean; next?: { text: string; cta: string; onClick: () => void } }) {
   const d = new Date(due);
   const days = Math.ceil((d.getTime() - Date.now()) / 864e5);
   const dueText = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -252,6 +252,16 @@ export function EventBar({ id, title, due, revision, blank, sent }: { id: string
           {!sent || days < 0 ? "" : <span className={cx("ml-1", days <= 3 && "text-warn")}>· {left}</span>}
         </span>
       </div>
+      {next && (
+        <div className="ml-auto flex items-center gap-2.5 text-[12.5px]">
+          <span className="text-muted">
+            <b className="font-semibold text-ink">Next:</b> {next.text}
+          </span>
+          <button onClick={next.onClick} className="rounded-lg bg-ink px-3 py-1 text-[12.5px] font-medium text-white hover:bg-black">
+            {next.cta} →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
