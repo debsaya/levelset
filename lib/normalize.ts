@@ -15,6 +15,17 @@ function realDeviation(t?: string | null): string | null {
 
 const IMAGE_FILE = /\.(png|jpe?g|webp|heic|gif|bmp|tiff?)$/i;
 /** A price read from a photo or scan: the likeliest place for a misread digit or a slipped row. */
+/** The AI sometimes thinks aloud in a note ("... says X. Wait, row 18 is Y."). Keep only what it settled on, so the buyer never reads the retracted part. */
+export function tidyNote(note: string): string {
+  const t = note.replace(/\s+/g, " ").trim();
+  const hits = [...t.matchAll(/(?:^|[.!?]\s+)(?:wait|hmm+|oops|scratch that|correction)\b[,:.!-]*\s*/gi)];
+  const done = (x: string) => (x && !/[.!?]$/.test(x) ? x + "." : x);
+  if (!hits.length) return done(t);
+  const last = hits[hits.length - 1];
+  const rest = t.slice(last.index! + last[0].length).trim();
+  return rest ? done(rest[0].toUpperCase() + rest.slice(1)) : done(t);
+}
+
 export function isPhotoSource(file: string | null | undefined, format: string | null | undefined): boolean {
   return IMAGE_FILE.test(file || "") || /photo|image|scan|handwrit/i.test(format || "");
 }
@@ -140,6 +151,8 @@ export function crore(n: number) {
   return inr(n, 0);
 }
 const num = (n: number, d = 4) => n.toLocaleString("en-IN", { maximumFractionDigits: d });
+/** A rupee amount inside a working step: always with the ₹ sign, three decimals when it is under ₹1 so small charges do not round to nothing. */
+const rs = (n: number) => inr(n, Math.abs(n) < 1 ? 3 : 2);
 
 function median(xs: number[]) {
   if (!xs.length) return null;
@@ -225,13 +238,13 @@ export function normalize(
             code: "REMATCHED",
             sev: "warn",
             msg: id
-              ? `Size check moved this price: vendor's ${fmtSz} (${mm.map((x) => Math.round(x)).filter(Boolean).join("×")} mm) fits ${best.l.id}, not ${id} as the model first read it.`
+              ? `Size check moved this price: vendor's ${fmtSz} (${mm.map((x) => Math.round(x)).filter(Boolean).join("×")} mm) fits ${best.l.id}, not ${id} as the AI first read it.`
               : `Matched by size: vendor's ${fmtSz} fits ${best.l.id}.`,
           });
           id = best.l.id;
         } else if (!best && id) {
           // the vendor's own size fits no RFx line: don't trust the model's guess
-          unmatched.push(`${fmtSz} (model guessed ${id})`);
+          unmatched.push(`${fmtSz} (the AI guessed ${id})`);
           continue;
         }
         if (best && best.l.id === id) dimErr.set(el, best.e!);
@@ -310,17 +323,17 @@ export function normalize(
       if (basisUnit === "kg") {
         // "₹42,000 per tonne" arrives as kg with basis_qty 1000, "₹4,200 per 100 kg" as 100
         v = (price / basisQty) * line.est_weight_kg;
-        steps.push({ label: basisQty !== 1 ? `Per ${basisQty} kg → per piece` : "Per kg → per piece", value: `${basisQty !== 1 ? `÷ ${basisQty} kg, ` : ""}× ${line.est_weight_kg} kg/pc (weight computed from RFx spec) = ${num(v)}` });
+        steps.push({ label: basisQty !== 1 ? `Per ${basisQty} kg → per piece` : "Per kg → per piece", value: `${basisQty !== 1 ? `÷ ${basisQty} kg, ` : ""}× ${line.est_weight_kg} kg per piece (box weight worked out from your spec) = ${rs(v)}` });
         flags.push({ code: "PER_KG", sev: "info", msg: `Quoted per kg; converted using the RFx's computed box weight (${line.est_weight_kg} kg). Actual box weight may differ by a few %.` });
       } else if (basisQty !== 1) {
         v = price / basisQty;
-        steps.push({ label: `Per ${basisQty} → per piece`, value: `÷ ${basisQty} = ${num(v)}` });
+        steps.push({ label: `Per ${basisQty} → per piece`, value: `÷ ${basisQty} = ${rs(v)}` });
       }
       // 2. currency
       if (currency !== "INR") {
         if (currency === "USD") {
           v = v * a.fx_usd_inr;
-          steps.push({ label: "USD → INR", value: `× ${a.fx_usd_inr} (buyer's rate${ex.fx_rate_stated ? `; vendor's reference ${ex.fx_rate_stated}` : ""}) = ${num(v)}` });
+          steps.push({ label: "USD → INR", value: `× ${a.fx_usd_inr} (your assumed rate${ex.fx_rate_stated ? `; vendor's reference ${ex.fx_rate_stated}` : ""}) = ${rs(v)}` });
           flags.push({ code: "FX", sev: "info", msg: `Converted from USD at ₹${a.fx_usd_inr}. Vendor invoices in INR at the RBI rate on invoice date, so the INR price will move with the currency.` });
         } else {
           flags.push({ code: "FX_UNKNOWN", sev: "block", msg: `Currency ${currency} has no conversion rate configured.` });
@@ -330,17 +343,17 @@ export function normalize(
       if (el.tax_included) {
         const rate = gst ?? 5;
         v = v / (1 + rate / 100);
-        steps.push({ label: "Remove GST", value: `÷ ${1 + rate / 100} (${rate}% GST was included) = ${num(v)}` });
+        steps.push({ label: "Remove GST", value: `÷ ${1 + rate / 100} (the quote included ${rate}% GST) = ${rs(v)}` });
         flags.push({ code: "GST_INCLUDED", sev: gst === null ? "warn" : "info", msg: `Vendor's price included GST${gst === null ? "; rate not stated, assumed 5%" : ` at ${rate}%`}; removed for like-for-like comparison.` });
       }
       // 4. unconditional discounts
       if (uncondPct) {
         v = v * (1 - uncondPct / 100);
-        steps.push({ label: "Discount", value: `× ${1 - uncondPct / 100} (${uncondPct}% unconditional) = ${num(v)}` });
+        steps.push({ label: "Discount", value: `× ${1 - uncondPct / 100} (${uncondPct}% discount, no conditions) = ${rs(v)}` });
       }
       if (surchargePct) {
         v = v * (1 + surchargePct / 100);
-        steps.push({ label: "Surcharge", value: `× ${1 + surchargePct / 100} (${surchargePct}% unconditional surcharge) = ${num(v)}` });
+        steps.push({ label: "Surcharge", value: `× ${1 + surchargePct / 100} (${surchargePct}% surcharge, no conditions) = ${rs(v)}` });
       }
       const preFreight = v;
       // 5. freight
@@ -348,7 +361,7 @@ export function normalize(
       if (freightIncluded === false) {
         freightAdd = freightRate * line.est_weight_kg;
         v = v + freightAdd;
-        steps.push({ label: "Add freight", value: `+ ₹${freightRate}/kg × ${line.est_weight_kg} kg = +${num(freightAdd)} (buyer's freight assumption)` });
+        steps.push({ label: "Add freight (quote was ex-works)", value: `+ ₹${freightRate}/kg × ${line.est_weight_kg} kg = + ${rs(freightAdd)} (your freight assumption)` });
         flags.push({ code: "FREIGHT_ADDED", sev: "info", msg: `Ex-works quote; added estimated freight of ₹${freightRate}/kg to the plant.` });
       } else if (freightIncluded === null || freightIncluded === undefined) {
         flags.push({ code: "FREIGHT_UNCLEAR", sev: "warn", msg: "Freight terms not stated; treated as delivered. Confirm with the vendor." });
@@ -361,15 +374,24 @@ export function normalize(
       const ifRebate = condPct ? preFreight * (1 - condPct / 100) + freightAdd : v;
       if (condPct && a.apply_conditional_rebates) {
         v = ifRebate;
-        steps.push({ label: "Conditional rebate", value: `${condPct}% applied (buyer chose to count it) = ${num(v)}` });
+        steps.push({ label: "Conditional rebate", value: `${condPct}% taken off (you chose to count it) = ${rs(v)}` });
         flags.push({ code: "CONDITIONAL_REBATE", sev: "info", msg: `Includes a ${condPct}% rebate that only applies if its condition is met.` });
       } else if (condPct) flags.push({ code: "CONDITIONAL_REBATE", sev: "info", msg: `A ${condPct}% conditional rebate is not counted in this price (would be ${inr(ifRebate)}).` });
 
       // 6. checks
       const perKg = v / line.est_weight_kg;
       if (perKg < a.per_kg_band[0] || perKg > a.per_kg_band[1]) flags.push({ code: "UNIT_SUSPECT", sev: "warn", msg: `Implies ₹${perKg.toFixed(1)}/kg, outside the ₹${a.per_kg_band[0]}–${a.per_kg_band[1]}/kg band for corrugated. Likely a unit or reading error (per piece vs per 100?).` });
-      if (conf < a.review_threshold) flags.push({ code: "LOW_CONFIDENCE", sev: "warn", msg: `Model confidence ${Math.round(conf * 100)}% (match ${Math.round((el.match_confidence ?? 0) * 100)}%, read ${Math.round((el.read_confidence ?? 0) * 100)}%).${el.note ? " " + el.note : ""}` });
-      else if (el.note) flags.push({ code: "NOTE", sev: "info", msg: el.note });
+      if (conf < a.review_threshold) {
+        const m = el.match_confidence ?? 0, rd = el.read_confidence ?? 0;
+        const why = [m < a.review_threshold && `not sure this price is for this item (${Math.round(m * 100)}% sure of the match)`, rd < a.review_threshold && `not sure the number was read correctly (${Math.round(rd * 100)}% sure)`].filter(Boolean).join(", and ");
+        const mfNow = matchFlag.get(el);
+        const note = el.note ? tidyNote(el.note) : "";
+        // A note that only repeats the numbers already in the size-match message adds nothing.
+        const nums = note.match(/[0-9]+(?:[.][0-9]+)?/g) || [];
+        const echo = !!note && !!mfNow && nums.length > 0 && nums.every((x) => mfNow.msg.includes(x));
+        flags.push({ code: "LOW_CONFIDENCE", sev: "warn", msg: `The AI was ${why}.${note && !echo ? " " + note : ""}` });
+      }
+      else if (el.note) flags.push({ code: "NOTE", sev: "info", msg: tidyNote(el.note) });
       // Photos and scans are held to a higher bar than clean files, but a clear one passes: only a read the AI itself was unsure of is flagged.
       const fromPhoto = isPhotoSource(el.source?.file, r.vendor.format);
       const photoBar = a.photo_review_threshold ?? 0.9;
