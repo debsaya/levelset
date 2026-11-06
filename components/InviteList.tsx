@@ -226,13 +226,12 @@ export default function InviteList() {
                 </div>
               </div>
               {v.source === "master" && (
-                <span className={cx("hidden shrink-0 items-center gap-1.5 text-[12px] md:flex", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
-                  <span className={cx("grid h-4 w-4 place-items-center rounded-full text-[10px] text-white", fit.tone === "good" ? "bg-good" : fit.tone === "bad" ? "bg-bad" : "bg-warn")}>{fit.tone === "good" ? "✓" : fit.tone === "bad" ? "✕" : "!"}</span>
+                <span title="From your vendor records, before any quote arrives. You can still send to this vendor." className={cx("hidden shrink-0 text-[12px] md:block", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
                   {fit.text}
                 </span>
               )}
-              <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted hover:bg-panel hover:text-ink">
-                ✕
+              <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="shrink-0 rounded-md px-2 py-1 text-[12px] text-muted hover:bg-panel hover:text-ink">
+                Remove
               </button>
             </div>
           );
