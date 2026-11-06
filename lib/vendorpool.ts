@@ -49,13 +49,13 @@ export function parseVendorLines(lines: string[][], startId: number, source: Poo
     const joined = cells.map((c) => String(c ?? "").trim()).filter(Boolean).join(" ");
     if (!joined) continue;
     const email = /[^\s<>,;]+@[^\s<>,;]+\.[^\s<>,;]+/.exec(joined)?.[0];
-    if (!email) {
+    if (!email || email.length > 120) {
       if (!/^(name|vendor|supplier)\b/i.test(joined)) skipped.push(joined.slice(0, 60));
       continue;
     }
     const rest = cells.map((c) => String(c ?? "").trim()).filter((c) => c && !c.includes(email));
-    const name = (rest[0] || joined.replace(email, "").replace(/[<>(),;]/g, " ").trim() || email.split("@")[1].split(".")[0]).replace(/\s+/g, " ");
-    vendors.push({ id: `V${id++}`, name, contact: name, email, city: rest[1] || "", km: null, categories: ["corrugated"], iso_valid_until: null, incumbent: false, history: source === "upload" ? "Added from an uploaded list" : source === "paste" ? "Added from pasted emails" : "Added by hand", source });
+    const name = (rest[0] || joined.replace(email, "").replace(/[<>(),;]/g, " ").trim() || email.split("@")[1].split(".")[0]).replace(/\s+/g, " ").slice(0, 80);
+    vendors.push({ id: `V${id++}`, name, contact: name, email, city: (rest[1] || "").slice(0, 60), km: null, categories: ["corrugated"], iso_valid_until: null, incumbent: false, history: source === "upload" ? "Added from an uploaded list" : source === "paste" ? "Added from pasted emails" : "Added by hand", source });
   }
   return { vendors, skipped };
 }

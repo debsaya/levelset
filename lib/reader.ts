@@ -28,6 +28,8 @@ export function useReader() {
               return { name, mime: mimeFor(name), data: await fileToB64(blob) };
             })
           );
+      const bytes = files.reduce((a, f) => a + f.data.length, 0); // base64 text; the host rejects bodies over about 4.5 MB
+      if (bytes > 4_000_000) throw new Error("Those files are too large for this demo (about 3 MB in total). Try fewer or smaller files, or one at a time.");
       const pc = s.prior[r.vendor.id];
       const j: any = await postJson("/api/extract", { vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null }, 3, { kind: "extract", label: r.vendor.name });
       if (j.error) throw new Error(j.error);

@@ -29,6 +29,7 @@ export function nextStep(s: State, review: number): NextStep {
     if (!s.sentTo.length) return { text: "choose who gets the request", cta: "Choose vendors", to: "rfx" };
     return { text: `check the vendor list, then send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
   }
+  if (!s.sentAt && s.mode === "demo" && !s.sentTo.length) return { text: "choose who gets the request", cta: "Choose vendors", to: "rfx" };
   if (!s.sentAt && s.mode === "demo") return { text: `check the vendor list, then send the request to ${plural(s.sentTo.length, "vendor")}`, cta: "Review and send", to: "send" };
   if (!n) return { text: "wait for vendor replies, or add a quote you already have", cta: "Add a quote", to: "rfx" };
   if (reading) return { text: `${plural(reading, "quote")} being read`, cta: "Watch in Read quotes", to: "quotes" };

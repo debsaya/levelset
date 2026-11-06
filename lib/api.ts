@@ -17,7 +17,12 @@ async function attempt<T>(url: string, body: unknown, tries: number): Promise<T 
     try {
       const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: payload, signal: AbortSignal.timeout(290_000) });
       const txt = (await res.text()).trim();
-      last = txt ? JSON.parse(txt) : { error: "The connection closed before the AI answered." };
+      if (res.status === 413) return { error: "Those files are too large for this demo (about 3 MB in total). Try fewer or smaller files, or one at a time." } as any;
+      try {
+        last = txt ? JSON.parse(txt) : { error: "The connection closed before the AI answered." };
+      } catch {
+        last = { error: `The server sent an unexpected reply (HTTP ${res.status}). Press retry.` };
+      }
       if (!res.ok && !last.error) last.error = `HTTP ${res.status}`;
     } catch (e: any) {
       last = { error: e?.name === "TimeoutError" ? "The AI took too long. Press retry." : e?.message || "Network error" };

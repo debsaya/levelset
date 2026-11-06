@@ -55,3 +55,13 @@ describe("Choosing who gets the request", () => {
     assert.equal(markSent(once).sentAt, once.sentAt);
   });
 });
+
+describe("Pasted vendor lists: hostile and messy input", () => {
+  it("caps long names and cities, skips absurd emails, ignores markup without an email", () => {
+    const long = "N".repeat(500);
+    const { vendors, skipped } = parseVendorLines([[long, "C".repeat(500), "a@b.co"], ["x".repeat(300) + "@" + "y".repeat(10) + ".com"], ["<img src=x onerror=alert(1)>"], ["just words"]], 1, "paste");
+    assert.equal(vendors.length, 1);
+    assert.ok(vendors[0].name.length <= 80 && vendors[0].city.length <= 60);
+    assert.ok(skipped.length >= 2);
+  });
+});

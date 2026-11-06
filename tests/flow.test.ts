@@ -64,3 +64,11 @@ describe("What to do next", () => {
     assert.equal(nextStep(s, 0).to, "overview");
   });
 });
+
+describe("Next step with no vendors chosen", () => {
+  it("asks to choose vendors instead of sending to zero", () => {
+    const st = { ...demoState(), sentTo: [] as string[] };
+    const nx = nextStep(st, 0);
+    assert.match(nx.text, /choose who gets/);
+  });
+});
