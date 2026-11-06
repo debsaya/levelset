@@ -1,6 +1,7 @@
 import { heartbeatJson } from "@/lib/stream";
 import { generate, parseJson } from "@/lib/gemini";
 import { toParts, type InFile } from "@/lib/fileText";
+import { incomplete } from "@/lib/rfxOps";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -68,13 +69,16 @@ How you work:
 - When the buyer attaches a file (a spec sheet, last year's PO, a drawing, an Excel list), read it, add the items it contains, and say which file each change came from. If you cannot read it or it has no items, say so and change nothing.
 - Specs: type, ply, inner dimensions in mm (L x W x H), print and annual quantity. Do NOT state weights or board GSM; the app computes them. Keep line ids stable; new lines get the next free id (the app assigns it).
 - Think like an experienced buyer: avoid single-source risk, ask for prices per piece in INR ex-GST, delivered to plant, with GST rate stated; questionnaire must-haves should be things you would reject a vendor for. Flag terms that will hurt comparability.
+- Every edit must carry its full payload: add_line and update_line need the complete line object, add_question and update_question need the question object (text, kind and must_have), set_meta needs the meta object. An edit that names a change but has no payload does nothing, and the buyer will be told it failed.
+- The title is a short name of at most 80 characters, such as "Annual contract for corrugated export cartons". Never put explanations, notes or the scope in the title. The scope is one or two sentences in the scope field.
+- Propose, don't impose: do not mark a new question as a must-have unless the buyer asked for it or it is a safety or legal requirement. If you think one should be a must-have, say so in your reply and let the buyer decide.
 - Never claim to have sent anything. Sending happens in the next step of the app. If the request is already sent, edits become an amendment the buyer sends separately.
 - Keep replies under 100 words, plain language, no jargon.`;
 
 export async function POST(req: Request) {
   const body = await req.json();
   return heartbeatJson(async () => {
-    const { messages, rfx, files = [] } = body as { messages: any[]; rfx: any; files?: InFile[] };
+    const { messages, rfx, files = [], amending = false } = body as { messages: any[]; rfx: any; files?: InFile[]; amending?: boolean };
     const draft = {
       title: rfx.title,
       scope: rfx.scope,
@@ -85,7 +89,7 @@ export async function POST(req: Request) {
       terms: rfx.terms,
     };
     const contents = [
-      { role: "user" as const, parts: [{ text: `CURRENT RFx DRAFT:\n${JSON.stringify(draft)}` }] },
+      { role: "user" as const, parts: [{ text: `CURRENT RFx DRAFT:\n${JSON.stringify(draft)}${amending ? "\n\nNOTE: this request has ALREADY been sent to vendors. Whatever the buyer asks for now goes into an AMENDMENT DRAFT that vendors do not see until the buyer sends it. Say so in your reply (for example: I have added it to the amendment draft; vendors have not been told yet)." : ""}` }] },
       { role: "model" as const, parts: [{ text: "Understood. I have the current draft." }] },
       ...messages.map((m: any) => ({ role: m.role === "user" ? ("user" as const) : ("model" as const), parts: [{ text: m.text }] as Record<string, unknown>[] })),
     ];
@@ -93,8 +97,26 @@ export async function POST(req: Request) {
       const last = contents[contents.length - 1];
       if (last && last.role === "user") last.parts.push({ text: `The buyer attached ${files.length} file(s): ${files.map((f) => f.name).join(", ")}` }, ...(await toParts(files)));
     }
-    const out = await generate({ system: SYSTEM, contents, responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 16000 });
-    const parsed = parseJson<{ reply: string; ops: any[] }>(out.text);
+    const run = async (cs: typeof contents) => {
+      const out = await generate({ system: SYSTEM, contents: cs, responseSchema: SCHEMA, thinking: "low", maxOutputTokens: 16000 });
+      return { out, parsed: parseJson<{ reply: string; ops: any[] }>(out.text) };
+    };
+    let { out, parsed } = await run(contents);
+    // The model sometimes says it made a change but sends an empty edit. Ask once for the complete edits.
+    const problems = (parsed.ops || []).map((o) => incomplete(o)).filter(Boolean);
+    if (problems.length) {
+      try {
+        const again = await run([
+          ...contents,
+          { role: "model" as const, parts: [{ text: out.text }] as Record<string, unknown>[] },
+          { role: "user" as const, parts: [{ text: `Some of your edits were empty and did nothing (${problems.join("; ")}). Send ALL the edits again, each with its complete payload, and a reply that says only what really changed.` }] as Record<string, unknown>[] },
+        ]);
+        out = again.out;
+        parsed = again.parsed;
+      } catch {
+        /* keep the first answer; the app reports what could not be applied */
+      }
+    }
     return { ...parsed, model: out.model, attempts: out.attempts };
   });
 }

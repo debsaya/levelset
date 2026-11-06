@@ -141,12 +141,12 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     setBusy(true);
     try {
       const enc = await Promise.all(sentFiles.map(async (f) => ({ name: f.name, mime: f.type || mimeFor(f.name), data: await fileToB64(f) })));
-      const j = await postJson("/api/copilot", { messages: msgs.map((m) => ({ role: m.role, text: m.text })), rfx: base, files: enc });
+      const j = await postJson("/api/copilot", { messages: msgs.map((m) => ({ role: m.role, text: m.text })), rfx: base, files: enc, amending: locked });
       if (j.error) throw new Error(j.error);
       const before = new Set(base.lines.map((l) => JSON.stringify(l)));
-      const { rfx, notes } = applyOps(base, j.ops || []);
+      const { rfx, notes, failed } = applyOps(base, j.ops || []);
       setFlash(rfx.lines.filter((l) => !before.has(JSON.stringify(l))).map((l) => l.id));
-      const reply = { role: "assistant" as const, text: j.reply, ops: notes };
+      const reply = { role: "assistant" as const, text: failed.length ? `${j.reply}\n\n⚠️ Not applied: ${failed.join("; ")}. Try saying it a different way.` : j.reply, ops: notes };
       set((x) => ({ ...x, ...(locked ? (notes.length ? { rfxDraft: rfx } : {}) : { rfx }), copilot: [...msgs, reply] }));
       if (notes.length) log(locked ? `Co-pilot drafted an amendment: ${notes.length} change(s), not yet sent to vendors` : `Co-pilot edited the request: ${notes.length} change(s)`);
     } catch (e: any) {
@@ -375,7 +375,12 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             }}
             className="flex gap-2"
           >
-            <input ref={fileRef} type="file" multiple hidden accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => (setFiles((f) => [...f, ...Array.from(e.target.files || [])].slice(0, 5)), (e.target.value = ""))} />
+            <input ref={fileRef} type="file" multiple hidden accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => {
+              // Take the files out before clearing the input, which also empties the list the browser hands us.
+              const picked = Array.from(e.target.files || []);
+              e.target.value = "";
+              setFiles((f) => [...f, ...picked].slice(0, 5));
+            }} />
             <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} title="Attach a file for the co-pilot to read: a spec sheet, last year's order, an Excel list of items, a photo of a drawing" aria-label="Attach a file" className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-line text-[15px] text-muted hover:bg-panel hover:text-ink disabled:opacity-40">
               📎
             </button>

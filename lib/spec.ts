@@ -36,7 +36,9 @@ export function describeLine(l: Pick<RfxLine, "type" | "ply" | "dimensions_mm" |
 
 export function buildLine(p: any, id: string): RfxLine {
   const ply = Number(p.ply) || 3;
-  const flute = p.flute || (ply === 3 ? "B" : ply === 5 ? "BC" : "BCB");
+  // The model sometimes writes "BC-flute" or "b flute"; keep only the letters so the description never reads "BC-flute-flute".
+  const given = String(p.flute ?? "").replace(/flute/gi, "").replace(/[^A-Za-z]/g, "").toUpperCase();
+  const flute = /^[A-Z]{1,3}$/.test(given) ? given : ply === 3 ? "B" : ply === 5 ? "BC" : "BCB";
   const dims = { L: Number(p.length_mm) || 0, W: Number(p.width_mm) || 0, H: Number(p.height_mm) || 0 };
   const type = p.type || "RSC";
   const print = p.print || "Plain";

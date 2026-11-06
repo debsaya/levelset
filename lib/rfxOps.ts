@@ -18,14 +18,53 @@ function nextId(prefix: string, ids: string[]) {
   return `${prefix}${String(m).padStart(2, "0")}`;
 }
 
-export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[] } {
+const hasVals = (x: any) => !!x && Object.values(x).some((v) => v !== null && v !== undefined && v !== "");
+
+/** An edit that names a change but carries nothing to change. The model does this now and then: it says "updated" and sends an empty edit. */
+export function incomplete(o: Op): string | null {
+  if ((o.op === "add_line" || o.op === "update_line") && !hasVals(o.line)) return `${o.op === "add_line" ? "a new item" : o.target_id}: no details came through`;
+  if ((o.op === "add_question" || o.op === "update_question") && !hasVals(o.question)) return `${o.op === "add_question" ? "a new question" : o.target_id}: no details came through`;
+  if (o.op === "set_meta" && !hasVals(o.meta)) return "event details: no details came through";
+  if (o.op === "set_term" && (!o.term_key || o.term_value == null)) return "a term: no value came through";
+  if (["update_line", "update_question", "remove_line", "remove_question"].includes(o.op) && !o.target_id) return `${o.op.replace("_", " ")}: no target`;
+  return null;
+}
+
+/** A request title is a short name. If the model wrote its reasoning into it, keep only the name. */
+export function cleanTitle(raw: string): string {
+  let t = String(raw).replace(/\s+/g, " ").trim();
+  if (t.length <= 90) return t;
+  const m = /Title:\s*(.+?)(?:\.\s|\s+Scope:|$)/i.exec(t);
+  if (m && m[1].length <= 90) return m[1].trim();
+  const first = t.split(/(?<=[.?!])\s/)[0];
+  if (first.length <= 90) return first.replace(/[.]$/, "");
+  return t.slice(0, 90).replace(/\s+\S*$/, "").trim();
+}
+
+export function cleanScope(raw: string): string {
+  const t = String(raw).replace(/\s+/g, " ").trim();
+  return t.length <= 300 ? t : t.slice(0, 300).replace(/\s+\S*$/, "") + "…";
+}
+
+/** What a question update really changes, so the note and the screen agree. */
+function changesOf(q: Record<string, any>, patch: Record<string, any>) {
+  return Object.entries(patch).filter(([k, v]) => v !== null && v !== undefined && JSON.stringify(q[k]) !== JSON.stringify(v));
+}
+
+export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[]; failed: string[] } {
+  const failed: string[] = [];
   const r: Rfx = structuredClone(rfx);
   const notes: string[] = [];
   for (const o of ops) {
+    const bad = incomplete(o);
+    if (bad) {
+      failed.push(bad);
+      continue;
+    }
     try {
       if (o.op === "set_meta" && o.meta) {
-        if (o.meta.title) r.title = o.meta.title;
-        if (o.meta.scope) r.scope = o.meta.scope;
+        if (o.meta.title) r.title = cleanTitle(o.meta.title);
+        if (o.meta.scope) r.scope = cleanScope(o.meta.scope);
         if (o.meta.due_date) r.due_date = o.meta.due_date;
         notes.push(`Updated event details — ${o.why}`);
       } else if (o.op === "add_line" && o.line && (!Number(o.line.length_mm) || !Number(o.line.width_mm))) {
@@ -65,8 +104,13 @@ export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[] } {
       } else if (o.op === "update_question" && o.target_id) {
         const q = r.questionnaire.find((x) => x.id === o.target_id);
         if (!q) continue;
-        Object.assign(q, Object.fromEntries(Object.entries(o.question || {}).filter(([, v]) => v !== null && v !== undefined)));
-        notes.push(`Updated ${q.id} — ${o.why}`);
+        const ch = changesOf(q, o.question || {});
+        if (!ch.length) {
+          failed.push(`${q.id}: the change did not come through`);
+          continue;
+        }
+        Object.assign(q, Object.fromEntries(ch));
+        notes.push(`Updated ${q.id}${ch.some(([k]) => k === "must_have") ? (q.must_have ? " (now a must-have)" : " (no longer a must-have)") : ""} — ${o.why}`);
       } else if (o.op === "remove_question" && o.target_id) {
         r.questionnaire = r.questionnaire.filter((q) => q.id !== o.target_id);
         notes.push(`Removed ${o.target_id} — ${o.why}`);
@@ -81,5 +125,5 @@ export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[] } {
       notes.push(`Skipped an edit I couldn't apply (${o.op}).`);
     }
   }
-  return { rfx: r, notes };
+  return { rfx: r, notes, failed };
 }
