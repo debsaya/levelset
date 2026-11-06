@@ -3,6 +3,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { A, PRIOR, RFX, cellOf, codes, extraction, line, override, run, vendorOf } from "./helpers";
+import { tidyNote } from "../lib/normalize";
 
 const near = (a: number | null, b: number, tol = 1e-6) => assert.ok(a !== null && Math.abs(a - b) <= tol, `expected ${a} ≈ ${b}`);
 const L01 = RFX.lines.find((l) => l.id === "L01")!; // 3-ply RSC 200×150×100, 0.083 kg
@@ -334,5 +335,21 @@ describe("defaults the buyer sees", () => {
   it("review threshold and ₹/kg band are the documented ones", () => {
     assert.equal(A.review_threshold, 0.8);
     assert.deepEqual(A.per_kg_band, [25, 90]);
+  });
+});
+
+describe("tidyNote", () => {
+  it("drops a retracted first attempt and keeps what the model settled on", () => {
+    assert.equal(
+      tidyNote("Vendor item description says 300x200x200 mm in RFx, but vendor sheet row 18 says 300x300x250 mm for 1 colour RSC. Wait, row 18 is 300x200x200 mm."),
+      "Row 18 is 300x200x200 mm."
+    );
+  });
+  it("ends a note with a full stop", () => {
+    assert.equal(tidyNote("Size 12 x 8 x 8 inches"), "Size 12 x 8 x 8 inches.");
+  });
+  it("leaves an ordinary note unchanged", () => {
+    assert.equal(tidyNote("Vendor wrote 'same as last year'; used the FY26 price."), "Vendor wrote 'same as last year'; used the FY26 price.");
+    assert.equal(tidyNote("Priced per 100 pieces, waiting charges excluded."), "Priced per 100 pieces, waiting charges excluded.");
   });
 });
