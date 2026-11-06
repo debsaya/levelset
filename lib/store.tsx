@@ -54,6 +54,7 @@ const DEMO_ASSUMPTIONS: Assumptions = {
   freight_inr_per_kg: { V2: 2.2, V4: 0.35, V5: 0.6 },
   default_freight_inr_per_kg: 1.0,
   apply_conditional_rebates: false,
+  cost_of_capital_pct: 10,
   per_kg_band: [25, 90],
   review_threshold: 0.8,
   photo_review_threshold: 0.9,
