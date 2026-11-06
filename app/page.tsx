@@ -1,28 +1,62 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { StoreProvider, useStore } from "@/lib/store";
+import { StoreProvider, hasSavedReading, useStore } from "@/lib/store";
+import Login, { type Entry } from "@/components/Login";
 import { normalize } from "@/lib/normalize";
 import OverviewStep from "@/components/OverviewStep";
 import CollectStep from "@/components/CollectStep";
 import SendStep from "@/components/SendStep";
 import InboxStep from "@/components/InboxStep";
 import CompareStep from "@/components/CompareStep";
-import AskStep from "@/components/AskStep";
+import AskStep, { type Suggestion } from "@/components/AskStep";
 import { cx } from "@/components/ui";
 
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
-function App() {
+// Ask AI sits beside whichever step you are on, and offers the questions that make sense there.
+const ASK_BY_STEP: Record<Exclude<Page, "ask" | "send">, Suggestion[]> = {
+  rfx: [
+    { short: "What's missing from the quotes?", q: "Which vendors are missing something we asked for, and what exactly is missing from each?" },
+    { short: "Who needs a follow-up?", q: "Which vendors need a follow-up, and what should I ask each of them?" },
+    { short: "Certificates", q: "Which ISO certificates are expired or missing?" },
+    { short: "Terms vs what we asked", q: "Did any vendor offer payment or validity terms different from what we asked for?" },
+  ],
+  quotes: [
+    { short: "Low-confidence reads", q: "Which prices did you read with low confidence, and where in the source did they come from?" },
+    { short: "Different units", q: "Which quotes were in a different unit, like per 100 pieces or per kg, and how did you convert them?" },
+    { short: "Photo or scan prices", q: "Which prices were read from a photo or scan, and how sure are you of them?" },
+    { short: "Different specs", q: "Did any vendor quote a different spec from what we asked for?" },
+  ],
+  compare: [
+    { short: "What to double-check first", q: "Which prices should I double-check first, and why?" },
+    { short: "Who is cheapest, really?", q: "Who is cheapest on a like-for-like basis, and how much should I trust that?" },
+    { short: "Biggest gaps between vendors", q: "Which items have the biggest price gap between vendors?" },
+    { short: "Items only one vendor quoted", q: "Which items did only one vendor quote?" },
+  ],
+  overview: [
+    { short: "Why this recommendation?", q: "Why do you recommend this award, and how much should I trust it?" },
+    { short: "Best split between vendors", q: "What if we split it, cheapest per line, but only among vendors who cleared the quality questionnaire?" },
+    { short: "Compare with last year", q: "How does this award compare with last year's contract, line by line?" },
+    { short: "Draft a note for my VP", q: "Draft an award recommendation I can send to my VP" },
+  ],
+};
+
+function App({ email, start, onSignOut }: { email: string; start?: Page; onSignOut: () => void }) {
   const { s, reset, hydrated } = useStore();
   const [page, setPage] = useState<Page>("rfx");
   const [opts, setOpts] = useState<{ review?: boolean; ask?: string; add?: boolean; nonce: number }>({ nonce: 0 });
   const [menu, setMenu] = useState(false);
+  const [askUi, setAskUi] = useState<{ open: boolean; q?: string; k: number }>({ open: false, k: 0 });
   const [confirm, setConfirm] = useState<null | "demo" | "blank">(null);
   const n = useMemo(() => normalize(s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior), [s.rfx, s.responses, s.assumptions, s.overrides, s.qOverrides, s.prior]);
   const review = n.cells.filter((c) => c.status === "review").length;
   const total = s.responses.length;
   const read = s.responses.filter((r) => r.status === "done").length;
   const go = (p: Page, o?: { review?: boolean; ask?: string; add?: boolean }) => {
+    if (p === "ask") {
+      setAskUi({ open: true, q: o?.ask, k: Date.now() });
+      return;
+    }
     setOpts({ ...o, nonce: Date.now() });
     setPage(p);
   };
@@ -32,7 +66,8 @@ function App() {
   useEffect(() => {
     if (!hydrated || landed.current) return;
     landed.current = true;
-    if (!s.sentAt && s.mode === "demo") setPage("rfx");
+    if (start) setPage(start);
+    else if (!s.sentAt && s.mode === "demo") setPage("rfx");
     else if (total && read < total) setPage("quotes");
     else if (read > 0) setPage(review > 0 ? "compare" : "overview");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +105,7 @@ function App() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          <button onClick={() => go("ask")} title="Ask questions about the comparison in plain English" className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", page === "ask" ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
+          <button onClick={() => setAskUi((a) => ({ ...a, open: !a.open, q: undefined }))} title="Ask questions about your quotes in plain English. Opens beside the step you are on." aria-expanded={askUi.open} className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", askUi.open ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
             Ask AI
           </button>
           <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[11.5px] text-muted lg:inline" title="Demo with made-up companies. The AI reads and answers for real; only the sending of emails to vendors is simulated.">
@@ -89,6 +124,8 @@ function App() {
                   {s.rfx.buyer.name}
                   <br />
                   {s.rfx.buyer.role}, {s.rfx.buyer.company}
+                  <br />
+                  <span className="text-[11.5px]">{email}</span>
                 </div>
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("demo"), setMenu(false))}>
                   Reset the demo event
@@ -96,18 +133,38 @@ function App() {
                 <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setConfirm("blank"), setMenu(false))}>
                   Start a new request from scratch
                 </button>
+                <button className="w-full rounded-lg px-3 py-2 text-left hover:bg-panel" onClick={() => (setMenu(false), onSignOut())}>
+                  Sign out
+                </button>
               </div>
             )}
           </div>
         </div>
       </header>
-      <main className="min-h-0 flex-1 overflow-hidden">
+      <main className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="min-w-0 flex-1 overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
         {page === "send" && <SendStep onNext={() => go("rfx")} />}
         {page === "quotes" && <InboxStep key={opts.nonce} n={n} onNext={() => go("compare")} initialAdd={!!opts.add} />}
-        {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} initialReview={!!opts.review} />}
-        {page === "ask" && <AskStep key={opts.nonce} n={n} initialAsk={opts.ask} />}
+        {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} onBack={() => go("quotes")} initialReview={!!opts.review} />}
+        </div>
+        {askUi.open && (
+          <aside className="fixed inset-y-14 right-0 z-40 flex w-[440px] max-w-full flex-col border-l border-line bg-white shadow-xl min-[1700px]:static min-[1700px]:z-auto min-[1700px]:shrink-0 min-[1700px]:shadow-none" aria-label="Ask AI">
+            <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+              <div>
+                <div className="text-[14px] font-semibold">Ask AI</div>
+                <div className="text-[11.5px] text-muted">About your quotes · you&apos;re on {steps.find((x) => x.id === cur)?.label}</div>
+              </div>
+              <button onClick={() => setAskUi((a) => ({ ...a, open: false }))} aria-label="Close Ask AI" className="grid h-7 w-7 place-items-center rounded-md text-muted hover:bg-panel hover:text-ink">
+                ✕
+              </button>
+            </div>
+            <div className="min-h-0 flex-1">
+              <AskStep key={askUi.k} n={n} initialAsk={askUi.q} compact suggested={ASK_BY_STEP[cur as keyof typeof ASK_BY_STEP]} />
+            </div>
+          </aside>
+        )}
       </main>
       {confirm && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setConfirm(null)}>
@@ -136,10 +193,56 @@ function App() {
   );
 }
 
+const SESSION_KEY = "levelset-session";
+
+/** The front door: a demo sign-in, then the four-step app. */
+function Gate() {
+  const { s, reset, loadExample, hydrated } = useStore();
+  const [auth, setAuth] = useState<{ email: string } | null | undefined>(undefined);
+  const [start, setStart] = useState<Page | undefined>(undefined);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      setAuth(raw ? JSON.parse(raw) : null);
+    } catch {
+      setAuth(null);
+    }
+  }, []);
+  if (auth === undefined || !hydrated) return <div className="min-h-screen bg-panel" />;
+  if (!auth)
+    return (
+      <Login
+        hasWork={!!s.sentAt || s.mode === "blank" || s.responses.some((r) => r.status === "done") || !!s.rfxDraft || s.analyst.length > 0}
+        onEnter={(email, entry: Entry) => {
+          try {
+            localStorage.setItem(SESSION_KEY, JSON.stringify({ email, at: new Date().toISOString() }));
+          } catch {}
+          if (entry === "fresh") reset("demo");
+          if (entry === "example") loadExample();
+          setStart(entry === "example" && hasSavedReading ? "overview" : undefined);
+          setAuth({ email });
+        }}
+      />
+    );
+  return (
+    <App
+      email={auth.email}
+      start={start}
+      onSignOut={() => {
+        try {
+          localStorage.removeItem(SESSION_KEY);
+        } catch {}
+        setStart(undefined);
+        setAuth(null);
+      }}
+    />
+  );
+}
+
 export default function Page() {
   return (
     <StoreProvider>
-      <App />
+      <Gate />
     </StoreProvider>
   );
 }

@@ -8,6 +8,7 @@ import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Disclosure, Md, Spinner, cx } from "./ui";
 import { downloadBidSheet } from "@/lib/bidsheet";
+import { greeting } from "@/lib/greeting";
 
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
@@ -20,6 +21,27 @@ const HEADS = [
 ];
 
 const SUGGESTIONS = ["Add a 2-colour die-cut tray 300×220×50, ~80k a year", "Make FSC certification a must-have", "Cut volumes on all 7-ply lines by 20%"];
+const BLANK_SUGGESTIONS = ["I need 20,000 steel pallets a year delivered to Pune", "Quote for 500 office chairs, delivered in 6 weeks", "Annual contract for 40 tonnes of PET resin"];
+
+/** What an unsent amendment changes compared with the request that went out. */
+function diffRfx(sent: Rfx, draft: Rfx) {
+  const ids = new Set(sent.lines.map((l) => l.id));
+  const dIds = new Set(draft.lines.map((l) => l.id));
+  const added = draft.lines.filter((l) => !ids.has(l.id)).map((l) => l.id);
+  const removed = sent.lines.filter((l) => !dIds.has(l.id)).map((l) => l.id);
+  const changed = draft.lines.filter((l) => ids.has(l.id) && JSON.stringify(l) !== JSON.stringify(sent.lines.find((x) => x.id === l.id))).map((l) => l.id);
+  const qa = new Map(sent.questionnaire.map((q) => [q.id, JSON.stringify(q)]));
+  const qChanged = draft.questionnaire.filter((q) => qa.get(q.id) !== JSON.stringify(q)).length + sent.questionnaire.filter((q) => !draft.questionnaire.some((d) => d.id === q.id)).length;
+  const termsChanged = JSON.stringify(sent.terms) !== JSON.stringify(draft.terms);
+  const parts = [
+    added.length && `${added.length} new ${added.length === 1 ? "item" : "items"} (${added.slice(0, 3).join(", ")}${added.length > 3 ? "…" : ""})`,
+    changed.length && `${changed.length} ${changed.length === 1 ? "item" : "items"} changed`,
+    removed.length && `${removed.length} ${removed.length === 1 ? "item" : "items"} removed`,
+    qChanged && `${qChanged} ${qChanged === 1 ? "question" : "questions"} changed`,
+    termsChanged && "terms changed",
+  ].filter(Boolean) as string[];
+  return { parts, flash: [...added, ...changed] };
+}
 
 type Req = { label: string; state: "ok" | "warn" | "bad" | "none"; text: string };
 
@@ -81,25 +103,45 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [s.copilot.length, busy]);
 
+  // Before the request is sent, the co-pilot edits it directly. After, it edits a pending amendment.
+  const locked = !!s.sentAt;
+  const shown = locked && s.rfxDraft ? s.rfxDraft : s.rfx;
+  const amend = s.rfxDraft ? diffRfx(s.rfx, s.rfxDraft) : null;
+
   async function send(text: string) {
     if (!text.trim() || busy) return;
+    const base = locked ? s.rfxDraft ?? s.rfx : s.rfx;
     const msgs = [...s.copilot, { role: "user" as const, text }];
     set((x) => ({ ...x, copilot: msgs }));
     setInput("");
     setBusy(true);
     try {
-      const j = await postJson("/api/copilot", { messages: msgs.slice(1), rfx: s.rfx });
+      const j = await postJson("/api/copilot", { messages: msgs, rfx: base });
       if (j.error) throw new Error(j.error);
-      const before = new Set(s.rfx.lines.map((l) => JSON.stringify(l)));
-      const { rfx, notes } = applyOps(s.rfx, j.ops || []);
+      const before = new Set(base.lines.map((l) => JSON.stringify(l)));
+      const { rfx, notes } = applyOps(base, j.ops || []);
       setFlash(rfx.lines.filter((l) => !before.has(JSON.stringify(l))).map((l) => l.id));
-      set((x) => ({ ...x, rfx, copilot: [...msgs, { role: "assistant", text: j.reply, ops: notes }] }));
-      if (notes.length) log(`Co-pilot edited the request: ${notes.length} change(s)`);
+      const reply = { role: "assistant" as const, text: j.reply, ops: notes };
+      set((x) => ({ ...x, ...(locked ? (notes.length ? { rfxDraft: rfx } : {}) : { rfx }), copilot: [...msgs, reply] }));
+      if (notes.length) log(locked ? `Co-pilot drafted an amendment: ${notes.length} change(s), not yet sent to vendors` : `Co-pilot edited the request: ${notes.length} change(s)`);
     } catch (e: any) {
       set((x) => ({ ...x, copilot: [...msgs, { role: "assistant", text: `⚠️ ${e.message}` }] }));
     } finally {
       setBusy(false);
     }
+  }
+
+  function sendAmendment() {
+    if (!s.rfxDraft || !amend) return;
+    const rev = (s.revision || 1) + 1;
+    set((x) => ({ ...x, rfx: x.rfxDraft!, rfxDraft: null, revision: rev }));
+    log(`Sent amendment (revision ${rev}) to ${vendorsInvited} vendors (email, simulated): ${amend.parts.join(", ")}`);
+    setFlash([]);
+  }
+  function discardAmendment() {
+    set((x) => ({ ...x, rfxDraft: null }));
+    log("Discarded the unsent amendment");
+    setFlash([]);
   }
 
   const due = new Date(r.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -114,7 +156,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         <div className="flex items-end justify-between gap-4 px-1 pt-1">
           <div className="min-w-0">
             <div className="truncate text-xs text-muted">
-              {r.id} · {r.title.replace(/\s*—\s*/, ": ")} · quotes due {due}
+              {r.id}{(s.revision || 1) > 1 ? ` (revision ${s.revision})` : ""} · {r.title.replace(/\s*—\s*/, ": ")} · quotes due {due}
             </div>
             <p className="mt-1 text-[16px] font-semibold tracking-tight">{status}</p>
           </div>
@@ -134,6 +176,23 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             )}
           </div>
         </div>
+
+        {amend && amend.parts.length > 0 && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-warn/40 bg-warn-soft px-4 py-3">
+            <div className="min-w-0 text-[13px]">
+              <div className="font-semibold text-warn">Amendment draft, not sent</div>
+              <div className="text-muted">
+                {amend.parts.join(" · ")}. Vendors haven&apos;t been told. The comparison still uses the request you sent. Sent, each vendor will need to price the changes.
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button onClick={discardAmendment}>Discard</Button>
+              <Button variant="primary" onClick={sendAmendment}>
+                Send amendment to {vendorsInvited} vendors
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */}
         <Card className="overflow-hidden">
@@ -192,8 +251,8 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           </div>
         )}
 
-        <Disclosure title="What we asked vendors" summary={`${r.lines.length} items · ${r.questionnaire.length} questions (${mustN} must-have) · terms`} defaultOpen={flash.length > 0}>
-          <RequestDetail r={r} flash={flash} />
+        <Disclosure key={s.rfxDraft ? "draft" : "sent"} title={s.rfxDraft ? "What we will ask vendors (amendment draft)" : "What we asked vendors"} summary={`${shown.lines.length} items · ${shown.questionnaire.length} questions (${shown.questionnaire.filter((q) => q.must_have).length} must-have) · terms`} defaultOpen={flash.length > 0 || !!s.rfxDraft}>
+          <RequestDetail r={shown} flash={amend ? amend.flash : flash} />
         </Disclosure>
       </div>
 
@@ -201,9 +260,12 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
       <Card className="flex min-h-0 flex-col">
         <div className="border-b border-line px-4 py-3">
           <div className="font-semibold">Request co-pilot</div>
-          <div className="text-xs text-muted">Want to change what vendors are asked? Say so here. {s.sentAt ? "The request has already gone out, so changes apply to a re-send." : "The request updates as you talk."}</div>
+          <div className="text-xs text-muted">{locked ? "Changes you ask for here become an amendment. Vendors are told only when you send it." : "Talk the request into shape. It updates as you talk."}</div>
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto p-3">
+          <div className="mr-2 rounded-lg bg-panel px-3 py-2 text-[12.5px] leading-relaxed">
+            <Md text={greeting(shown, { sentAt: s.sentAt, vendors: vendorsInvited, hasDraft: !!(amend && amend.parts.length) })} />
+          </div>
           {s.copilot.map((m, i) => (
             <div key={i} className={cx("rounded-lg px-3 py-2 text-[12.5px] leading-relaxed", m.role === "user" ? "ml-6 bg-brand text-white" : "mr-2 bg-panel")}>
               <Md text={m.text} />
@@ -227,7 +289,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         </div>
         <div className="border-t border-line p-3">
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {SUGGESTIONS.map((q) => (
+            {(shown.lines.length ? SUGGESTIONS : BLANK_SUGGESTIONS).map((q) => (
               <button key={q} onClick={() => send(q)} disabled={busy} className="rounded-full border border-line px-2 py-0.5 text-left text-[11.5px] text-muted hover:bg-panel">
                 {q}
               </button>

@@ -14,7 +14,7 @@ const QUAL: Record<string, { tone: "good" | "warn" | "bad"; label: string }> = {
   not_qualified: { tone: "bad", label: "Not approved" },
 };
 
-export default function CompareStep({ n, onNext, initialReview }: { n: Normalized; onNext: () => void; initialReview?: boolean }) {
+export default function CompareStep({ n, onNext, onBack, initialReview }: { n: Normalized; onNext: () => void; onBack?: () => void; initialReview?: boolean }) {
   const { s, set, log } = useStore();
   const [tab, setTab] = useState<"prices" | "questionnaire" | "audit">("prices");
   const [onlyReview, setOnlyReview] = useState(!!initialReview);
@@ -30,8 +30,18 @@ export default function CompareStep({ n, onNext, initialReview }: { n: Normalize
 
   if (!vs.length)
     return (
-      <div className="p-10 text-muted">
-        No replies read yet. Go to <b>Replies</b> and click <b>Read all</b>.
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-[860px] px-6 py-8">
+          <div className="rounded-2xl border border-line bg-white p-8 text-center">
+            <div className="text-[20px] font-semibold">Nothing to compare yet</div>
+            <p className="mx-auto mt-2 max-w-md text-muted">Once the vendor quotes are read, every price lands side by side here, normalised to one basis.</p>
+            {onBack && (
+              <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={onBack}>
+                Go to Read quotes
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     );
 

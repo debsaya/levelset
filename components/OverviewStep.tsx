@@ -48,7 +48,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
             <div className="text-[20px] font-semibold">Nothing to decide yet</div>
             <p className="mx-auto mt-2 max-w-md text-muted">Once the vendor replies are read, your recommended award appears here, with everything behind it one click away.</p>
             <Button variant="primary" className="mt-5 px-5 py-2.5 text-[14px]" onClick={() => go("quotes")}>
-              Go to the replies
+              Go to Read quotes
             </Button>
           </div>
         ) : (

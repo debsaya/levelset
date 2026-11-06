@@ -4,6 +4,11 @@ import type { Assumptions, AuditEntry, CellOverride, ChatMsg, PriorContracts, Rf
 import seedRfx from "@/data/rfx.json";
 import seedVendors from "@/data/vendors.json";
 import seedPrior from "@/data/prior_contracts.json";
+import savedRaw from "@/data/saved_reading.json";
+
+const savedReading = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
+/** true once a real reading of the five demo quotes has been recorded (see scripts/record_reading.mjs) */
+export const hasSavedReading = Object.keys(savedReading.extractions).length > 0;
 
 export type Block =
   | { kind: "table"; title: string; columns: string[]; rows: any[][]; note?: string; sql: string; error?: string }
@@ -18,6 +23,10 @@ export type State = {
   mode: "demo" | "blank";
   rfx: Rfx;
   copilot: ChatMsg[];
+  /** edits asked for after the request was sent: kept apart until the buyer sends them to vendors as an amendment */
+  rfxDraft?: Rfx | null;
+  /** 1 for the request as first sent; goes up by one each time an amendment is sent */
+  revision?: number;
   sentAt: string | null;
   sentTo: string[];
   responses: VendorResponse[];
@@ -46,13 +55,9 @@ export function demoState(): State {
     version: 3,
     mode: "demo",
     rfx: structuredClone(seedRfx) as Rfx,
-    copilot: [
-      {
-        role: "assistant",
-        text:
-          "I've loaded the **FY27 corrugated packaging** event: 30 lines (~1,000 t/yr, ~₹4.4 Cr at market rates), a 9-question supplier questionnaire with 3 must-haves, and your standard terms. I\u2019ve also worked out each box\u2019s weight, so vendors who quote per kg can be compared fairly.\n\nTell me what to change — e.g. *\"add a 5-ply export carton 600×400×300, 30k a year\"* or *\"make FSC a must-have\"*.",
-      },
-    ],
+    copilot: [],
+    rfxDraft: null,
+    revision: 1,
     sentAt: null,
     sentTo: (seedVendors as VendorMsg[]).map((v) => v.id),
     responses: (seedVendors as VendorMsg[]).map((v) => ({ vendor: v, status: "new" })),
@@ -63,6 +68,19 @@ export function demoState(): State {
     analyst: [],
     analystHistory: [],
     prior: seedPrior as PriorContracts,
+  };
+}
+
+/** The demo event with the request sent and the five quotes already read, from the recorded reading. Without a recording the quotes arrive unread. */
+export function exampleState(): State {
+  const s = demoState();
+  return {
+    ...s,
+    sentAt: "2026-11-12T10:00:00+05:30",
+    responses: s.responses.map((r) => {
+      const e = savedReading.extractions[r.vendor.id];
+      return e ? { ...r, status: "done" as const, extraction: e.extraction, model: `saved run (${e.model || "AI"})`, ms: e.ms } : r;
+    }),
   };
 }
 
@@ -82,7 +100,7 @@ export function blankState(): State {
       questionnaire: [],
       terms: {},
     },
-    copilot: [{ role: "assistant", text: "Tell me what you need to buy — category, rough volumes, where it ships to and when you need quotes. I'll draft the line items, a supplier questionnaire and terms, and ask only what I can't sensibly assume." }],
+    copilot: [],
     sentTo: [],
     responses: [],
     prior: {},
@@ -98,7 +116,7 @@ function reducer(s: State, a: Action): State {
 }
 
 const KEY = "levelset-state-v3";
-const Ctx = createContext<{ s: State; set: (fn: (s: State) => State) => void; reset: (mode: "demo" | "blank") => void; log: (what: string) => void; hydrated: boolean } | null>(null);
+const Ctx = createContext<{ s: State; set: (fn: (s: State) => State) => void; reset: (mode: "demo" | "blank") => void; loadExample: () => void; log: (what: string) => void; hydrated: boolean } | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [s, dispatch] = useReducer(reducer, undefined, demoState);
@@ -108,7 +126,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed?.version === 3) dispatch({ type: "replace", state: { ...parsed, responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)) } });
+        if (parsed?.version === 3) dispatch({ type: "replace", state: { ...parsed, copilot: (parsed.copilot || []).filter((m: ChatMsg, i: number) => !(i === 0 && m.role === "assistant" && /^(I.ve loaded the|Tell me what you need to buy)/.test(m.text))), responses: parsed.responses.map((r: VendorResponse) => (r.status === "reading" ? { ...r, status: "new" } : r)) } });
       }
     } catch {}
     setHydrated(true);
@@ -121,8 +139,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [s, hydrated]);
   const set = (fn: (s: State) => State) => dispatch({ type: "set", fn });
   const reset = (mode: "demo" | "blank") => dispatch({ type: "replace", state: mode === "demo" ? demoState() : blankState() });
+  const loadExample = () => dispatch({ type: "replace", state: exampleState() });
   const log = (what: string) => set((x) => ({ ...x, audit: [{ at: new Date().toISOString(), who: x.rfx.buyer.name, what }, ...x.audit] }));
-  return <Ctx.Provider value={{ s, set, reset, log, hydrated }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ s, set, reset, loadExample, log, hydrated }}>{children}</Ctx.Provider>;
 }
 
 export function useStore() {

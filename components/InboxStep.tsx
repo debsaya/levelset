@@ -19,7 +19,7 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
   const visible = s.sentAt || s.mode === "blank" ? s.responses : [];
   const cur = s.responses.find((r) => r.vendor.id === sel);
 
-  const { read, readAll } = useReader();
+  const { read, readAll, hasSaved, loadSaved } = useReader();
 
   const doneCount = visible.filter((r) => r.status === "done").length;
   const nextId = `V${Math.max(0, ...s.responses.map((r) => parseInt(r.vendor.id.replace(/\D/g, ""), 10) || 0)) + 1}`;
@@ -31,6 +31,16 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
     log(`Removed the response from ${name}`);
     if (sel === id) setSel(s.responses.find((r) => r.vendor.id !== id)?.vendor.id);
     setDeleting(null);
+  }
+  function saveReading() {
+    const extractions = Object.fromEntries(s.responses.filter((r) => r.status === "done" && r.extraction).map((r) => [r.vendor.id, { extraction: r.extraction, model: r.model, ms: r.ms }]));
+    const blob = new Blob([JSON.stringify({ recorded_at: new Date().toISOString(), extractions })], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "saved_reading.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    log(`Saved the reading of ${Object.keys(extractions).length} quote(s) to a file`);
   }
   const menuFor = (r: VendorResponse) => [
     { label: r.status === "done" ? "Read again" : "Read with AI", hint: r.status === "done" ? "Runs the AI over the same files again and replaces the prices. Your accept / override choices are kept." : "Runs the AI over this vendor's files.", onClick: () => read(r), disabled: r.status === "reading" },
@@ -48,9 +58,18 @@ export default function InboxStep({ n, onNext, initialAdd = false }: { n: Normal
               {visible.length} replies · {doneCount} read by the AI
             </div>
           </div>
-          <Button variant="primary" onClick={readAll} disabled={!visible.some((r) => r.status === "new" || r.status === "error")}>
-            Read all
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="primary" onClick={readAll} disabled={!visible.some((r) => r.status === "new" || r.status === "error")}>
+              Read all
+            </Button>
+            <MoreMenu
+              title="More actions for all replies"
+              items={[
+                ...(hasSaved ? [{ label: "Load the saved reading", hint: "Fills in the quotes from an earlier real run, without calling the AI. Useful if the connection is slow.", onClick: loadSaved }] : []),
+                { label: "Save this reading as a file", hint: "Downloads what the AI read, so it can be kept as the saved reading.", onClick: saveReading, disabled: doneCount === 0 },
+              ]}
+            />
+          </div>
         </div>
         <div className="flex-1 divide-y divide-line overflow-y-auto">
           {!s.sentAt && s.mode === "demo" && (

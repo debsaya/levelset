@@ -36,7 +36,11 @@ function niceCell(v: any) {
 
 const COLORS = ["#2f5bea", "#12a07a", "#e08a00", "#c2417a", "#6b5bd6", "#3b8fbf"];
 
-export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?: string }) {
+export type Suggestion = { short: string; q: string };
+
+/** Full page by default; `compact` is the narrow side-drawer version, with its own suggested questions. */
+export default function AskStep({ n, initialAsk, compact = false, suggested }: { n: Normalized; initialAsk?: string; compact?: boolean; suggested?: Suggestion[] }) {
+  const SUG = suggested && suggested.length ? suggested : SUGGESTED;
   const { s, set } = useStore();
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -170,11 +174,11 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      <Card className="flex min-h-0 flex-1 flex-col">
+    <div className={cx("flex h-full min-h-0 flex-col", compact ? "p-0" : "p-4")}>
+      <Card className={cx("flex min-h-0 flex-1 flex-col", compact && "rounded-none border-0")}>
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <div className="font-semibold">Ask the comparison</div>
+            {!compact && <div className="font-semibold">Ask the comparison</div>}
             <div className="text-xs text-muted">Ask in plain English. Answers come from your comparison data, and every number is checked against it.</div>
           </div>
           <div className="relative flex gap-1">
@@ -204,10 +208,10 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           {!s.analyst.length && (
-            <div className="mx-auto max-w-2xl space-y-3 pt-6">
+            <div className={cx("mx-auto space-y-3", compact ? "pt-2" : "max-w-2xl pt-6")}>
               <div className="text-center text-muted">Try one of these, or ask your own.</div>
-              <div className="grid grid-cols-2 gap-2">
-                {SUGGESTED.map((x) => (
+              <div className={cx("grid gap-2", compact ? "grid-cols-1" : "grid-cols-2")}>
+                {SUG.map((x) => (
                   <button key={x.q} onClick={() => ask(x.q)} className="rounded-lg border border-line p-3 text-left text-[13px] hover:bg-panel">
                     {x.q}
                   </button>
@@ -233,7 +237,7 @@ export default function AskStep({ n, initialAsk }: { n: Normalized; initialAsk?:
         <div className="border-t border-line p-3">
           {s.analyst.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5">
-              {SUGGESTED.slice(0, 4).map((x) => (
+              {SUG.slice(0, 4).map((x) => (
                 <button key={x.q} disabled={busy} onClick={() => ask(x.q)} className="rounded-full border border-line px-2.5 py-0.5 text-[12px] text-muted hover:bg-panel">
                   {x.short}
                 </button>
