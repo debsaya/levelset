@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 223 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 237 tests, ~1 second, no API key needed).
 
 ---
 
@@ -160,7 +160,7 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 223 checks, no API key needed
+npm test        # 237 checks, no API key needed
 ```
 
 I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.
@@ -181,4 +181,4 @@ I tested the live site as a QA engineer would, and fixed what I found.
 | Security headers | Real-browser load | CSP, frame, referrer and content-type headers; no violations, WASM SQLite runs |
 | Large photos | 10 MB phone photo | Resized and re-encoded in the browser (`lib/image.ts`): request body ~2.3 MB |
 
-All of this is covered by `npm test` where it is code (223 tests) and by the browser checks above where it is not.
+All of this is covered by `npm test` where it is code (237 tests) and by the browser checks above where it is not.

@@ -48,7 +48,7 @@ A working prototype for a buyer who has to get from "five vendors replied in fiv
 ## Where to look (how it thinks)
 
 - [`docs/DECISIONS.md`](docs/DECISIONS.md): 47 real-world edge cases (expired ISO certificate, "size in inches" vs a real spec change, "same as last year", conditional rebates...), each mapped to the rule, the code and a test, plus the workflow, hardening and known limits.
-- `tests/`: 223 automated checks for those rules and the guards. Run `npm test` (about 1 second, no API key needed).
+- `tests/`: 237 automated checks for those rules and the guards. Run `npm test` (about 1 second, no API key needed).
 - `lib/normalize.ts`: all conversions, flags and the must-have rules. `lib/award.ts`: award scenarios. `lib/grounding.ts`: the check on the analyst's numbers. `lib/rfxOps.ts`: co-pilot edits and amendments. `lib/guard.ts`: API protection.
 - `app/api/*/route.ts`: the prompts.
 
