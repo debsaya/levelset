@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
 import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
-import { levelled } from "@/lib/levelled";
+import { creditValue, levelled } from "@/lib/levelled";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal } from "./ClarifyModal";
@@ -41,6 +41,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   // Every vendor on the same full scope, with gaps estimated, so a partial quote can't look cheaper or dearer than it is.
   const lv = useMemo(() => levelled(n, s.rfx), [n, s.rfx]);
   const nLines = s.rfx.lines.length;
+  const rate = s.assumptions.cost_of_capital_pct ?? 10;
   // Vendors with gaps whose full-scope cost would already undercut the recommended award once they quote the rest.
   const couldWin = best && best.linesCovered === nLines ? awardable.filter((v) => lv[v.vendor_id]?.filled > 0 && lv[v.vendor_id].total !== null && lv[v.vendor_id].total! < best.total * 0.995 && !(best.vendorsUsed.length === 1 && best.vendorsUsed[0].vendor_id === v.vendor_id)) : [];
   const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length;
@@ -167,7 +168,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
                     {done >= 2 && (
                       <p className="text-[12px] leading-snug text-muted sm:col-span-2 xl:col-span-3">
-                        Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. The award below uses real quotes.
+                        Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. Payment terms are valued separately, using the cost of money you set in Compare. The award below uses real quotes.
                       </p>
                     )}
                     {[...n.vendors]
@@ -199,6 +200,11 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                                     {v.qualification === "qualified" && Math.abs(vs) < 0.05 ? "Lowest approved cost" : `${Math.abs(vs).toFixed(1)}% ${vs < 0 ? "below" : "above"} the lowest approved vendor`}
                                   </div>
                                 )}
+                                {v.terms.payment ? (
+                                  <div className="mt-1 text-[11.5px] leading-snug text-muted" title={`Paying ${v.terms.payment} days after delivery is worth ${crore(creditValue(l.total, v.terms.payment, rate))} a year to you at ${rate}% a year. Change the rate in Compare.`}>
+                                    {crore(l.total - creditValue(l.total, v.terms.payment, rate))} after payment terms ({v.terms.payment} days at {rate}%)
+                                  </div>
+                                ) : null}
                                 {l.filled > 0 && (
                                   <div className="mt-1 text-[11.5px] leading-snug text-warn">
                                     Quoted {l.quoted} of {nLines} items. The other {l.filled} {l.filled === 1 ? "is" : "are"} estimated at {crore(l.filledValue)}. Ask them to quote {l.filled === 1 ? "it" : "these"}.
