@@ -73,8 +73,15 @@ export function applyOps(rfx: Rfx, ops: Op[]): { rfx: Rfx; notes: string[]; fail
         notes.push(`Couldn't add a line without its size. Say the dimensions in mm.`);
       } else if (o.op === "add_line" && o.line) {
         const id = nextId("L", r.lines.map((l) => l.id));
-        r.lines.push(buildLine({ ...o.line, is_new: o.line.is_new ?? r.id !== "RFX-NEW" }, id));
-        notes.push(`Added ${id}: ${r.lines[r.lines.length - 1].description} — ${o.why}`);
+        const cand = buildLine({ ...o.line, is_new: o.line.is_new ?? r.id !== "RFX-NEW" }, id);
+        // Same size, board and print as a line already on the request: vendors would price the same box twice.
+        const twin = r.lines.find((l) => l.type === cand.type && l.ply === cand.ply && l.flute === cand.flute && l.print === cand.print && l.dimensions_mm.L === cand.dimensions_mm.L && l.dimensions_mm.W === cand.dimensions_mm.W && l.dimensions_mm.H === cand.dimensions_mm.H);
+        if (twin) {
+          failed.push(`${twin.id} is already this exact item (${twin.description}, ${twin.annual_qty.toLocaleString("en-IN")}/yr). To change the quantity, say "set ${twin.id} to ..." instead`);
+          continue;
+        }
+        r.lines.push(cand);
+        notes.push(`Added ${id}: ${cand.description} — ${o.why}`);
       } else if (o.op === "update_line" && o.target_id) {
         const i = r.lines.findIndex((l) => l.id === o.target_id);
         if (i < 0) continue;
