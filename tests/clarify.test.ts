@@ -2,7 +2,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { normalize } from "../lib/normalize";
-import { buildEmail, buildRequestEmail, replyBy, vendorPoints } from "../lib/clarify";
+import { buildAmendmentEmail, buildEmail, buildReminderEmail, buildRequestEmail, replyBy, vendorPoints } from "../lib/clarify";
 import { A, PRIOR, RFX, extraction, line, vendorMsg } from "./helpers";
 
 const BUYER = { name: "Ananya Rao", role: "Category Buyer, Packaging", company: "Saffronleaf Foods Pvt Ltd" };
@@ -78,5 +78,31 @@ describe("buildRequestEmail", () => {
   });
   it("sounds like a person, not a system", () => {
     assert.doesNotMatch(e.body.replace(RFX.id, ""), JARGON);
+  });
+});
+
+describe("reminder and amendment emails", () => {
+  const today = new Date("2026-11-06T10:00:00");
+  it("reminds a vendor in plain words before the due date", () => {
+    const e = buildReminderEmail({ rfx: RFX, vendorName: "Kaveri Packwell Pvt Ltd", contact: "Meera Iyer", pastDue: false, today });
+    assert.match(e.body, /^Hi Meera,/);
+    assert.match(e.body, /waiting for your quote/);
+    assert.match(e.body, new RegExp(RFX.buyer.name));
+    assert.match(e.subject, /Reminder/);
+    assert.ok(!JARGON.test(e.body.replace(RFX.id, "")), e.body);
+  });
+  it("is firmer once the due date has passed and gives a new date", () => {
+    const e = buildReminderEmail({ rfx: RFX, vendorName: "Kaveri Packwell Pvt Ltd", pastDue: true, today });
+    assert.match(e.body, /^Hi Kaveri Packwell team,/);
+    assert.match(e.body, /has passed/);
+    assert.match(e.body, new RegExp(replyBy(today)));
+    assert.match(e.subject, /overdue/);
+  });
+  it("lists exactly what changed in an amendment", () => {
+    const e = buildAmendmentEmail({ rfx: RFX, revision: 2, parts: ["2 new items (L31, L32)", "terms changed"] });
+    assert.match(e.subject, /revision 2/);
+    assert.match(e.body, /• 2 new items \(L31, L32\)/);
+    assert.match(e.body, /• terms changed/);
+    assert.match(e.body, /Everything else stays the same/);
   });
 });

@@ -52,3 +52,12 @@ describe("levelled", () => {
     assert.equal(r.A.total, null);
   });
 });
+
+import { creditValue } from "../lib/levelled";
+describe("creditValue", () => {
+  it("values paying later at the cost of money", () => {
+    assert.ok(Math.abs(creditValue(10_000_000, 60, 10) - 164383.56) < 1);
+    assert.equal(creditValue(10_000_000, null, 10), 0);
+    assert.equal(creditValue(10_000_000, 60, 0), 0);
+  });
+});

@@ -118,6 +118,8 @@ export type Assumptions = {
   freight_inr_per_kg: Record<string, number>;
   default_freight_inr_per_kg: number;
   apply_conditional_rebates: boolean;
+  /** What paying later is worth, % a year. Used to value payment terms. Optional for older saved state (10 when missing). */
+  cost_of_capital_pct?: number;
   per_kg_band: [number, number];
   review_threshold: number;
   /** photos and scans must clear this confidence to be trusted without a look (higher than review_threshold; optional for older saved state) */

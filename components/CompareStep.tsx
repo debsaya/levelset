@@ -63,6 +63,10 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
               USD→INR
               <input type="number" step="0.1" value={a.fx_usd_inr} onChange={(e) => setA({ fx_usd_inr: parseFloat(e.target.value) || 0 }, `Set FX to ${e.target.value}`)} className="w-20 rounded border border-line px-1.5 py-0.5 tabular" />
             </label>
+            <label className="flex items-center gap-1.5" title="What paying later is worth to you, a year. Used on the Decision page to value payment terms: 60 days to pay is worth more than 30.">
+              Cost of money (% a year)
+              <input type="number" step="0.5" min="0" value={a.cost_of_capital_pct ?? 10} onChange={(e) => setA({ cost_of_capital_pct: Math.max(0, parseFloat(e.target.value) || 0) }, `Set cost of money to ${e.target.value}%`)} className="w-16 rounded border border-line px-1.5 py-0.5 tabular" />
+            </label>
             <span className="flex items-center gap-1.5" title="These vendors quoted at their factory gate, so we add transport to the Bidadi plant. Change the rate and every total updates.">
               Add freight (₹/kg) for vendors who quoted ex-works:
               {vs
