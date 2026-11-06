@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
 import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
@@ -8,7 +8,7 @@ import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal } from "./ClarifyModal";
 import { vendorPoints } from "@/lib/clarify";
-import { Badge, Blocked, Button, Spinner, cx } from "./ui";
+import { Badge, Blocked, Button, Disclosure, Spinner, cx } from "./ui";
 import { blocker } from "@/lib/flow";
 
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
@@ -24,6 +24,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const { s } = useStore();
   const { readAll, hasSaved, loadSaved } = useReader();
   const [clarify, setClarify] = useState<string | null>(null);
+  const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
   const total = s.responses.length;
   const done = s.responses.filter((r) => r.status === "done").length;
   const reading = s.responses.filter((r) => r.status === "reading").length;
@@ -59,18 +60,24 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
       : `Split the award: ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
   const lyUp = !!ly && ly.delta > 0;
-  const tile = "rounded-xl bg-white/[0.07] p-3.5";
-  const tileLabel = "text-[11px] font-medium uppercase tracking-[0.06em] text-white/55";
+  const facts = best
+    ? [
+        `${best.linesCovered} of ${nLines} items covered`,
+        ly ? `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}% vs last year (${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items that had a price then)` : "no last-year price to compare with",
+        ...(best.vendorsUsed.length > 1 ? [best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} ${crore(v.value)}`).join(", ")] : []),
+      ]
+    : [];
+  const ranked = [...n.vendors].sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18));
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1480px] space-y-4 px-5 py-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1040px] space-y-4 px-5 py-6 lg:px-8">
         {done === 0 ? (
           <Blocked bare b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />
         ) : (
           <>
             {done < total && (
-              <div className="flex items-center justify-between gap-3 rounded-xl bg-kraft-soft px-4 py-3 text-[13px]">
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-kraft-soft px-4 py-3 text-[13px]">
                 <span>
                   {done} of {total} replies read, so this covers only those. {errors > 0 ? `${errors} couldn't be read (connection or busy AI).` : ""}
                 </span>
@@ -87,73 +94,34 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             )}
 
-            <section className="overflow-hidden rounded-2xl bg-ink text-white">
-              <div className="grid gap-6 p-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:p-7">
-                <div className="flex flex-col">
-                  <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-white/60">Recommended award</div>
-                  <h1 className="mt-1.5 text-[26px] font-semibold leading-snug">{headline}</h1>
-                  {best && <p className="mt-1 text-[13.5px] text-white/70">{best.detail}</p>}
-                  {best && (
-                    <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span className="text-[48px] font-semibold leading-none tabular">{crore(best.total)}</span>
-                      <span className="text-[13px] text-white/70">a year, delivered to your plant, ex-GST</span>
-                    </div>
-                  )}
-                  {best && best.linesMissing.length > 0 && <div className="mt-2 text-[13px] text-white/80">No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</div>}
-                  <div className="mt-auto flex flex-wrap gap-2 pt-6">
-                    <Button className="border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>
-                      Export to Excel
-                    </Button>
-                    <Button className="border-white/20 bg-white/10 text-white hover:bg-white/20" onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>
-                      Ask AI why
-                    </Button>
-                  </div>
-                </div>
+            <section className="rounded-xl border border-line bg-white">
+              <div className="px-6 py-5">
+                <div className="text-[12px] font-medium uppercase tracking-wide text-muted">Recommended award</div>
+                <h1 className="mt-1 text-[24px] font-semibold leading-snug">{headline}</h1>
                 {best && (
-                  <div className="grid grid-cols-2 gap-3 self-start">
-                    <div className={tile}>
-                      <div className={tileLabel}>Against last year</div>
-                      <div className={cx("mt-1 text-[24px] font-semibold tabular", ly ? (lyUp ? "text-[#f3c06a]" : "text-[#7fd6a4]") : "text-white/60")}>{ly ? `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}%` : "–"}</div>
-                      <div className="mt-0.5 text-[12px] leading-snug text-white/65">{ly ? `${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items that had a price then` : "No last-year price to compare with"}</div>
-                    </div>
-                    <div className={tile}>
-                      <div className={tileLabel}>Items covered</div>
-                      <div className="mt-1 text-[24px] font-semibold tabular">
-                        {best.linesCovered}
-                        <span className="text-[16px] text-white/55">/{s.rfx.lines.length}</span>
-                      </div>
-                      <div className="mt-0.5 text-[12px] leading-snug text-white/65">{best.linesMissing.length ? `${best.linesMissing.length} without an approved price` : "every item has an approved price"}</div>
-                    </div>
-                    <div className={tile}>
-                      <div className={tileLabel}>Awarded to</div>
-                      <div className="mt-1 text-[24px] font-semibold tabular">{best.vendorsUsed.length} {best.vendorsUsed.length === 1 ? "vendor" : "vendors"}</div>
-                      <div className="mt-0.5 text-[12px] leading-snug text-white/65">{best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} ${crore(v.value)}`).join(" · ")}</div>
-                    </div>
-                    <div className={tile}>
-                      <div className={tileLabel}>Approved vendors</div>
-                      <div className="mt-1 text-[24px] font-semibold tabular">
-                        {approved}
-                        <span className="text-[16px] text-white/55">/{n.vendors.length}</span>
-                      </div>
-                      <div className="mt-0.5 text-[12px] leading-snug text-white/65">answered every must-have question</div>
-                    </div>
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[34px] font-semibold leading-none tabular">{crore(best.total)}</span>
+                    <span className="text-[13px] text-muted">a year, delivered to your plant, ex-GST</span>
                   </div>
                 )}
+                {facts.length > 0 && <p className="mt-2 text-[13px] text-muted">{facts.join(" · ")}</p>}
+                {best && best.linesMissing.length > 0 && <p className="mt-1 text-[13px] text-warn">No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>Export to Excel</Button>
+                  <Button onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>Ask AI why</Button>
+                </div>
               </div>
               {review > 0 && (
-                <div role="status" className="flex flex-col gap-3 bg-kraft-soft px-6 py-3.5 text-[13.5px] text-ink sm:flex-row sm:items-center sm:justify-between lg:px-7">
+                <div role="status" className="flex flex-col gap-2 border-t border-line bg-kraft-soft px-6 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="font-semibold">
+                    <span className="font-semibold">
                       {best && best.unverified === 0
                         ? `${review} flagged ${review === 1 ? "price" : "prices"} to check. None is behind this award.`
                         : best
-                          ? `Not final: ${best.unverified} of the ${review} flagged ${review === 1 ? "price is" : "prices are"} behind this award`
-                          : `${review} flagged ${review === 1 ? "price" : "prices"} to check`}
-                    </div>
-                    <div className="mt-0.5 text-[12.5px] text-muted">
-                      The system wasn&apos;t sure about these (unit conversions, photo reads, group rules).{" "}
-                      {best ? (best.unverified > 0 ? "Checking them can change the total." : "The total stands as it is, but a correction could still change which vendor wins an item.") : ""}
-                    </div>
+                          ? `Not final: ${best.unverified} of the ${review} flagged ${review === 1 ? "price is" : "prices are"} behind this award.`
+                          : `${review} flagged ${review === 1 ? "price" : "prices"} to check.`}
+                    </span>{" "}
+                    <span className="text-muted">{best ? (best.unverified > 0 ? "Checking them can change the total." : "The total stands, but a correction could still change which vendor wins an item.") : ""}</span>
                   </div>
                   <Button className="shrink-0" onClick={() => go("compare", { review: true })}>
                     Check {review === 1 ? "it" : "them"} →
@@ -162,94 +130,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               )}
             </section>
 
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
-              <div className="order-last lg:order-none">
-                <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
-                  <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {done >= 2 && (
-                      <p className="text-[12px] leading-snug text-muted sm:col-span-2 xl:col-span-3">
-                        Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. Payment terms are valued separately, using the cost of money you set in Compare. The award below uses real quotes.
-                      </p>
-                    )}
-                    {[...n.vendors]
-                      .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18))
-                      .map((v, i) => (
-                        <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-[13.5px] font-semibold leading-snug">{v.name}</div>
-                            {done >= 2 && v.qualification === "qualified" && approved >= 2 && <span title="Rank among approved vendors, by yearly cost of the full scope" className="shrink-0 whitespace-nowrap text-[11px] text-muted tabular">#{i + 1} of {approved}</span>}
-                          </div>
-                          <div className="mt-1.5">
-                            <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
-                          </div>
-                          {done >= 2 && i === 0 && v.qualification === "qualified" && approved >= 2 && lv[v.vendor_id]?.total != null && (
-                            <div className="mt-1.5">
-                              <Badge tone={lv[v.vendor_id].filled > 0 ? "warn" : "good"}>{lv[v.vendor_id].filled > 0 ? "Lowest estimated cost" : "Lowest among approved vendors"}</Badge>
-                            </div>
-                          )}
-                          {(() => {
-                            const l = lv[v.vendor_id];
-                            if (!l || l.total === null) return <div className="mt-3 text-[12.5px] leading-snug text-warn">Can't be costed on all {nLines} items: nobody has priced {l?.unfilled ?? 0} of them.</div>;
-                            const vs = l.vsLowestApproved;
-                            return (
-                              <>
-                                <div className="mt-3 text-[22px] font-semibold tabular">{crore(l.total)}</div>
-                                <div className="text-[11.5px] leading-snug text-muted">a year for all {nLines} items{l.filled > 0 ? ", partly estimated" : ""}</div>
-                                {vs !== null && (
-                                  <div className="mt-1 text-[12px] font-medium tabular">
-                                    {v.qualification === "qualified" && Math.abs(vs) < 0.05 ? "Lowest approved cost" : `${Math.abs(vs).toFixed(1)}% ${vs < 0 ? "below" : "above"} the lowest approved vendor`}
-                                  </div>
-                                )}
-                                {v.terms.payment ? (
-                                  <div className="mt-1 text-[11.5px] leading-snug text-muted" title={`Paying ${v.terms.payment} days after delivery is worth ${crore(creditValue(l.total, v.terms.payment, rate))} a year to you at ${rate}% a year. Change the rate in Compare.`}>
-                                    {crore(l.total - creditValue(l.total, v.terms.payment, rate))} after payment terms ({v.terms.payment} days at {rate}%)
-                                  </div>
-                                ) : null}
-                                {l.filled > 0 && (
-                                  <div className="mt-1 text-[11.5px] leading-snug text-warn">
-                                    Quoted {l.quoted} of {nLines} items. The other {l.filled} {l.filled === 1 ? "is" : "are"} estimated at {crore(l.filledValue)}. Ask them to quote {l.filled === 1 ? "it" : "these"}.
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                          {(() => {
-                            const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
-                            const captured = r?.extraction?.lines?.length ?? 0;
-                            const left = Math.max(0, captured - v.quoted);
-                            const file = r?.vendor.attachments?.[0];
-                            return (
-                              <div className="mt-3 space-y-1 rounded-lg bg-panel px-2.5 py-2 text-[11.5px] leading-snug text-muted">
-                                <div>
-                                  <span className="font-medium text-ink">{v.format}</span> → {captured} prices captured
-                                </div>
-                                <div>→ {v.quoted} matched to your items{left > 0 ? ` (${left} didn't match an item)` : ""}</div>
-                                {v.deviation > 0 && <div className="text-warn">→ {v.deviation} on a different spec, not counted</div>}
-                                <div className={v.review > 0 ? "text-warn" : undefined}>→ {v.review} {v.review === 1 ? "price" : "prices"} flagged for you</div>
-                                {file && (
-                                  <a href={`/${file}`} target="_blank" rel="noreferrer" className="inline-block pt-0.5 font-medium text-kraft hover:underline">
-                                    View the original file ↗
-                                  </a>
-                                )}
-                              </div>
-                            );
-                          })()}
-                          <div className="mt-3 flex items-center justify-between text-[12px]">
-                            <span className="text-muted">Payment</span>
-                            <span className="tabular">{v.terms.payment ? `${v.terms.payment} days` : "–"}</span>
-                          </div>
-                          <button onClick={() => setClarify(v.vendor_id)} className="mt-auto pt-3 text-left text-[12.5px] font-medium text-kraft hover:underline">
-                            {askedOn(v.vendor_id) ? `Emailed ${askedOn(v.vendor_id)} · email again` : `Email ${v.name.split(" ")[0]} · ${points[v.vendor_id]?.length || 0} ${(points[v.vendor_id]?.length || 0) === 1 ? "question" : "questions"}`}
-                          </button>
-                        </div>
-                      ))}
-                  </div>
-                </Panel>
-              </div>
-
-              <div className="space-y-4">
-                <Panel title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
-                  <div className="space-y-1 p-3">
+            <Panel title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
+              <div className="space-y-0.5 p-2">
                     {attention === 0 && <div className="p-3 text-[13px] text-muted">No vendor or document problems.{review > 0 ? ` The ${review} flagged ${review === 1 ? "price is" : "prices are"} in Compare.` : ""}</div>}
                     {n.vendors
                       .filter((v) => v.qualification !== "qualified")
@@ -270,10 +152,112 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     {totalOff.map((v) => (
                       <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
-                  </div>
-                </Panel>
+              </div>
+            </Panel>
 
-                <Panel title="Other ways to award it" summary={`${sc.length} ${sc.length === 1 ? "way" : "ways"} compared`}>
+            <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-[13px]">
+                  <caption className="sr-only">Vendors ranked by yearly cost of the full scope</caption>
+                  <thead>
+                    <tr className="border-b border-line text-[11.5px] font-medium text-muted">
+                      <th scope="col" className="py-2 pl-5 pr-3 font-medium">Vendor</th>
+                      <th scope="col" className="hidden px-3 py-2 font-medium sm:table-cell">Status</th>
+                      <th scope="col" className="py-2 pl-3 pr-5 text-right font-medium sm:px-3">A year, all {nLines} items</th>
+                      <th scope="col" className="hidden px-3 py-2 text-right font-medium sm:table-cell">Compared with lowest approved</th>
+                      <th scope="col" className="hidden py-2 pl-3 pr-5 text-right font-medium md:table-cell">Quoted</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ranked.map((v, i) => {
+                      const l = lv[v.vendor_id];
+                      const vs = l?.vsLowestApproved ?? null;
+                      const open = !!openRows[v.vendor_id];
+                      const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
+                      const captured = r?.extraction?.lines?.length ?? 0;
+                      const left = Math.max(0, captured - v.quoted);
+                      const file = r?.vendor.attachments?.[0];
+                      const isLowest = done >= 2 && i === 0 && v.qualification === "qualified" && approved >= 2 && l?.total != null;
+                      const nq = points[v.vendor_id]?.length || 0;
+                      return (
+                        <Fragment key={v.vendor_id}>
+                          <tr className="border-b border-line last:border-b-0 hover:bg-panel/60">
+                            <td className="py-2.5 pl-5 pr-3">
+                              <button onClick={() => setOpenRows((x) => ({ ...x, [v.vendor_id]: !x[v.vendor_id] }))} aria-expanded={open} className="flex items-center gap-2 text-left font-medium">
+                                <span aria-hidden="true" className={cx("text-[10px] text-muted transition-transform", open && "rotate-90")}>▶</span>
+                                {done >= 2 && v.qualification === "qualified" && approved >= 2 && <span className="text-[12px] font-normal text-muted tabular">{i + 1}.</span>}
+                                {v.name}
+                              </button>
+                              <div className="mt-1 pl-5 sm:hidden">
+                                <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
+                              </div>
+                            </td>
+                            <td className="hidden px-3 py-2.5 sm:table-cell">
+                              <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
+                            </td>
+                            <td className="py-2.5 pl-3 pr-5 text-right tabular sm:px-3">
+                              {l?.total != null ? (
+                                <>
+                                  <span className="font-semibold">{crore(l.total)}</span>
+                                  {l.filled > 0 && <span className="ml-1 text-[11.5px] text-warn" title={`${l.filled} of ${nLines} items are estimated`}>est.</span>}
+                                </>
+                              ) : (
+                                <span className="text-warn">can&apos;t be costed</span>
+                              )}
+                            </td>
+                            <td className="hidden px-3 py-2.5 text-right tabular sm:table-cell">
+                              {vs === null ? "–" : isLowest ? <span className="font-medium text-good">Lowest</span> : v.qualification === "qualified" && Math.abs(vs) < 0.05 ? "Lowest" : `${vs < 0 ? "−" : "+"}${Math.abs(vs).toFixed(1)}%`}
+                            </td>
+                            <td className="hidden py-2.5 pl-3 pr-5 text-right tabular text-muted md:table-cell">
+                              {l ? `${l.quoted}/${nLines}` : "–"}
+                            </td>
+                          </tr>
+                          {open && (
+                            <tr className="border-b border-line bg-panel/60 last:border-b-0">
+                              <td colSpan={5} className="px-5 py-3">
+                                <div className="grid gap-x-8 gap-y-1 text-[12.5px] leading-snug text-muted sm:grid-cols-2">
+                                  <div>
+                                    <span className="font-medium text-ink">{v.format}</span>: {captured} prices read, {v.quoted} matched to your items{left > 0 ? ` (${left} didn't match an item)` : ""}
+                                  </div>
+                                  <div>Payment {v.terms.payment ? `${v.terms.payment} days` : "not stated"}{l?.total != null && v.terms.payment ? `. ${crore(l.total - creditValue(l.total, v.terms.payment, rate))} after payment terms at ${rate}% a year` : ""}</div>
+                                  {v.deviation > 0 && <div className="text-warn">{v.deviation} on a different spec, not counted</div>}
+                                  <div className={v.review > 0 ? "text-warn" : undefined}>
+                                    {v.review} {v.review === 1 ? "price" : "prices"} flagged for you
+                                  </div>
+                                  {l && l.filled > 0 && (
+                                    <div className="text-warn sm:col-span-2">
+                                      Quoted {l.quoted} of {nLines} items. The other {l.filled} {l.filled === 1 ? "is" : "are"} estimated at {crore(l.filledValue)}. Ask them to quote {l.filled === 1 ? "it" : "these"}.
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px]">
+                                  <button onClick={() => setClarify(v.vendor_id)} className="font-medium text-kraft hover:underline">
+                                    {askedOn(v.vendor_id) ? `Emailed ${askedOn(v.vendor_id)} · email again` : `Email ${v.name.split(" ")[0]} · ${nq} ${nq === 1 ? "question" : "questions"}`}
+                                  </button>
+                                  {file && (
+                                    <a href={`/${file}`} target="_blank" rel="noreferrer" className="font-medium text-kraft hover:underline">
+                                      View the original file ↗
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
+                <summary className="cursor-pointer font-medium text-ink">How these costs are worked out</summary>
+                <p className="mt-1.5">
+                  Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. Payment terms are valued separately, using the cost of money you set in Compare. The award itself uses real quotes.
+                </p>
+              </details>
+            </Panel>
+
+            <Disclosure title="Other ways to award it" summary={`${sc.length} ${sc.length === 1 ? "way" : "ways"} compared`}>
                   <details className="border-b border-line bg-panel px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
                     <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
                     <div className="mt-2 space-y-1.5">
@@ -334,9 +318,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     })}
                     {!sc.length && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
                   </div>
-                </Panel>
-              </div>
-            </div>
+            </Disclosure>
           </>
         )}
       </div>
