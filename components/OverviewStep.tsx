@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
 import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
+import { levelled } from "@/lib/levelled";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal } from "./ClarifyModal";
@@ -37,9 +38,12 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const awardable = n.vendors.filter((v) => v.qualification !== "not_qualified");
   const altSpec = awardable.filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
   const totalOff = awardable.filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
-  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length;
-  // Items a vendor's percentage is based on: priced, same spec as asked.
-  const compared = (id: string) => n.cells.filter((c) => c.vendor_id === id && c.unit_inr !== null && c.status !== "deviation" && !!c.annual_inr).length;
+  // Every vendor on the same full scope, with gaps estimated, so a partial quote can't look cheaper or dearer than it is.
+  const lv = useMemo(() => levelled(n, s.rfx), [n, s.rfx]);
+  const nLines = s.rfx.lines.length;
+  // Vendors with gaps whose full-scope cost would already undercut the recommended award once they quote the rest.
+  const couldWin = best && best.linesCovered === nLines ? awardable.filter((v) => lv[v.vendor_id]?.filled > 0 && lv[v.vendor_id].total !== null && lv[v.vendor_id].total! < best.total * 0.995 && !(best.vendorsUsed.length === 1 && best.vendorsUsed[0].vendor_id === v.vendor_id)) : [];
+  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length;
   const askedOn = (id: string) => {
     const a = s.asked?.[id];
     return a ? new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
@@ -163,30 +167,46 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
                     {done >= 2 && (
                       <p className="text-[12px] leading-snug text-muted sm:col-span-2 xl:col-span-3">
-                        The percentage shows how far a vendor's prices are above the best price anyone gave on the same items{hasUnapproved ? ", including vendors you haven't approved" : ""}. Nobody can be at 0%, because no single vendor is cheapest on every item. Only approved vendors are ranked.
+                        Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. The award below uses real quotes.
                       </p>
                     )}
                     {[...n.vendors]
-                      .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
+                      .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18))
                       .map((v, i) => (
                         <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="text-[13.5px] font-semibold leading-snug">{v.name}</div>
-                            {done >= 2 && v.qualification === "qualified" && approved >= 2 && <span title="Rank among approved vendors, by how close their prices are to the best price on each item" className="shrink-0 whitespace-nowrap text-[11px] text-muted tabular">#{i + 1} of {approved}</span>}
+                            {done >= 2 && v.qualification === "qualified" && approved >= 2 && <span title="Rank among approved vendors, by yearly cost of the full scope" className="shrink-0 whitespace-nowrap text-[11px] text-muted tabular">#{i + 1} of {approved}</span>}
                           </div>
                           <div className="mt-1.5">
                             <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                           </div>
-                          {done >= 2 && i === 0 && v.qualification === "qualified" && approved >= 2 && v.avg_over_best_pct !== null && (
+                          {done >= 2 && i === 0 && v.qualification === "qualified" && approved >= 2 && lv[v.vendor_id]?.total != null && (
                             <div className="mt-1.5">
-                              <Badge tone="good">Lowest among approved vendors</Badge>
+                              <Badge tone={lv[v.vendor_id].filled > 0 ? "warn" : "good"}>{lv[v.vendor_id].filled > 0 ? "Lowest estimated cost" : "Lowest among approved vendors"}</Badge>
                             </div>
                           )}
-                          <div className="mt-3 text-[22px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Best on every item" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
-                          <div className="text-[11.5px] leading-snug text-muted">
-                            {v.avg_over_best_pct === null ? "no comparable prices" : v.avg_over_best_pct < 0.05 ? "Lowest price on every item they quoted" : "above the best price on each item they quoted"}
-                            {v.avg_over_best_pct !== null && compared(v.vendor_id) < s.rfx.lines.length ? `. Based on ${compared(v.vendor_id)} of ${s.rfx.lines.length} items.` : ""}
-                          </div>
+                          {(() => {
+                            const l = lv[v.vendor_id];
+                            if (!l || l.total === null) return <div className="mt-3 text-[12.5px] leading-snug text-warn">Can't be costed on all {nLines} items: nobody has priced {l?.unfilled ?? 0} of them.</div>;
+                            const vs = l.vsLowestApproved;
+                            return (
+                              <>
+                                <div className="mt-3 text-[22px] font-semibold tabular">{crore(l.total)}</div>
+                                <div className="text-[11.5px] leading-snug text-muted">a year for all {nLines} items{l.filled > 0 ? ", partly estimated" : ""}</div>
+                                {vs !== null && (
+                                  <div className="mt-1 text-[12px] font-medium tabular">
+                                    {v.qualification === "qualified" && Math.abs(vs) < 0.05 ? "Lowest approved cost" : `${Math.abs(vs).toFixed(1)}% ${vs < 0 ? "below" : "above"} the lowest approved vendor`}
+                                  </div>
+                                )}
+                                {l.filled > 0 && (
+                                  <div className="mt-1 text-[11.5px] leading-snug text-warn">
+                                    Quoted {l.quoted} of {nLines} items. The other {l.filled} {l.filled === 1 ? "is" : "are"} estimated at {crore(l.filledValue)}. Ask them to quote {l.filled === 1 ? "it" : "these"}.
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                           {(() => {
                             const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
                             const captured = r?.extraction?.lines?.length ?? 0;
@@ -237,6 +257,9 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       ))}
                     {altSpec.map(({ v, lines }) => (
                       <Attention key={"a" + v.vendor_id} tone="warn" title={`${v.name}: different spec on ${lines.length === 1 ? "an item" : `${lines.length} items`}`} body={`${lines.join(", ")} ${lines.length === 1 ? "was" : "were"} quoted on a different spec, so ${lines.length === 1 ? "it isn't" : "they aren't"} counted. Ask whether they can quote what you specified.`} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
+                    ))}
+                    {couldWin.map((v) => (
+                      <Attention key={"w" + v.vendor_id} tone="warn" title={`${v.name}: could beat this award once they quote the rest`} body={`They quoted ${lv[v.vendor_id].quoted} of ${nLines} items. If the other ${lv[v.vendor_id].filled} ${lv[v.vendor_id].filled === 1 ? "comes" : "come"} in at the median of other vendors, their full cost is about ${crore(lv[v.vendor_id].total!)}, ${crore(best!.total - lv[v.vendor_id].total!)} less than this award. Ask for the missing prices before you award.`} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
                     {totalOff.map((v) => (
                       <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
