@@ -141,8 +141,9 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
         </Badge>
       </div>
       <div className="text-[11px] text-muted">
-        {v.quoted}/{n.cells.filter((c) => c.vendor_id === v.vendor_id).length} priced · {v.terms.currency} · {v.terms.freight}
+        {v.quoted - v.deviation}/{n.cells.filter((c) => c.vendor_id === v.vendor_id).length} priced · {v.terms.currency} · {v.terms.freight}
       </div>
+      {v.deviation > 0 && <div className="text-[11px] text-warn">{v.deviation} on a different spec, not counted</div>}
       {v.review > 0 && <div className="text-[11px] text-warn">{v.review} need review</div>}
       {warn.map((f, i) => (
         <div key={i} className="text-[11px] leading-snug text-warn" title={f.msg}>

@@ -32,7 +32,12 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const review = n.cells.filter((c) => c.status === "review").length;
   const issues = useMemo(() => Object.fromEntries(n.vendors.map((v) => [v.vendor_id, vendorIssues(v, n, s.rfx, s.responses)])), [n, s.rfx, s.responses]);
   const approved = n.vendors.filter((v) => v.qualification === "qualified").length;
-  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length;
+  // Problems on vendors you could still award to: a different spec on an item, or a total that does not match their own lines.
+  const awardable = n.vendors.filter((v) => v.qualification !== "not_qualified");
+  const altSpec = awardable.filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
+  const totalOff = awardable.filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
+  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length;
+  const hasUnapproved = n.vendors.some((v) => v.qualification === "not_qualified");
 
   const names = best ? best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} (${v.lines} ${v.lines === 1 ? "item" : "items"})`) : [];
   const headline = !best
@@ -126,10 +131,16 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               {review > 0 && (
                 <div role="status" className="flex flex-col gap-3 bg-kraft-soft px-6 py-3.5 text-[13.5px] text-ink sm:flex-row sm:items-center sm:justify-between lg:px-7">
                   <div>
-                    <div className="font-semibold">Not final until you check {review} flagged {review === 1 ? "price" : "prices"}</div>
+                    <div className="font-semibold">
+                      {best && best.unverified === 0
+                        ? `${review} flagged ${review === 1 ? "price" : "prices"} to check. None is behind this award.`
+                        : best
+                          ? `Not final: ${best.unverified} of the ${review} flagged ${review === 1 ? "price is" : "prices are"} behind this award`
+                          : `${review} flagged ${review === 1 ? "price" : "prices"} to check`}
+                    </div>
                     <div className="mt-0.5 text-[12.5px] text-muted">
                       The system wasn&apos;t sure about these (unit conversions, photo reads, group rules).{" "}
-                      {best ? (best.unverified > 0 ? `${best.unverified} of them are behind this award, so the total can still change.` : "None of them are behind this award, but a correction could still change which vendor wins an item.") : ""}
+                      {best ? (best.unverified > 0 ? "Checking them can change the total." : "The total stands as it is, but a correction could still change which vendor wins an item.") : ""}
                     </div>
                   </div>
                   <Button className="shrink-0" onClick={() => go("compare", { review: true })}>
@@ -155,7 +166,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                             <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                           </div>
                           <div className="mt-3 text-[22px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Cheapest" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
-                          <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : "vs the lowest price, on the items they quoted"}</div>
+                          <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : hasUnapproved ? "vs the lowest price from any vendor, including ones not approved" : "vs the lowest price, on the items they quoted"}</div>
                           {(() => {
                             const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
                             const captured = r?.extraction?.lines?.length ?? 0;
@@ -167,7 +178,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                                   <span className="font-medium text-ink">{v.format}</span> → {captured} prices captured
                                 </div>
                                 <div>→ {v.quoted} matched to your items{left > 0 ? ` (${left} didn't match an item)` : ""}</div>
-                                <div className={v.review > 0 ? "text-warn" : undefined}>→ {v.review} flagged for you</div>
+                                {v.deviation > 0 && <div className="text-warn">→ {v.deviation} on a different spec, not counted</div>}
+                                <div className={v.review > 0 ? "text-warn" : undefined}>→ {v.review} {v.review === 1 ? "price" : "prices"} flagged for you</div>
                                 {file && (
                                   <a href={`/${file}`} target="_blank" rel="noreferrer" className="inline-block pt-0.5 font-medium text-kraft hover:underline">
                                     View the original file ↗
@@ -181,7 +193,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                             <span className="tabular">{v.terms.payment ? `${v.terms.payment} days` : "–"}</span>
                           </div>
                           <button onClick={() => setClarify(v.vendor_id)} className="mt-auto pt-3 text-left text-[12.5px] font-medium text-kraft hover:underline">
-                            {issues[v.vendor_id]?.length || 0} open questions → draft email
+                            Draft email · {issues[v.vendor_id]?.length || 0} {(issues[v.vendor_id]?.length || 0) === 1 ? "point" : "points"} to raise
                           </button>
                         </div>
                       ))}
@@ -190,9 +202,9 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
 
               <div className="space-y-4">
-                <Panel title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "nothing open"}>
+                <Panel title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
                   <div className="space-y-1 p-3">
-                    {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open.</div>}
+                    {attention === 0 && <div className="p-3 text-[13px] text-muted">No vendor or document problems.{review > 0 ? ` The ${review} flagged ${review === 1 ? "price is" : "prices are"} in Compare.` : ""}</div>}
                     {n.vendors
                       .filter((v) => v.qualification !== "qualified")
                       .map((v) => (
@@ -203,6 +215,12 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       .map((v) => (
                         <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
                       ))}
+                    {altSpec.map(({ v, lines }) => (
+                      <Attention key={"a" + v.vendor_id} tone="warn" title={`${v.name}: different spec on ${lines.length === 1 ? "an item" : `${lines.length} items`}`} body={`${lines.join(", ")} ${lines.length === 1 ? "was" : "were"} quoted on a different spec, so ${lines.length === 1 ? "it isn't" : "they aren't"} counted. Ask whether they can quote what you specified.`} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                    ))}
+                    {totalOff.map((v) => (
+                      <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                    ))}
                   </div>
                 </Panel>
 
@@ -258,7 +276,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                           })()}
                           {(x.linesMissing.length > 0 || x.unverified > 0) && (
                             <div className="mt-1.5 text-[12px] text-warn">
-                              {x.linesMissing.length > 0 && `No qualified price for ${x.linesMissing.join(", ")}. `}
+                              {x.linesMissing.length > 0 && `No approved price for ${x.linesMissing.join(", ")}. `}
                               {x.unverified > 0 && `${x.unverified} winning prices still need your check.`}
                             </div>
                           )}
