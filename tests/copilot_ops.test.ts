@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { applyOps, cleanScope, cleanTitle, incomplete, type Op } from "../lib/rfxOps";
-import { buildLine } from "../lib/spec";
+import { buildLine, describeLine } from "../lib/spec";
 import { RFX } from "./helpers";
 
 const op = (o: Partial<Op>): Op => ({ op: "set_meta", why: "test", ...o });
@@ -75,5 +75,30 @@ describe("Must-have switch without a full question object", () => {
     assert.equal(rfx.questionnaire.find((x) => x.id === q.id)!.must_have, true);
     assert.match(notes[0], /now a must-have/);
     assert.equal(failed.length, 0);
+  });
+});
+
+describe("Co-pilot edits: a repeated item is not added twice", () => {
+  it("refuses an add_line that matches an existing line exactly, and points at that line", () => {
+    const l = RFX.lines[0];
+    const same = { type: l.type, ply: l.ply, flute: l.flute, print: l.print, length_mm: l.dimensions_mm.L, width_mm: l.dimensions_mm.W, height_mm: l.dimensions_mm.H, annual_qty: 30000 };
+    const { rfx, notes, failed } = applyOps(RFX, [op({ op: "add_line", line: same })]);
+    assert.equal(rfx.lines.length, RFX.lines.length);
+    assert.equal(notes.length, 0);
+    assert.equal(failed.length, 1);
+    assert.match(failed[0], new RegExp(l.id));
+  });
+  it("still adds a genuinely different line", () => {
+    const l = RFX.lines[0];
+    const other = { type: l.type, ply: l.ply, flute: l.flute, print: l.print, length_mm: l.dimensions_mm.L + 10, width_mm: l.dimensions_mm.W, height_mm: l.dimensions_mm.H, annual_qty: 1000 };
+    const { rfx, failed } = applyOps(RFX, [op({ op: "add_line", line: other })]);
+    assert.equal(rfx.lines.length, RFX.lines.length + 1);
+    assert.equal(failed.length, 0);
+  });
+  it("a flute that already says flute never reads flute-flute", () => {
+    const line = buildLine({ ply: 5, flute: "BC-flute", length_mm: 600, width_mm: 400, height_mm: 300, annual_qty: 1 }, "L99");
+    assert.ok(!/flute-flute/.test(line.description));
+    const stale = { ...line, flute: "BC-flute" };
+    assert.ok(!/flute-flute/.test(describeLine(stale)));
   });
 });
