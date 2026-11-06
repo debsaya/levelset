@@ -81,7 +81,7 @@ const SCHEMA = {
           spec_deviation: SN("If the vendor offers a different spec than the RFx line, describe it"),
           match_confidence: N("0-1 confidence that this maps to the right RFx line"),
           read_confidence: N("0-1 confidence that the number was read correctly"),
-          note: SN("Interpretation or assumption made, if any"),
+          note: SN("Interpretation or assumption made, if any. One short, final statement: never show working or corrections (no \"Wait\", no changing your mind mid-sentence)."),
           vendor_size: {
             type: "object",
             nullable: true,
