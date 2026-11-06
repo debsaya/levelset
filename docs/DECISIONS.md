@@ -6,7 +6,7 @@ This is the "why" behind the build. It answers three questions a buyer with ₹4
 2. **What stops a wrong number from reaching my award decision?**
 3. **How do I know each safeguard actually works?**
 
-Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 152 tests, ~1 second, no API key needed).
+Every safeguard below has three parts: **the rule** (a product decision), **where it lives** (the code), and **the proof** (an automated test you can run with `npm test`; 223 tests, ~1 second, no API key needed).
 
 ---
 
@@ -121,16 +121,23 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 
 ## 6. What's real and what I left out, on purpose
 
-**Real:** the AI reading (every vendor reply goes through a live model), the co-pilot, the analyst's SQL, all calculations and checks, the audit trail, the exports.
+**Real:** the AI reading (every vendor reply goes through a live model), the co-pilot (including attachments and amendments), the analyst's SQL, all calculations and checks, the audit trail, the exports.
 
-**Stubbed:** sending email (preview and simulated send only) and the inbox (replies are pre-loaded). That's plumbing; the brief said to stub plumbing.
+**Stubbed:** sending email, reminders and the other channels (preview and simulated send only), the inbox for the demo set, and login/SSO. That's plumbing; the brief said to stub plumbing.
+
+**The workflow, as built (four steps, Ask AI on every tab):**
+
+- *Collect quotes:* co-pilot drafts the RFx; **Who gets this request** picks vendors from the master, an uploaded list, pasted emails or one by hand, with a suggested shortlist by rules the buyer can read (category, certificate not expired, distance, incumbent kept). Vendors who haven't replied show as no-reply rows with a drafted reminder.
+- *Amendments:* once sent, edits go to a **draft** instead of silently changing what vendors priced against. **Send amendment** issues revision 2 to the same vendors; **Discard** drops it. A vendor can never be compared against a spec they were not sent.
+- *Read, Compare, Decision:* as in sections 2 and 3. A **Next step** bar on every tab says the one thing to do now, worked out from where the work stands (`lib/flow.ts`).
+- *Waiting honestly:* a progress panel with a learned ETA runs during AI calls, and a short note explains the free-tier model's pace. No spinner that hides how long it will take.
 
 **Left out deliberately:**
 
 - **Live FX and freight lookups.** They're assumptions the buyer owns and can see. A hidden live rate would make yesterday's comparison unrepeatable.
 - **Automatic award.** The tool reaches a *defensible* award by showing the working; a person signs it.
 - **Supplier scoring weights.** Weights are a negotiation inside the company, not a default I should invent. Must-haves are hard rules; the rest is shown side by side.
-- **Auto-chasing vendors.** The tool drafts the clarifying questions; it doesn't send them. A wrong auto-email to a supplier costs more than a click.
+- **Auto-chasing vendors.** The tool drafts the reminders and clarifying questions; it doesn't send them. A wrong auto-email to a supplier costs more than a click.
 - **Login and multi-user.** Out of scope for a take-home; state lives in the browser.
 
 ## 7. Known limits (so you don't have to find them)
@@ -141,7 +148,9 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 - **What the checks cannot see:** a misread that stays in a believable range, such as 3.40 read as 3.04, or a few-percent GST or freight error with consistent wording. These are caught indirectly, and for photos and scans by process (rows 46 and 47): by confidence scores, the peer comparison when 3+ vendors quoted the line, the 15% winner check, and the citation next to every price so the buyer can look. If the vendor quotes the only price on a line there is no peer to compare with.
 - **Not modelled yet:** quantity price breaks as a structure (they arrive as duplicates and the buyer picks), and minimum order quantities. Both would need new fields in the reading step, which I chose not to risk this close to the demo.
 - Number formats such as decimal commas are a reading problem, not a code problem; they belong in the extraction accuracy checks above, not in unit tests.
-- Free-tier model limits can slow a live read. The app retries and shows a clear message rather than failing silently.
+- Free-tier model limits can slow a live read. On the free key the stronger models return 429 and the app falls back to `gemini-3.5-flash-lite`: slower and more variable. It retries, shows the progress panel and a clear message rather than failing silently. `/api/diag` shows which models answer right now; for a live demo, check it first or use a key with billing.
+- **Security is basic, not production.** There is no real authentication (SSO is a stub), and the per-IP rate limit lives in server memory, so it is per instance. The API guard, same-site check, body cap and CSP stop casual misuse, not a determined attacker.
+- **Not tested:** a real screen-reader pass (axe and keyboard checks are clean, which is not the same thing), and very large PDFs.
 
 ## 8. What "proof" means here, and doesn't
 
@@ -151,7 +160,25 @@ The tests prove the **code** does what each rule says, on every case I could thi
 
 ```bash
 npm install
-npm test        # 152 checks, no API key needed
+npm test        # 223 checks, no API key needed
 ```
 
 I also confirmed the tests are not decorative: deliberately breaking the certificate-expiry rule fails 13 of them, removing the inches-vs-spec fix fails one, and removing the second round of fixes (rows 21 to 24) fails 6, removing the third round (rows 29 to 34) fails 10, and removing the fourth (rows 38 to 45) fails 14.
+
+## 10. Hardening and QA (what I tried to break)
+
+I tested the live site as a QA engineer would, and fixed what I found.
+
+| Area | What I checked | Result |
+|---|---|---|
+| Co-pilot | Empty edits, must-have toggles, attachments, amendment send and discard | An `update_question` once arrived empty. Fixed with a flat `must_have` field, one retry and a per-item repair call; `incomplete()` rejects empty edits |
+| API | Malformed JSON, wrong shapes, oversize bodies, cross-site calls, bursts | Clean 400/413/429 with plain-language messages (`lib/guard.ts`); no raw stack or "Failed to fetch" |
+| Extraction | Empty and fake PDFs, non-JSON replies | Set aside with a reason, never a generic AI error |
+| Ask AI | Write attempts and multi-statement SQL, ungrounded numbers | `runQuery` allows one read-only SELECT/WITH only; unmatched figures are highlighted |
+| Flow | Send to zero vendors, empty states, resets | Next-step bar covers each case; no "send to 0 vendors" |
+| Layout | Phone and tablet widths | Header and grids stack below `lg`, no horizontal scroll |
+| Accessibility | axe-core on every step, keyboard-only run | Zero violations. Skip link, landmarks, labelled dialog with focus on Cancel, Escape closes confirm, then menu, then the Ask AI drawer; contrast raised on kraft and muted text |
+| Security headers | Real-browser load | CSP, frame, referrer and content-type headers; no violations, WASM SQLite runs |
+| Large photos | 10 MB phone photo | Resized and re-encoded in the browser (`lib/image.ts`): request body ~2.3 MB |
+
+All of this is covered by `npm test` where it is code (223 tests) and by the browser checks above where it is not.

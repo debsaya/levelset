@@ -81,7 +81,7 @@ export default function InviteList() {
               {c.label}
             </button>
           ))}
-          <span title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-full border border-dashed border-line px-2.5 py-1 text-[12px] text-muted/70">
+          <span title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-full border border-dashed border-line px-2.5 py-1 text-[12px] text-muted">
             Connect ERP · planned
           </span>
         </div>

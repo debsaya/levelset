@@ -7,6 +7,7 @@ import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Disclosure, Md, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { prepFile } from "@/lib/image";
 import InviteList from "./InviteList";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
 import { downloadBidSheet } from "@/lib/bidsheet";
@@ -140,7 +141,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     setFiles([]);
     setBusy(true);
     try {
-      const enc = await Promise.all(sentFiles.map(async (f) => ({ name: f.name, mime: f.type || mimeFor(f.name), data: await fileToB64(f) })));
+      const enc = await Promise.all((await Promise.all(sentFiles.map(prepFile))).map(async (f) => ({ name: f.name, mime: f.type || mimeFor(f.name), data: await fileToB64(f) })));
       const j = await postJson("/api/copilot", { messages: msgs.map((m) => ({ role: m.role, text: m.text })), rfx: base, files: enc, amending: locked }, 3, { kind: "copilot", label: "Co-pilot" });
       if (j.error) throw new Error(j.error);
       const before = new Set(base.lines.map((l) => JSON.stringify(l)));

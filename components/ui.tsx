@@ -175,7 +175,7 @@ export function Disclosure({ title, summary, defaultOpen = false, children }: { 
 export function MoreMenu({ items, title = "More actions" }: { items: { label: string; hint?: string; onClick: () => void; danger?: boolean; disabled?: boolean }[]; title?: string }) {
   const [open, setOpen] = React.useState(false);
   return (
-    <span className="relative inline-block" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+    <span className="relative inline-block" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === "Escape" && open) setOpen(false); e.stopPropagation(); }}>
       <button aria-label={title} title={title} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} className={cx("grid h-7 w-7 place-items-center rounded-md text-[16px] leading-none text-muted hover:bg-panel hover:text-ink", open && "bg-panel text-ink")}>
         ⋯
       </button>
@@ -232,12 +232,12 @@ export function EventBar({ id, title, due, revision, blank, sent, next }: { id: 
   const left = days > 1 ? `${days} days left` : days === 1 ? "1 day left" : days === 0 ? "due today" : "past due";
   const untitled = blank && /^untitled/i.test(title);
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-line bg-panel px-5 py-2">
+    <section aria-label="Current request" className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-line bg-panel px-5 py-2">
       <div className="flex min-w-0 items-baseline gap-2.5">
         <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted">Request</span>
-        <span className={cx("truncate text-[14.5px] font-semibold tracking-tight", untitled && "font-normal italic text-muted")} title={title}>
+        <h1 className={cx("truncate text-[14.5px] font-semibold tracking-tight", untitled && "font-normal italic text-muted")} title={title}>
           {untitled ? "Untitled request. Describe what you are buying in Collect quotes." : title.replace(/\s*—\s*/, ": ")}
-        </span>
+        </h1>
       </div>
       <div className="flex items-center gap-2 text-[12px] text-muted">
         {!blank && (
@@ -262,6 +262,6 @@ export function EventBar({ id, title, due, revision, blank, sent, next }: { id: 
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }

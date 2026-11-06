@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
 import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { prepFile } from "@/lib/image";
 import { blocker } from "@/lib/flow";
 import { MASTER } from "@/lib/vendorpool";
 import { fileName, useReader } from "@/lib/reader";
@@ -82,12 +83,12 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
             </div>
           )}
           {visible.map((r) => (
-            <div key={r.vendor.id} role="button" tabIndex={0} onClick={() => (setAdding(false), setReplacing(null), setSel(r.vendor.id))} onKeyDown={(e) => e.key === "Enter" && (setAdding(false), setReplacing(null), setSel(r.vendor.id))} className={cx("block w-full cursor-pointer px-4 py-3 text-left", sel === r.vendor.id && "bg-kraft-soft")}>
+            <div key={r.vendor.id} className={cx("relative px-4 py-3 text-left", sel === r.vendor.id && "bg-kraft-soft")}>
               <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-medium">
+                <button type="button" aria-current={sel === r.vendor.id ? "true" : undefined} onClick={() => (setAdding(false), setReplacing(null), setSel(r.vendor.id))} className="min-w-0 flex-1 truncate text-left font-medium after:absolute after:inset-0 after:content-['']">
                   {r.vendor.name}
-                </span>
-                <span className="flex shrink-0 items-center gap-1">
+                </button>
+                <span className="relative z-10 flex shrink-0 items-center gap-1">
                   <StatusBadge r={r} n={n} />
                   <MoreMenu items={menuFor(r)} title={`Actions for ${r.vendor.name}`} />
                 </span>
@@ -361,7 +362,7 @@ function AddResponse({ onCancel, onAdd, nextId, replacing, names }: { onCancel: 
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState(replacing?.name || "");
   const [body, setBody] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+  const [picked, setFiles] = useState<File[]>([]);
   return (
     <div className="space-y-3 p-5">
       <div className="font-semibold">{replacing ? `Replace the response from ${replacing.name}` : "Add a vendor response"}</div>
@@ -373,9 +374,10 @@ function AddResponse({ onCancel, onAdd, nextId, replacing, names }: { onCancel: 
       <div className="flex gap-2">
         <Button
           variant="primary"
-          disabled={busy || !name.trim() || (!body.trim() && !files.length)}
+          disabled={busy || !name.trim() || (!body.trim() && !picked.length)}
           onClick={async () => {
             setBusy(true);
+            const files = await Promise.all(picked.map(prepFile)); // big phone photos are shrunk to fit
             const small = files.reduce((a, f) => a + f.size, 0) < 1_500_000;
             const attachments = small ? await Promise.all(files.map(async (f) => `data:${f.type || mimeFor(f.name)};base64,${await fileToB64(f)}#name=${encodeURIComponent(f.name)}`)) : [];
             onAdd(
