@@ -38,6 +38,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const altSpec = awardable.filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
   const totalOff = awardable.filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
   const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length;
+  // Items a vendor's percentage is based on: priced, same spec as asked.
+  const compared = (id: string) => n.cells.filter((c) => c.vendor_id === id && c.unit_inr !== null && c.status !== "deviation" && !!c.annual_inr).length;
   const askedOn = (id: string) => {
     const a = s.asked?.[id];
     return a ? new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
@@ -159,19 +161,32 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               <div className="order-last lg:order-none">
                 <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
                   <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {done >= 2 && (
+                      <p className="text-[12px] leading-snug text-muted sm:col-span-2 xl:col-span-3">
+                        The percentage shows how far a vendor's prices are above the best price anyone gave on the same items{hasUnapproved ? ", including vendors you haven't approved" : ""}. Nobody can be at 0%, because no single vendor is cheapest on every item. Only approved vendors are ranked.
+                      </p>
+                    )}
                     {[...n.vendors]
                       .sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (a.avg_over_best_pct ?? 1e9) - (b.avg_over_best_pct ?? 1e9))
                       .map((v, i) => (
                         <div key={v.vendor_id} className="flex flex-col rounded-2xl border border-line bg-white p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="text-[13.5px] font-semibold leading-snug">{v.name}</div>
-                            {done >= 2 && v.qualification !== "not_qualified" && <span className="text-[11px] text-muted tabular">#{i + 1}</span>}
+                            {done >= 2 && v.qualification === "qualified" && approved >= 2 && <span title="Rank among approved vendors, by how close their prices are to the best price on each item" className="shrink-0 whitespace-nowrap text-[11px] text-muted tabular">#{i + 1} of {approved}</span>}
                           </div>
                           <div className="mt-1.5">
                             <Badge tone={QUAL[v.qualification].tone}>{QUAL[v.qualification].label}</Badge>
                           </div>
-                          <div className="mt-3 text-[22px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Cheapest" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
-                          <div className="text-[11.5px] text-muted">{v.avg_over_best_pct === null ? "no comparable prices" : hasUnapproved ? "vs the lowest price from any vendor, including ones not approved" : "vs the lowest price, on the items they quoted"}</div>
+                          {done >= 2 && i === 0 && v.qualification === "qualified" && approved >= 2 && v.avg_over_best_pct !== null && (
+                            <div className="mt-1.5">
+                              <Badge tone="good">Lowest among approved vendors</Badge>
+                            </div>
+                          )}
+                          <div className="mt-3 text-[22px] font-semibold tabular">{v.avg_over_best_pct === null ? "–" : v.avg_over_best_pct < 0.05 ? "Best on every item" : `+${v.avg_over_best_pct.toFixed(1)}%`}</div>
+                          <div className="text-[11.5px] leading-snug text-muted">
+                            {v.avg_over_best_pct === null ? "no comparable prices" : v.avg_over_best_pct < 0.05 ? "Lowest price on every item they quoted" : "above the best price on each item they quoted"}
+                            {v.avg_over_best_pct !== null && compared(v.vendor_id) < s.rfx.lines.length ? `. Based on ${compared(v.vendor_id)} of ${s.rfx.lines.length} items.` : ""}
+                          </div>
                           {(() => {
                             const r = s.responses.find((x) => x.vendor.id === v.vendor_id);
                             const captured = r?.extraction?.lines?.length ?? 0;
