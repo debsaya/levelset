@@ -127,7 +127,7 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 
 **The workflow, as built (four steps, Ask AI on every tab):**
 
-- *Collect quotes:* co-pilot drafts the RFx; **Who gets this request** picks vendors from the master, an uploaded list, pasted emails or one by hand, with a suggested shortlist by rules the buyer can read (category, certificate not expired, distance, incumbent kept). Vendors who haven't replied show as no-reply rows with a drafted reminder.
+- *Collect quotes:* co-pilot drafts the RFx; **Onboarded vendors** picks vendors from the master, an uploaded list, pasted emails or one by hand, with a suggested shortlist by rules the buyer can read (category, certificate not expired, distance, incumbent kept). Vendors who haven't replied show as no-reply rows with a drafted reminder.
 - *Amendments:* once sent, edits go to a **draft** instead of silently changing what vendors priced against. **Send amendment** issues revision 2 to the same vendors; **Discard** drops it. A vendor can never be compared against a spec they were not sent.
 - *Read, Compare, Decision:* as in sections 2 and 3. A **Next step** bar on every tab says the one thing to do now, worked out from where the work stands (`lib/flow.ts`).
 - *Waiting honestly:* a progress panel with a learned ETA runs during AI calls, and a short note explains the free-tier model's pace. No spinner that hides how long it will take.

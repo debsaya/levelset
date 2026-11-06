@@ -11,7 +11,7 @@ import { prepFile } from "@/lib/image";
 import InviteList from "./InviteList";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
 import { downloadBidSheet } from "@/lib/bidsheet";
-import { greeting } from "@/lib/greeting";
+import { greeting, requestSummary } from "@/lib/greeting";
 
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
@@ -175,9 +175,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const headline = showStart
     ? "Start by telling the co-pilot what you are buying."
     : showInvite
-      ? invitees.length
-        ? `Send this request to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`
-        : "Choose the vendors who should get this request"
+      ? "Onboarded vendors"
       : !replies.length
         ? `Sent to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
         : `${replies.length} of ${vendorsInvited} vendors replied`;
@@ -312,7 +310,12 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         )}
 
         {(!blank || shown.lines.length > 0) && (
-        <Disclosure key={s.rfxDraft ? "draft" : "sent"} title={s.rfxDraft ? "What we will ask vendors (amendment draft)" : "What we asked vendors"} summary={`${shown.lines.length} items · ${shown.questionnaire.length} questions (${shown.questionnaire.filter((q) => q.must_have).length} must-have) · terms`} defaultOpen={flash.length > 0 || !!s.rfxDraft}>
+        <Disclosure key={s.rfxDraft ? "draft" : "sent"} title={s.rfxDraft ? "RFx package (amendment draft)" : "RFx package"} summary={`${shown.lines.length} items · ${shown.questionnaire.length} questions (${shown.questionnaire.filter((q) => q.must_have).length} must-have) · terms`} defaultOpen={flash.length > 0 || !!s.rfxDraft}>
+          {shown.lines.length > 0 && (
+            <div className="border-b border-line px-5 py-3 text-[12.5px] leading-relaxed text-muted">
+              <Md text={requestSummary(shown)} />
+            </div>
+          )}
           <RequestDetail r={shown} flash={amend ? amend.flash : flash} />
         </Disclosure>
         )}
@@ -326,7 +329,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         </div>
         <div className="flex-1 space-y-3 overflow-y-auto p-3">
           <div className="mr-2 rounded-lg bg-panel px-3 py-2 text-[12.5px] leading-relaxed">
-            <Md text={greeting(shown, { sentAt: s.sentAt, vendors: vendorsInvited, hasDraft: !!(amend && amend.parts.length) })} />
+            <Md text={greeting(shown, { sentAt: s.sentAt, vendors: vendorsInvited, hasDraft: !!(amend && amend.parts.length), chosen: invitees.length, replied: replies.length, read: readN, flagged: n.cells.filter((c) => c.status === "review").length, noReply, pastDue })} />
           </div>
           {s.copilot.map((m, i) => (
             <div key={i} className={cx("rounded-lg px-3 py-2 text-[12.5px] leading-relaxed", m.role === "user" ? "ml-6 bg-brand text-white" : "mr-2 bg-panel")}>

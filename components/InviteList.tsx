@@ -68,27 +68,58 @@ export default function InviteList() {
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-line px-5 py-3.5">
-        <div className="flex items-baseline justify-between gap-3">
-          <div className="text-[15px] font-semibold">Who gets this request</div>
-          <div className="text-[12.5px] text-muted">
-            {invitees.length} {invitees.length === 1 ? "vendor" : "vendors"} chosen
-          </div>
+        <div className="text-[15px] font-semibold">
+          {invitees.length ? `${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"} will receive this request` : "No vendors selected yet"}
         </div>
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[11.5px] text-muted">Add vendors from</span>
-          {CHANNELS.map((c) => (
-            <button key={c.id} title={c.tip} onClick={() => (setCh(ch === c.id ? null : c.id), setMsg(null))} className={cx("rounded-full border px-2.5 py-1 text-[12px]", ch === c.id ? "border-ink bg-ink text-white" : "border-line text-muted hover:bg-panel hover:text-ink")}>
-              {c.label}
-            </button>
-          ))}
-          <span title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-full border border-dashed border-line px-2.5 py-1 text-[12px] text-muted">
-            Connect ERP · planned
-          </span>
-        </div>
+        <div className="mt-0.5 text-[12.5px] text-muted">Check the list below. Remove anyone you do not want to invite, or add vendors underneath.</div>
       </div>
 
+      <div className="divide-y divide-line">
+        {invitees.map((v) => {
+          const fit = certificate(v, due);
+          return (
+            <div key={v.id} className="flex items-center gap-4 px-5 py-2.5">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[13.5px] font-medium">{v.name}</span>
+                  {s.prior[v.id] && <Badge tone="brand">incumbent</Badge>}
+                  {v.source !== "master" && <Badge>{SOURCE[v.source]}</Badge>}
+                </div>
+                <div className="truncate text-[11.5px] text-muted">
+                  {why[v.id] ? why[v.id] : `${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
+                </div>
+              </div>
+              {v.source === "master" && (
+                <span title="From your vendor records, before any quote arrives. You can still send to this vendor." className={cx("hidden shrink-0 text-[12px] md:block", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
+                  {fit.text}
+                </span>
+              )}
+              <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="shrink-0 rounded-md px-2 py-1 text-[12px] text-muted hover:bg-panel hover:text-ink">
+                Remove
+              </button>
+            </div>
+          );
+        })}
+        {!invitees.length && <div className="px-5 py-8 text-center text-[13px] text-muted">No vendors selected yet. Pick one of the options below to bring vendors in.</div>}
+      </div>
+
+      <div className="border-t border-line bg-white px-5 py-4">
+        <div className="text-[13.5px] font-semibold">Add vendors</div>
+        <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {CHANNELS.map((c) => (
+            <button key={c.id} onClick={() => (setCh(ch === c.id ? null : c.id), setMsg(null))} aria-pressed={ch === c.id} className={cx("rounded-xl border px-3.5 py-2.5 text-left", ch === c.id ? "border-ink bg-ink text-white" : "border-line hover:border-ink/40 hover:bg-panel")}>
+              <span className="block text-[13px] font-medium">{c.label}</span>
+              <span className={cx("mt-0.5 block text-[11.5px] leading-snug", ch === c.id ? "text-white/75" : "text-muted")}>{c.tip}</span>
+            </button>
+          ))}
+          <div title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-xl border border-dashed border-line px-3.5 py-2.5">
+            <span className="block text-[13px] font-medium text-muted">Connect ERP · planned</span>
+            <span className="mt-0.5 block text-[11.5px] leading-snug text-muted">Sync your vendor master from SAP, Tally, Oracle or Ariba.</span>
+          </div>
+        </div>
+
       {ch && (
-        <div className="border-b border-line bg-panel px-5 py-3.5 text-[12.5px]">
+        <div className="mt-3 rounded-xl border border-line bg-panel px-4 py-3.5 text-[12.5px]">
           {ch === "list" && (
             <div>
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your vendors by name or city" className="mb-2 w-full rounded-md border border-line bg-white px-3 py-1.5 text-[13px] outline-none focus:border-kraft" />
@@ -209,34 +240,6 @@ export default function InviteList() {
           {msg && <div className="mt-2 text-[12px] text-ink">{msg}</div>}
         </div>
       )}
-
-      <div className="divide-y divide-line">
-        {invitees.map((v) => {
-          const fit = certificate(v, due);
-          return (
-            <div key={v.id} className="flex items-center gap-4 px-5 py-2.5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-[13.5px] font-medium">{v.name}</span>
-                  {s.prior[v.id] && <Badge tone="brand">incumbent</Badge>}
-                  {v.source !== "master" && <Badge>{SOURCE[v.source]}</Badge>}
-                </div>
-                <div className="truncate text-[11.5px] text-muted">
-                  {why[v.id] ? why[v.id] : `${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
-                </div>
-              </div>
-              {v.source === "master" && (
-                <span title="From your vendor records, before any quote arrives. You can still send to this vendor." className={cx("hidden shrink-0 text-[12px] md:block", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
-                  {fit.text}
-                </span>
-              )}
-              <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="shrink-0 rounded-md px-2 py-1 text-[12px] text-muted hover:bg-panel hover:text-ink">
-                Remove
-              </button>
-            </div>
-          );
-        })}
-        {!invitees.length && <div className="px-5 py-8 text-center text-[13px] text-muted">No vendors chosen yet. Use one of the options above to bring vendors in.</div>}
       </div>
     </Card>
   );
