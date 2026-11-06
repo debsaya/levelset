@@ -36,6 +36,8 @@ export type State = {
   pool?: PoolVendor[];
   /** vendor id → when the buyer last sent a reminder */
   reminded?: Record<string, string>;
+  /** vendor id → the last "questions for the vendor" email the buyer marked as sent */
+  asked?: Record<string, { at: string; subject: string; points: number }>;
   responses: VendorResponse[];
   assumptions: Assumptions;
   overrides: Record<string, CellOverride>;
@@ -158,6 +160,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               sentTo: Array.isArray(parsed.sentTo) ? parsed.sentTo : base.sentTo,
               pool: Array.isArray(parsed.pool) ? parsed.pool : structuredClone(MASTER),
               reminded: parsed.reminded || {},
+              asked: parsed.asked && typeof parsed.asked === "object" ? parsed.asked : {},
               overrides: parsed.overrides || {},
               qOverrides: parsed.qOverrides || {},
               audit: Array.isArray(parsed.audit) ? parsed.audit : [],
