@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
-import { lastYear, scenarios } from "@/lib/award";
+import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal, vendorIssues } from "./CompareStep";
@@ -32,7 +32,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const review = n.cells.filter((c) => c.status === "review").length;
   const issues = useMemo(() => Object.fromEntries(n.vendors.map((v) => [v.vendor_id, vendorIssues(v, n, s.rfx, s.responses)])), [n, s.rfx, s.responses]);
   const approved = n.vendors.filter((v) => v.qualification === "qualified").length;
-  const attention = (review > 0 ? 1 : 0) + n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length;
+  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length;
 
   const names = best ? best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} (${v.lines} ${v.lines === 1 ? "item" : "items"})`) : [];
   const headline = !best
@@ -69,6 +69,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
             <div className="rounded-2xl border border-ink bg-ink p-7 text-white">
               <div className="text-[12px] font-medium uppercase tracking-[0.08em] text-white/60">Recommended</div>
               <h1 className="mt-1.5 text-[24px] font-semibold leading-snug">{headline}</h1>
+              {best && <p className="mt-1 text-[13.5px] text-white/70">{best.detail}</p>}
               {best && (
                 <>
                   <div className="mt-4 flex items-baseline gap-2">
@@ -82,14 +83,6 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       </div>
                     )}
                     {best.linesMissing.length > 0 && <div>No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</div>}
-                    {best.unverified > 0 && (
-                      <div>
-                        {best.unverified} of the winning prices still need your check{" "}
-                        <button className="underline underline-offset-2" onClick={() => go("compare", { review: true })}>
-                          Check them
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </>
               )}
@@ -103,7 +96,47 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             </div>
 
-            <Disclosure title="Other award options" summary={`${sc.length} ${sc.length === 1 ? "option" : "options"}`}>
+            {review > 0 && (
+              <div role="status" className="flex flex-col gap-3 rounded-xl border border-warn/40 bg-kraft-soft px-4 py-3 text-[13.5px] sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="font-semibold">Not final until you check {review} flagged {review === 1 ? "price" : "prices"}</div>
+                  <div className="mt-0.5 text-[12.5px] text-muted">
+                    The system wasn&apos;t sure about these (unit conversions, photo reads, group rules).{" "}
+                    {best ? (best.unverified > 0 ? `${best.unverified} of them are behind this award, so the total can still change.` : "None of them are behind this award, but a correction could still change which vendor wins an item.") : ""}
+                  </div>
+                </div>
+                <Button className="shrink-0" onClick={() => go("compare", { review: true })}>Check {review === 1 ? "it" : "them"} →</Button>
+              </div>
+            )}
+
+            <Disclosure title="Needs your attention" defaultOpen={attention > 0} summary={attention ? `${attention} ${attention === 1 ? "item" : "items"} to look at` : "nothing open"}>
+              <div className="space-y-1 p-3">
+                {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open.</div>}
+                {n.vendors
+                  .filter((v) => v.qualification !== "qualified")
+                  .map((v) => (
+                    <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                  ))}
+                {n.vendors
+                  .filter((v) => v.adjustments.some((a) => a.conditional))
+                  .map((v) => (
+                    <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                  ))}
+              </div>
+            </Disclosure>
+
+            <Disclosure title="Other ways to award it" summary={`${sc.length} ${sc.length === 1 ? "way" : "ways"} compared`}>
+              <div className="space-y-1.5 bg-panel px-5 py-4 text-[12.5px] leading-relaxed text-muted">
+                <p>Each option is a different rule for who can win each item. The recommended one is the lowest total that covers the most items.</p>
+                <dl className="grid gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
+                  <dt className="font-medium text-ink">Total</dt>
+                  <dd>The winning price for each item times your yearly volume, added up. Delivered to your plant, ex-GST.</dd>
+                  <dt className="font-medium text-ink">Items</dt>
+                  <dd>How many of your {s.rfx.lines.length} items have a price under that rule. Totals only compare fairly when this number matches, so each option also shows its difference on the items both cover.</dd>
+                  <dt className="font-medium text-ink">Approved</dt>
+                  <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
+                </dl>
+              </div>
               <div className="divide-y divide-line">
                 {sc.map((x) => {
                   const isBest = best && x.key === best.key;
@@ -130,6 +163,15 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                           </span>
                         ))}
                       </div>
+                      {best && !isBest && (() => {
+                        const d = savingOnCommon(x, best);
+                        const common = Object.keys(x.byLine).filter((l) => best.byLine[l] !== undefined).length;
+                        return (
+                          <div className="mt-1.5 text-[12px] text-muted">
+                            {Math.abs(d) < 1 ? "Same cost as the recommended option" : `${crore(Math.abs(d))} ${d > 0 ? "more" : "less"} than the recommended option`} on the {common} items both cover
+                          </div>
+                        );
+                      })()}
                       {(x.linesMissing.length > 0 || x.unverified > 0) && (
                         <div className="mt-1.5 text-[12px] text-warn">
                           {x.linesMissing.length > 0 && `No qualified price for ${x.linesMissing.join(", ")}. `}
@@ -140,23 +182,6 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   );
                 })}
                 {!sc.length && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
-              </div>
-            </Disclosure>
-
-            <Disclosure title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "nothing open"}>
-              <div className="space-y-1 p-3">
-                {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open.</div>}
-                {review > 0 && <Attention tone="warn" title={`${review} prices the system isn't sure about`} body="Unit conversions, photo reads and group rules. Check them before you award." action="Review" onClick={() => go("compare", { review: true })} />}
-                {n.vendors
-                  .filter((v) => v.qualification !== "qualified")
-                  .map((v) => (
-                    <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
-                  ))}
-                {n.vendors
-                  .filter((v) => v.adjustments.some((a) => a.conditional))
-                  .map((v) => (
-                    <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
-                  ))}
               </div>
             </Disclosure>
 
