@@ -48,7 +48,7 @@ export default function AiActivity() {
       })}
       {showWhy && (
         <p className="mt-2 border-t border-line pt-2 text-xs leading-relaxed text-muted">
-          {kinds.includes("extract") ? "The AI is on a free, shared tier, so it is slower than a paid plan. Reading quotes can take a minute or two (photos longest). Nothing is stuck." : "The AI is on a free, shared tier, so it is slower than a paid plan. Answers can take up to half a minute. Nothing is stuck."}
+          {kinds.includes("extract") ? "Free AI tier: reading quotes takes a minute or two, photos longest." : "Free AI tier: answers can take up to half a minute."}
         </p>
       )}
     </div>

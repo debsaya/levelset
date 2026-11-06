@@ -7,7 +7,7 @@ export type Kind = "extract" | "copilot" | "analyst" | "clarify";
 export type Job = { id: number; kind: Kind; label: string; start: number; end?: number; ok?: boolean };
 export type Snap = { jobs: Job[]; slow: boolean; expected: Record<Kind, number> };
 
-const DEFAULTS: Record<Kind, number> = { extract: 90_000, copilot: 15_000, analyst: 20_000, clarify: 12_000 };
+const DEFAULTS: Record<Kind, number> = { extract: 90_000, copilot: 15_000, analyst: 45_000, clarify: 12_000 };
 const KEY = "levelset-ai-timing";
 
 function loadExpected(): Record<Kind, number> {

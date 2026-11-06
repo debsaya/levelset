@@ -7,6 +7,7 @@ import type { Normalized } from "@/lib/normalize";
 import { checkGrounding } from "@/lib/grounding";
 import { runScenario } from "@/lib/award";
 import { postJson } from "@/lib/api";
+import { endJob, startJob } from "@/lib/aiActivity";
 import { downloadTable } from "@/lib/export";
 import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
 
@@ -105,9 +106,10 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     let finalText = "";
     let model = "";
     let error: string | undefined;
+    const job = startJob("analyst", "Ask AI"); // one job for the whole question, however many lookups it takes
     try {
       for (let step = 0; step < 10; step++) {
-        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) }, 3, { kind: "analyst", label: "Ask AI" });
+        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) });
         if (j.error) throw new Error(j.error);
         model = j.model;
         history.push(j.content);
@@ -159,6 +161,7 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     } catch (e: any) {
       error = e.message;
     }
+    endJob(job, !error, { model });
     // a saving is the difference between two scenario totals the buyer was shown
     for (let i = 0; i < scTotals.length; i++) for (let j = i + 1; j < scTotals.length; j++) nums.push(Math.abs(scTotals[i] - scTotals[j]));
     // figures the analyst was given as context (FX, freight, terms) also count as traceable
