@@ -1,5 +1,6 @@
 "use client";
-import { readBackIssue } from "@/lib/readback";
+import { vendorPoints } from "@/lib/clarify";
+import { ClarifyModal } from "./ClarifyModal";
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, inr, key, type Cell, type Normalized, type QCell, type VendorSummary } from "@/lib/normalize";
@@ -121,7 +122,7 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
         {sel && n.cellMap[key(sel.v, sel.l)] && <CellDrawer c={n.cellMap[key(sel.v, sel.l)]} v={vs.find((x) => x.vendor_id === sel.v)!} onClose={() => setSel(null)} />}
         {clarify && (() => {
           const v = vs.find((x) => x.vendor_id === clarify)!;
-          return <ClarifyModal v={v} issues={vendorIssues(v, n, s.rfx, s.responses)} onClose={() => setClarify(null)} />;
+          return <ClarifyModal v={v} points={vendorPoints(v, n, s.rfx)} onClose={() => setClarify(null)} />;
         })()}
         {selQ && <QDrawer qc={n.q.find((x) => x.vendor_id === selQ.v && x.question_id === selQ.q)!} v={vs.find((x) => x.vendor_id === selQ.v)!} onClose={() => setSelQ(null)} />}
       </div>
@@ -130,6 +131,8 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
 }
 
 function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onClarify: () => void }) {
+  const { s } = useStore();
+  const asked = s.asked?.[v.vendor_id];
   const q = QUAL[v.qualification];
   const warn = v.flags.filter((f) => f.sev !== "info");
   return (
@@ -151,7 +154,7 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
         </div>
       ))}
       <button onClick={onClarify} className="text-[11px] font-medium text-kraft hover:underline">
-        Draft clarification email
+        {asked ? `Emailed ${new Date(asked.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · email again` : "Email this vendor"}
       </button>
     </div>
   );
@@ -522,85 +525,5 @@ function QDrawer({ qc, v, onClose }: { qc: QCell; v: VendorSummary; onClose: () 
         </div>
       </div>
     </Card>
-  );
-}
-
-export function vendorIssues(v: VendorSummary, n: Normalized, rfx: any, responses: any[]): string[] {
-  const out: string[] = [];
-  const cells = n.cells.filter((c) => c.vendor_id === v.vendor_id);
-  const lineDesc = (id: string) => `${id} (${rfx.lines.find((l: any) => l.id === id)?.description})`;
-  const missing = cells.filter((c) => c.status === "missing" && !c.flags.some((f) => f.code === "NO_PRIOR_PRICE"));
-  if (missing.length && missing.length <= 12) out.push(`No price for: ${missing.map((c) => `${lineDesc(c.line_id)} — ${c.missing_reason}`).join("; ")}. Ask whether they can quote.`);
-  else if (missing.length) out.push(`No price for ${missing.length} of ${cells.length} lines (${missing.map((c) => c.line_id).join(", ")}). Ask whether they can quote the rest.`);
-  for (const c of cells.filter((c) => c.flags.some((f) => f.code === "NO_PRIOR_PRICE"))) out.push(`${lineDesc(c.line_id)}: vendor wrote "${c.source?.quote}" but this line has no price last year. Ask for a price.`);
-  for (const c of cells.filter((c) => c.status === "deviation")) out.push(`${lineDesc(c.line_id)}: they offered a different spec (${c.raw?.spec_deviation}). Ask whether they can quote the specified spec, and for test data proving the alternate meets the same BCT.`);
-  for (const c of cells.filter((c) => c.status === "review" && !c.override)) {
-    const f = c.flags.filter((x) => x.sev !== "info").map((x) => x.msg).join(" ");
-    out.push(`${lineDesc(c.line_id)}: read as ${c.quoted_as}${c.source?.quote ? ` from "${c.source.quote}"` : ""}. Unsure because: ${f} Ask them to confirm the price and what unit it is for.`);
-  }
-  const rules = cells.filter((c) => c.derived_from === "rule");
-  if (rules.length) out.push(`Their per-kg statement ("${rules[0].source?.quote}") was applied to ${rules.length} lines using our computed box weights. Ask them to confirm per-piece prices, and whether printed items cost extra.`);
-  const prior = cells.filter((c) => c.derived_from === "prior_contract" && c.unit_inr !== null);
-  if (prior.length) out.push(`For ${prior.length} lines they said prices are the same as last year; we used the FY26 contract. Ask them to confirm those prices hold for FY27.`);
-  for (const a of v.adjustments) if (a.conditional) out.push(`Conditional ${a.kind}: "${a.description}" (condition: ${a.condition}). Ask how it is measured if the award is split across vendors.`);
-  for (const a of v.adjustments) if (a.kind === "one_time_charge") out.push(`One-time charge: ${a.description}. Ask whether existing plates/dies can be reused or the charge waived.`);
-  if (v.terms.freight.startsWith("Ex-works")) out.push(`Prices are ex-works; we have assumed freight. Ask for a delivered price to the Bidadi plant.`);
-  if (v.terms.currency !== "INR") out.push(`Quote is in ${v.terms.currency}. Ask for a firm INR price, or how currency movement will be shared.`);
-  for (const r of v.qual_reasons) out.push(`Questionnaire must-have: ${r}. Ask for evidence or a corrective plan.`);
-  for (const f of v.flags.filter((f) => f.code === "TOTAL_MISMATCH")) out.push(`${f.msg} Ask them to confirm which lines their total covers.`);
-  const rb = readBackIssue(v.vendor_id, n, rfx);
-  if (rb) out.push(rb);
-  void responses;
-  return out;
-}
-
-export function ClarifyModal({ v, issues, onClose }: { v: VendorSummary; issues: string[]; onClose: () => void }) {
-  const { s, log } = useStore();
-  const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<{ subject: string; body: string; model?: string } | null>(null);
-  const [err, setErr] = useState("");
-  const vendor = s.responses.find((r) => r.vendor.id === v.vendor_id)?.vendor;
-  async function go() {
-    setBusy(true);
-    setErr("");
-    try {
-      const j = await postJson("/api/clarify", { vendor: { name: v.name, contact: vendor?.contact }, buyer: s.rfx.buyer, rfx_id: s.rfx.id, rfx_title: s.rfx.title, issues, today: new Date().toISOString().slice(0, 10) }, 3, { kind: "clarify", label: "Email" });
-      if (j.error) throw new Error(j.error);
-      setDraft(j);
-      log(`Drafted clarification email to ${v.name} (${issues.length} issues)`);
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6" onClick={onClose}>
-      <Card className="flex max-h-full w-[760px] flex-col overflow-hidden" >
-        <div className="flex items-center justify-between border-b border-line px-5 py-3" onClick={(e) => e.stopPropagation()}>
-          <div>
-            <div className="font-semibold">Clarify with {v.name}</div>
-            <div className="text-xs text-muted">The system found {issues.length} open issues. The AI turns them into one email the vendor can answer line by line.</div>
-          </div>
-          <button onClick={onClose} className="text-muted">✕</button>
-        </div>
-        <div className="flex-1 space-y-4 overflow-y-auto p-5 text-[13px]" onClick={(e) => e.stopPropagation()}>
-          <ol className="list-decimal space-y-1 pl-5 text-[12.5px] text-muted">
-            {issues.map((i, k) => <li key={k}>{i}</li>)}
-          </ol>
-          {err && <div className="rounded bg-bad-soft p-2 text-bad">{err}</div>}
-          {draft ? (
-            <div className="rounded-md border border-line">
-              <div className="border-b border-line bg-panel px-3 py-2 text-[12.5px]"><b>Subject:</b> {draft.subject}</div>
-              <pre className="whitespace-pre-wrap p-3 font-sans text-[13px] leading-relaxed">{draft.body}</pre>
-            </div>
-          ) : null}
-        </div>
-        <div className="flex justify-end gap-2 border-t border-line px-5 py-3" onClick={(e) => e.stopPropagation()}>
-          {draft && <Button onClick={() => navigator.clipboard.writeText(`Subject: ${draft.subject}\n\n${draft.body}`)}>Copy</Button>}
-          <Button variant="primary" onClick={go} disabled={busy || !issues.length}>{busy ? <Spinner /> : null}{draft ? "Redraft" : "Draft email"}</Button>
-        </div>
-      </Card>
-    </div>
   );
 }
