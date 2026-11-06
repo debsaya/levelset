@@ -305,8 +305,8 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
       )}
       {m.grounding &&
         (m.grounding.ungrounded.length ? (
-          <Badge tone="warn" title="The AI worked this number out itself, and it is not in any table it looked up. Verify it before you use it.">
-            Check the underlined number{m.grounding.ungrounded.length > 1 ? "s" : ""}: not found in the data
+          <Badge tone="warn" title="The AI wrote this number from memory or worked it out itself. It is not in anything it looked up in your data this turn, so it may be right but has not been checked. Verify it before you use it.">
+            Underlined number{m.grounding.ungrounded.length > 1 ? "s were" : " was"} not looked up in your data: check {m.grounding.ungrounded.length > 1 ? "them" : "it"}
           </Badge>
         ) : m.grounding.checked ? (
           <Badge tone="good">✓ Numbers checked against your data</Badge>
