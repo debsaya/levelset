@@ -69,7 +69,7 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
 
   const iso = ex.documents.find((d) => /iso|9001/i.test(`${d.kind} ${d.file}`));
   const until = iso ? isoDate(iso.valid_until) : null;
-  const cert: Req = !iso ? { label: "Certificate", state: "warn", text: "ISO 9001 not sent" } : !until ? { label: "Certificate", state: "warn", text: "validity date unreadable" } : until < rfx.due_date ? { label: "Certificate", state: "bad", text: `expired ${monthYear(until)}` } : { label: "Certificate", state: "ok", text: `ISO 9001 to ${monthYear(until)}` };
+  const cert: Req = !iso ? { label: "Certificate", state: "warn", text: "ISO 9001 not sent" } : !until ? { label: "Certificate", state: "warn", text: "validity date unreadable" } : until < rfx.due_date ? { label: "Certificate", state: "bad", text: `ISO 9001 expired ${monthYear(until)}` } : { label: "Certificate", state: "ok", text: `ISO 9001 valid until ${monthYear(until)}` };
 
   const answered = (id: string) => ex.questionnaire.some((a) => a.question_id === id && a.assessment !== "unanswered");
   const nAns = rfx.questionnaire.filter((q) => answered(q.id)).length;
@@ -108,7 +108,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   // main action: one clear next move
   let primary: { label: string; run: () => void; disabled?: boolean };
   if (showStart) primary = { label: "Send request →", run: onSend, disabled: true };
-  else if (showInvite) primary = { label: `Send request to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`, run: onSend, disabled: !r.lines.length || !invitees.length };
+  else if (showInvite) primary = { label: `Send to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`, run: onSend, disabled: !r.lines.length || !invitees.length };
   else if (!replies.length) primary = { label: "Add a quote file or email text", run: () => onRead(true) };
   else if (unread > 0) primary = { label: `Read ${unread} ${unread === 1 ? "quote" : "quotes"} →`, run: () => (readAll(), onRead()) };
   else primary = { label: "Continue to compare →", run: onNext };
@@ -176,8 +176,8 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
     ? "Start by telling the co-pilot what you are buying."
     : showInvite
       ? invitees.length
-        ? `Check who gets this request, then send it to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}.`
-        : "Choose the vendors who should get this request."
+        ? `Send this request to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`
+        : "Choose the vendors who should get this request"
       : !replies.length
         ? `Sent to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
         : `${replies.length} of ${vendorsInvited} vendors replied`;
@@ -191,6 +191,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
         <div className="flex items-end justify-between gap-4 px-1 pt-1">
           <div className="min-w-0">
             <p className="text-[18px] font-semibold tracking-tight">{headline}</p>
+            {showInvite && invitees.length > 0 && <p className="mt-0.5 text-[12.5px] text-muted">Remove anyone you don&apos;t want to include.</p>}
             {chips.length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
                 {chips.map((c) => (

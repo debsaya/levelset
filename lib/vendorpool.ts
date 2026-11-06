@@ -23,7 +23,7 @@ export type Fit = { tone: "good" | "warn" | "bad" | "none"; text: string };
 export function certificate(v: PoolVendor, due: string): Fit {
   if (!v.iso_valid_until) return { tone: "warn", text: "No ISO 9001 on file" };
   if (v.iso_valid_until < due) return { tone: "bad", text: `ISO 9001 expired ${new Date(v.iso_valid_until).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` };
-  return { tone: "good", text: `ISO 9001 to ${new Date(v.iso_valid_until).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` };
+  return { tone: "good", text: `ISO 9001 valid until ${new Date(v.iso_valid_until).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` };
 }
 
 export const isCategory = (v: PoolVendor, cat = "corrugated") => v.categories.includes(cat);
