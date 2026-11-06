@@ -27,21 +27,21 @@ export default function AiActivity() {
   const longest = Math.max(0, ...a.jobs.filter((j) => !j.end).map((j) => now - j.start));
   const showWhy = anyActive && (a.slow || longest > 10_000);
   return (
-    <div role="status" aria-live="polite" className="fixed bottom-4 left-4 z-50 w-[340px] rounded-xl border border-line bg-white p-3 shadow-lg">
+    <div role="status" aria-live="polite" className="lv-rise fixed bottom-4 left-4 z-50 w-[340px] rounded-xl border border-line bg-white p-3 shadow-lg">
       {kinds.map((k) => {
         const g = groupProgress(a.jobs.filter((j) => j.kind === k), a.expected[k], now);
         const finished = g.done === g.total;
         return (
           <div key={k} className="mb-2 last:mb-0">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[13px] font-medium">{finished ? `✓ ${WORD[k][1]}` : WORD[k][0]}</span>
+              <span className="text-[13px] font-medium">{finished ? <span key="done" className="lv-settle inline-block">✓ {WORD[k][1]}</span> : WORD[k][0]}</span>
               <span className="tabular text-xs text-muted">
                 {k === "extract" && g.total > 1 ? `${g.done} of ${g.total} · ` : ""}
                 {finished ? "" : g.over ? "a little longer than usual" : `about ${secs(g.left)} left`}
               </span>
             </div>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-panel" aria-hidden>
-              <div className={`h-full rounded-full transition-[width] duration-500 ${finished ? "bg-good" : "bg-kraft"} ${g.over ? "animate-pulse" : ""}`} style={{ width: `${Math.round((finished ? 1 : g.pct) * 100)}%` }} />
+              <div className={`h-full rounded-full transition-[width,background-color] duration-500 ease-out ${finished ? "bg-good" : "lv-bar bg-kraft"} ${g.over ? "animate-pulse" : ""}`} style={{ width: `${Math.round((finished ? 1 : g.pct) * 100)}%` }} />
             </div>
           </div>
         );

@@ -34,3 +34,21 @@ h1, h2 { text-wrap: balance; letter-spacing: -0.02em; }
 .ungrounded { text-decoration: underline dotted #b42318; text-underline-offset: 3px; background: #fde9e7; border-radius: 2px; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: #cfd6de; border-radius: 6px; }
+
+/* Motion: only where the product is making the buyer wait or something has just arrived. Quiet, short, and off for anyone who asks for reduced motion. */
+@keyframes lv-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes lv-settle { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes lv-sheen { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+@keyframes lv-dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+@keyframes lv-skeleton { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.lv-rise { animation: lv-rise .24s cubic-bezier(.2,.7,.3,1) both; }
+.lv-settle { animation: lv-settle .22s cubic-bezier(.2,.7,.3,1) both; }
+.lv-bar { position: relative; overflow: hidden; }
+.lv-bar::after { content: ""; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: lv-sheen 1.6s ease-in-out infinite; }
+.lv-dots span { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 9999px; background: currentColor; animation: lv-dot 1.2s ease-in-out infinite; }
+.lv-dots span:nth-child(2) { animation-delay: .15s; }
+.lv-dots span:nth-child(3) { animation-delay: .3s; margin-right: 0; }
+.lv-skeleton { border-radius: 6px; background: var(--color-panel); animation: lv-skeleton 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .lv-rise, .lv-settle, .lv-bar::after, .lv-dots span, .lv-skeleton { animation: none !important; }
+}

@@ -9,7 +9,7 @@ import { runScenario } from "@/lib/award";
 import { postJson } from "@/lib/api";
 import { endJob, startJob } from "@/lib/aiActivity";
 import { downloadTable } from "@/lib/export";
-import { Badge, Button, Card, Md, Spinner, cx } from "./ui";
+import { Badge, Button, Card, Dots, Md, cx } from "./ui";
 
 const SUGGESTED = [
   { short: "Who is cheapest, and can I trust it?", q: "Who is cheapest on a like-for-like basis, and how much should I trust that?" },
@@ -222,11 +222,11 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
               </div>
             </div>
           )}
-          {s.analyst.map((m, i) => (m.role === "user" ? <div key={i} className="ml-auto max-w-2xl rounded-lg bg-brand px-4 py-2 text-[13.5px] text-white">{m.text}</div> : <Answer key={i} m={m} />))}
+          {s.analyst.map((m, i) => (m.role === "user" ? <div key={i} className="lv-rise ml-auto max-w-2xl rounded-lg bg-brand px-4 py-2 text-[13.5px] text-white">{m.text}</div> : <Answer key={i} m={m} />))}
           {busy && (
             <div className="space-y-1 text-[12.5px] text-muted">
               <div className="flex items-center gap-2">
-                <Spinner /> Thinking…
+                <Dots /> Thinking…
               </div>
               {live.map((l, i) => (
                 <div key={i} className="pl-6">

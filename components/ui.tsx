@@ -44,6 +44,17 @@ export function Card({ children, className }: { children: React.ReactNode; class
   return <div className={cx("rounded-xl border border-line bg-white", className)}>{children}</div>;
 }
 
+/** Three quiet dots, for "the AI is working on it". */
+export function Dots() {
+  return (
+    <span className="lv-dots inline-flex items-center" aria-hidden>
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
 export function Spinner({ className }: { className?: string }) {
   return <span className={cx("inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent", className)} />;
 }

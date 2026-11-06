@@ -6,7 +6,7 @@ import { postJson } from "@/lib/api";
 import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
-import { Badge, Button, Card, Disclosure, Md, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { Badge, Button, Card, Disclosure, Dots, Md, cx, fileToB64, mimeFor } from "./ui";
 import { prepFile } from "@/lib/image";
 import InviteList from "./InviteList";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
@@ -332,7 +332,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             <Md text={greeting(shown, { sentAt: s.sentAt, vendors: vendorsInvited, hasDraft: !!(amend && amend.parts.length), chosen: invitees.length, replied: replies.length, read: readN, flagged: n.cells.filter((c) => c.status === "review").length, noReply, pastDue })} />
           </div>
           {s.copilot.map((m, i) => (
-            <div key={i} className={cx("rounded-lg px-3 py-2 text-[12.5px] leading-relaxed", m.role === "user" ? "ml-6 bg-brand text-white" : "mr-2 bg-panel")}>
+            <div key={i} className={cx("lv-rise rounded-lg px-3 py-2 text-[12.5px] leading-relaxed", m.role === "user" ? "ml-6 bg-brand text-white" : "mr-2 bg-panel")}>
               <Md text={m.text} />
               {m.files && m.files.length > 0 && <div className="mt-1.5 text-[11.5px] text-white/80">📎 {m.files.join(", ")}</div>}
               {m.ops && m.ops.length > 0 && (
@@ -348,7 +348,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           ))}
           {busy && (
             <div className="flex items-center gap-2 text-xs text-muted">
-              <Spinner /> drafting…
+              <Dots /> drafting…
             </div>
           )}
           <div ref={endRef} />

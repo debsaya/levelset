@@ -41,6 +41,7 @@ A working prototype for a buyer who has to get from "five vendors replied in fiv
 - **API guard** (`lib/guard.ts`) on every POST route: valid JSON, same-site requests only, per-IP rate limit, shape checks, 12 MB body cap, plain-language errors (`friendly()`).
 - **Security headers** in `next.config.ts`, including a Content-Security-Policy (verified in a real browser: no violations, in-browser SQLite still runs).
 - **Accessibility:** axe-core reports zero violations on every step; skip link, landmarks, labelled dialogs, Escape closes the topmost layer, full keyboard path through the flow, contrast fixed.
+- **Motion** is used only while the buyer waits or something has just arrived (progress bar sheen, reading skeletons, thinking dots, soft entrances), short and quiet, and switched off for anyone who prefers reduced motion.
 - **Large photos:** compressed in the browser (canvas, JPEG) before upload, so a 10 MB phone photo goes up at ~2 MB.
 - **Empty or fake PDFs** are set aside with a reason instead of a generic AI error.
 - The QA pass and its findings are written up in the project notes; every defect found was fixed and pinned by a test where it could be.

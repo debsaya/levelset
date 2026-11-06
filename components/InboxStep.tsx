@@ -180,7 +180,7 @@ function StatusBadge({ r, n }: { r: VendorResponse; n: Normalized }) {
   if (r.status === "done") {
     const v = n.vendors.find((x) => x.vendor_id === r.vendor.id);
     return (
-      <span className="flex gap-1">
+      <span className="lv-settle flex gap-1">
         <Badge tone="good">{v ? v.quoted : 0} priced</Badge>
         {v && v.review > 0 && <Badge tone="warn">{v.review} to check</Badge>}
       </span>
@@ -236,8 +236,15 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
         </div>
         {r.status === "error" && <div className="rounded-md bg-bad-soft p-3 text-sm text-bad">{r.error}</div>}
         {r.status === "reading" && (
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <Spinner /> Reading every attachment, matching prices to your items, citing sources…
+          <div className="space-y-2.5" role="status">
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <Spinner /> Reading every attachment, matching prices to your items, citing sources…
+            </div>
+            <div className="space-y-2" aria-hidden>
+              <div className="lv-skeleton h-3 w-2/3" />
+              <div className="lv-skeleton h-3 w-5/6" style={{ animationDelay: ".15s" }} />
+              <div className="lv-skeleton h-3 w-1/2" style={{ animationDelay: ".3s" }} />
+            </div>
           </div>
         )}
         {ex && (
