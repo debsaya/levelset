@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import { copyText } from "@/lib/copy";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -274,5 +275,22 @@ export function EventBar({ id, title, due, revision, blank, sent, next }: { id: 
         </div>
       )}
     </section>
+  );
+}
+
+/** A copy button that says what happened: turns green with "Copied!" for a moment, or says plainly that it could not copy. */
+export function CopyButton({ text, label = "Copy", link, className }: { text: string | (() => string); label?: string; link?: boolean; className?: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  async function go() {
+    const ok = await copyText(typeof text === "function" ? text() : text);
+    setState(ok ? "copied" : "failed");
+    setTimeout(() => setState("idle"), ok ? 2200 : 4000);
+  }
+  const base = link ? "text-[11.5px] font-medium" : "inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition";
+  const tone = state === "copied" ? (link ? "text-good" : "border-good/40 bg-good-soft text-good") : state === "failed" ? (link ? "text-bad" : "border-bad/30 bg-bad-soft text-bad") : link ? "text-kraft" : "border-line bg-white hover:border-[#cfd3da] hover:bg-panel";
+  return (
+    <button type="button" onClick={go} aria-live="polite" className={cx(base, tone, className)}>
+      {state === "copied" ? "✓ Copied!" : state === "failed" ? "Couldn't copy. Select the text and press Ctrl+C" : label}
+    </button>
   );
 }

@@ -15,21 +15,24 @@ const SCHEMA = {
   required: ["subject", "body", "questions_count"],
 };
 
-const SYSTEM = `You write clarification emails from an Indian manufacturing company's category buyer to a vendor who has quoted on an RFx.
-- Polite, direct, plain English that a small-business owner will understand. No legalese.
-- One numbered question per open issue, each answerable in one line. Quote the vendor's own words where it helps ("you wrote '...'").
-- Ask for exactly what is needed to compare fairly (e.g. price per piece in INR, delivered to plant, ex-GST).
-- An issue that starts with "READ-BACK" is a price confirmation. Put it in the email as a short list, one line per item, with the line ID, description and both figures EXACTLY as given (never round, reword or recompute a number), and ask the vendor to reply "correct" or give the right price per item. Keep every item, and any closing note such as "(plus N smaller items)", exactly as given: the vendor must be able to see how many items there are in total. Do not say which items they are winning, that they are cheapest, or that an award is decided.
-- Do not reveal other vendors' prices or names. Do not promise an award.
-- Ask them to reply by a specific date: two working days after today.
-- Sign off with the buyer's name and role.`;
+const SYSTEM = `You write short emails from a buyer at an Indian manufacturing company to a supplier who has sent a quote. Write the way a polite, busy person writes to someone they work with: warm, plain, direct.
+- Sound human. Short sentences. No corporate or legal phrasing, no jargon, and never mention systems, AI, flags, checks, normalising or "the RFx". Say "your quote".
+- Keep every question, every item ID and every number EXACTLY as given. Never round, reword, recompute or drop one. Keep any list of items and any "plus N smaller items" note as it is.
+- Keep the layout exactly: greeting on its own line, a blank line between paragraphs, every numbered question starting on a new line, and each listed item on its own line. Never join the email into one block.
+- Keep the questions numbered, one per open point, each answerable in a line. Quote the supplier's own words where they are given.
+- Do not reveal other suppliers' prices or names. Do not say who is cheapest or promise an award. Do not make new commitments.
+- Ask for a reply by the date already in the draft.
+- Sign off with the buyer's name and role, as in the draft.`;
 
 export async function POST(req: Request) {
-  const g = await guard(req, "ai", (b) => (b.vendor && typeof b.vendor === "object" && Array.isArray(b.issues) ? null : "Missing vendor or issues."));
+  const g = await guard(req, "ai", (b) => (b.vendor && typeof b.vendor === "object" && (Array.isArray(b.issues) || (b.draft && typeof b.draft.body === "string")) ? null : "Missing vendor or draft."));
   if (g instanceof Response) return g;
   const body = g;
   return heartbeatJson(async () => {
-    const { vendor, buyer, rfx_id, rfx_title, issues, today } = body;
+    const { vendor, buyer, rfx_id, rfx_title, issues, draft, today } = body;
+    const task = draft
+      ? `Here is a draft email. Rewrite it so it reads like a real person wrote it. Change the wording only, not the content.\n\nSubject: ${String(draft.subject || "").slice(0, 300)}\n\n${String(draft.body).slice(0, 12000)}`
+      : `Open points to ask about:\n${(issues as string[]).map((i: string, n: number) => `${n + 1}. ${i}`).join("\n")}\n\nDraft the email.`;
     const out = await generate({
       system: SYSTEM,
       contents: [
@@ -37,14 +40,14 @@ export async function POST(req: Request) {
           role: "user",
           parts: [
             {
-              text: `Today: ${today}\nRFx: ${rfx_id} — ${rfx_title}\nBuyer: ${buyer.name}, ${buyer.role}, ${buyer.company}\nVendor: ${vendor.name} (contact: ${vendor.contact})\n\nOpen issues found by the system:\n${issues.map((i: string, n: number) => `${n + 1}. ${i}`).join("\n")}\n\nDraft the email.`,
+              text: `Today: ${today}\nRFx: ${rfx_id} — ${rfx_title}\nBuyer: ${buyer.name}, ${buyer.role}, ${buyer.company}\nVendor: ${vendor.name} (contact: ${vendor.contact})\n\n${task}`,
             },
           ],
         },
       ],
       responseSchema: SCHEMA,
       thinking: "low",
-      maxOutputTokens: 4000,
+      maxOutputTokens: 8000,
     });
     return { ...parseJson<Record<string, unknown>>(out.text), model: out.model, attempts: out.attempts };
   });

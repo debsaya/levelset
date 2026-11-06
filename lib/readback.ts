@@ -6,8 +6,10 @@ import type { Rfx } from "./types";
 
 export const READBACK_MAX = 40;
 
-/** One issue line for the clarification email, or null if this vendor has no lines in the current best award. */
-export function readBackIssue(vendorId: string, n: Normalized, rfx: Rfx): string | null {
+export type ReadBack = { count: number; ids: string[]; items: string[]; more: number };
+
+/** The prices we hold for this vendor on the items they are winning, as one plain line each. Null if they win nothing. */
+export function readBackItems(vendorId: string, n: Normalized, rfx: Rfx): ReadBack | null {
   const won = runScenario(rfx, n, {}).rows.filter((r) => r.vendor_id === vendorId);
   if (!won.length) return null;
   const top = [...won].sort((a, b) => b.annual_value_inr - a.annual_value_inr).slice(0, READBACK_MAX);
@@ -21,6 +23,13 @@ export function readBackIssue(vendorId: string, n: Normalized, rfx: Rfx): string
     const quote = c?.source?.quote && c.source.quote.length <= 70 ? ` ("${c.source.quote}")` : "";
     return `${r.line_id} ${desc}: you wrote ${c?.quoted_as || "a price"}${quote}; we read it as ₹${r.unit_price_inr.toFixed(2)} per piece`;
   });
-  const more = won.length > top.length ? ` (plus ${won.length - top.length} smaller items)` : "";
-  return `READ-BACK before we finalise: please confirm the prices we have for you on ${won.length} items, answering "correct" or giving the right price for each. Where you quoted in another unit, we show what you wrote and what we read. ${items.join("; ")}${more}.`;
+  return { count: won.length, ids: top.map((r) => r.line_id), items, more: won.length - top.length };
+}
+
+/** One issue line for the clarification email, or null if this vendor has no lines in the current best award. */
+export function readBackIssue(vendorId: string, n: Normalized, rfx: Rfx): string | null {
+  const rb = readBackItems(vendorId, n, rfx);
+  if (!rb) return null;
+  const more = rb.more > 0 ? ` (plus ${rb.more} smaller items)` : "";
+  return `READ-BACK before we finalise: please confirm the prices we have for you on ${rb.count} items, answering "correct" or giving the right price for each. Where you quoted in another unit, we show what you wrote and what we read. ${rb.items.join("; ")}${more}.`;
 }

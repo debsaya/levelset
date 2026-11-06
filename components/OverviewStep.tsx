@@ -5,7 +5,8 @@ import { crore, type Normalized } from "@/lib/normalize";
 import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
-import { ClarifyModal, vendorIssues } from "./CompareStep";
+import { ClarifyModal } from "./ClarifyModal";
+import { vendorPoints } from "@/lib/clarify";
 import { Badge, Blocked, Button, Spinner, cx } from "./ui";
 import { blocker } from "@/lib/flow";
 
@@ -30,13 +31,17 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const best = [...sc].filter((x) => x.key !== "split_qc").sort((a, b) => b.linesCovered - a.linesCovered || a.total - b.total)[0];
   const ly = useMemo(() => lastYear(s.rfx, s.prior, best, n), [s.rfx, s.prior, best, n]);
   const review = n.cells.filter((c) => c.status === "review").length;
-  const issues = useMemo(() => Object.fromEntries(n.vendors.map((v) => [v.vendor_id, vendorIssues(v, n, s.rfx, s.responses)])), [n, s.rfx, s.responses]);
+  const points = useMemo(() => Object.fromEntries(n.vendors.map((v) => [v.vendor_id, vendorPoints(v, n, s.rfx)])), [n, s.rfx]);
   const approved = n.vendors.filter((v) => v.qualification === "qualified").length;
   // Problems on vendors you could still award to: a different spec on an item, or a total that does not match their own lines.
   const awardable = n.vendors.filter((v) => v.qualification !== "not_qualified");
   const altSpec = awardable.filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
   const totalOff = awardable.filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
   const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length;
+  const askedOn = (id: string) => {
+    const a = s.asked?.[id];
+    return a ? new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
+  };
   const hasUnapproved = n.vendors.some((v) => v.qualification === "not_qualified");
 
   const names = best ? best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} (${v.lines} ${v.lines === 1 ? "item" : "items"})`) : [];
@@ -193,7 +198,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                             <span className="tabular">{v.terms.payment ? `${v.terms.payment} days` : "–"}</span>
                           </div>
                           <button onClick={() => setClarify(v.vendor_id)} className="mt-auto pt-3 text-left text-[12.5px] font-medium text-kraft hover:underline">
-                            Draft email · {issues[v.vendor_id]?.length || 0} {(issues[v.vendor_id]?.length || 0) === 1 ? "point" : "points"} to raise
+                            {askedOn(v.vendor_id) ? `Emailed ${askedOn(v.vendor_id)} · email again` : `Email ${v.name.split(" ")[0]} · ${points[v.vendor_id]?.length || 0} ${(points[v.vendor_id]?.length || 0) === 1 ? "question" : "questions"}`}
                           </button>
                         </div>
                       ))}
@@ -208,18 +213,18 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     {n.vendors
                       .filter((v) => v.qualification !== "qualified")
                       .map((v) => (
-                        <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                        <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                       ))}
                     {n.vendors
                       .filter((v) => v.adjustments.some((a) => a.conditional))
                       .map((v) => (
-                        <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                        <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                       ))}
                     {altSpec.map(({ v, lines }) => (
-                      <Attention key={"a" + v.vendor_id} tone="warn" title={`${v.name}: different spec on ${lines.length === 1 ? "an item" : `${lines.length} items`}`} body={`${lines.join(", ")} ${lines.length === 1 ? "was" : "were"} quoted on a different spec, so ${lines.length === 1 ? "it isn't" : "they aren't"} counted. Ask whether they can quote what you specified.`} action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={"a" + v.vendor_id} tone="warn" title={`${v.name}: different spec on ${lines.length === 1 ? "an item" : `${lines.length} items`}`} body={`${lines.join(", ")} ${lines.length === 1 ? "was" : "were"} quoted on a different spec, so ${lines.length === 1 ? "it isn't" : "they aren't"} counted. Ask whether they can quote what you specified.`} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
                     {totalOff.map((v) => (
-                      <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action="Ask vendor" onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
                   </div>
                 </Panel>
@@ -294,7 +299,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
       {clarify &&
         (() => {
           const v = n.vendors.find((x) => x.vendor_id === clarify)!;
-          return <ClarifyModal v={v} issues={issues[clarify] || []} onClose={() => setClarify(null)} />;
+          return <ClarifyModal v={v} points={points[clarify] || []} onClose={() => setClarify(null)} />;
         })()}
     </div>
   );
@@ -312,13 +317,14 @@ function Panel({ title, summary, children }: { title: string; summary?: string; 
   );
 }
 
-function Attention({ tone, title, body, action, onClick }: { tone: "warn" | "bad" | "neutral"; title: string; body: string; action: string; onClick: () => void }) {
+function Attention({ tone, title, body, action, done, onClick }: { tone: "warn" | "bad" | "neutral"; title: string; body: string; action: string; done?: string; onClick: () => void }) {
   return (
     <div className="flex items-start gap-3 rounded-xl px-2.5 py-2.5 hover:bg-panel">
       <span className={cx("mt-1.5 h-2 w-2 shrink-0 rounded-full", tone === "warn" ? "bg-warn" : tone === "bad" ? "bg-bad" : "bg-muted")} />
       <div className="min-w-0 flex-1">
         <div className="text-[13px] font-medium">{title}</div>
         <div className="text-[12px] leading-snug text-muted">{body}</div>
+        {done && <div className="mt-0.5 text-[12px] font-medium text-good">✓ Emailed {done}. Waiting for their reply.</div>}
       </div>
       <button onClick={onClick} className="shrink-0 rounded-lg border border-line bg-white px-2.5 py-1 text-[12px] font-medium hover:bg-panel">
         {action}
