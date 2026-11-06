@@ -168,7 +168,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
           </button>
         </div>
       </header>
-      <EventBar next={(() => { const nx = nextStep(s, review); /* The Collect step already has its own main button for these moves; don't say the same thing twice. */ if (nx.to === page || (page === "rfx" && (nx.to === "send" || nx.to === "quotes"))) return undefined; return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
+      <EventBar next={(() => { const nx = nextStep(s, review); /* The Collect and Decision steps already have their own main button for these moves; don't say the same thing twice. */ if (nx.to === page || (page === "rfx" && (nx.to === "send" || nx.to === "quotes")) || (page === "overview" && nx.to === "compare")) return undefined; return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
       <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
         <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
