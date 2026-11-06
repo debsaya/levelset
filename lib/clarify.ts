@@ -3,7 +3,11 @@
 import type { Normalized, VendorSummary } from "./normalize";
 import { readBackItems } from "./readback";
 import type { Rfx } from "./types";
-import { titleInSentence } from "./spec";
+import { titleInSentence as rawTitleInSentence } from "./spec";
+
+/** "FY27 annual rate contract — corrugated packaging" reads better in a sentence as "…contract, corrugated packaging". */
+const titleInSentence = (t: string) => rawTitleInSentence(t).replace(/\s+[—–-]\s+/g, ", ");
+const plainTitle = (t: string) => t.replace(/\s+[—–-]\s+/g, ", ");
 
 /** One thing to ask the vendor. `items` are short lines shown as a list under it (item IDs, prices). */
 export type Point = { id: string; text: string; items?: string[] };
@@ -150,4 +154,37 @@ export function buildRequestEmail(o: { rfx: Rfx; vendorName: string; contact?: s
   if (how.length) lines.push("", "How we'd like it:", ...how.map(([k, v]) => `• ${k}: ${tidy(v)}`));
   lines.push("", "Send your quote in whatever form is easiest: the bid sheet, your own price list, a PDF, a photo, or just a reply to this email. Please keep the subject line so your reply reaches the right place.", "", "Thanks,", r.buyer.name, `${r.buyer.role}, ${r.buyer.company}`);
   return { subject: `[${r.id}] Request for quotation: ${r.title}`, body: lines.join("\n") };
+}
+
+const sign = (r: Rfx) => ["Thanks,", r.buyer.name, `${r.buyer.role}, ${r.buyer.company}`];
+
+/** A nudge to a vendor who has not replied yet. Firmer, but still friendly, once the due date has passed. */
+export function buildReminderEmail(o: { rfx: Rfx; vendorName: string; contact?: string; pastDue: boolean; today?: Date }): { subject: string; body: string } {
+  const r = o.rfx;
+  const hi = firstName(o.contact || "");
+  const greet = `Hi ${hi || `${shortName(o.vendorName)} team`},`;
+  const what = `our ${titleInSentence(r.title)}`;
+  const lines = o.pastDue
+    ? [greet, "", `We haven't received your quote for ${what} yet, and the due date (${longDate(r.due_date)}) has passed. I'd still like to include you in the comparison.`, "", `Could you send it by ${replyBy(o.today ?? new Date())}? If you won't be quoting this time, a one-line reply saying so would help.`]
+    : [greet, "", `A quick reminder that we're waiting for your quote for ${what}. It is due on ${longDate(r.due_date)}.`, "", "Send it in whatever form is easiest: the bid sheet, your own price list, a PDF, a photo, or just a reply to this email. If you can't quote, a one-line reply saying so would help."];
+  lines.push("", "Please keep the subject line so your reply reaches the right place.", "", ...sign(r));
+  return { subject: `[${r.id}] ${o.pastDue ? "Quote overdue" : "Reminder"}: ${plainTitle(r.title)}`, body: lines.join("\n") };
+}
+
+/** One email to every invited vendor when the request changes after it went out. */
+export function buildAmendmentEmail(o: { rfx: Rfx; revision: number; parts: string[] }): { subject: string; body: string } {
+  const r = o.rfx;
+  const lines = [
+    "Hi all,",
+    "",
+    `We have updated our request for the ${titleInSentence(r.title)} (revision ${o.revision}).`,
+    "",
+    "What changed:",
+    ...o.parts.map((p) => `• ${p}`),
+    "",
+    `Everything else stays the same. Please price the changes and send your updated quote by ${longDate(r.due_date)}. If a change affects a price you already gave us, please tell us.`,
+    "",
+    ...sign(r),
+  ];
+  return { subject: `[${r.id}] Updated request, revision ${o.revision}: ${plainTitle(r.title)}`, body: lines.join("\n") };
 }
