@@ -272,98 +272,130 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
     setOv("");
   };
   const srcUrl = c.source && s.responses.find((r) => r.vendor.id === c.vendor_id)?.vendor.attachments.find((a) => fileName(a) === c.source!.file);
+  const STATUS: Record<string, { label: string; tone: "good" | "warn" | "neutral" }> = {
+    ok: { label: "Looks fine", tone: "good" },
+    review: { label: "Check this price", tone: "warn" },
+    deviation: { label: "Different spec", tone: "warn" },
+    missing: { label: "No price", tone: "neutral" },
+    excluded: { label: "Excluded", tone: "neutral" },
+  };
+  const st = STATUS[c.status] ?? { label: c.status, tone: "neutral" as const };
+  // Steps already show the freight sum, so the matching note would only repeat it.
+  const alerts = c.flags.filter((f) => f.sev !== "info");
+  const notes = c.flags.filter((f) => f.sev === "info" && f.code !== "FREIGHT_ADDED");
+  const head = "text-[11px] font-semibold uppercase tracking-wide text-muted";
+  const ovText = c.override
+    ? `${c.override.action === "override" ? `You set the price to ${inr(c.override.unit_inr)}` : c.override.action === "exclude" ? "You excluded this price" : "You marked this price as right"}${c.override.note ? `: ${c.override.note}` : ""}`
+    : "";
   return (
     <Card className="flex w-[380px] shrink-0 flex-col overflow-hidden">
-      <div className="flex items-start justify-between border-b border-line px-4 py-3">
+      <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
         <div>
           <div className="text-xs text-muted">{v.name}</div>
-          <div className="font-semibold">
+          <div className="font-semibold leading-snug">
             {c.line_id} · {line.description}
           </div>
         </div>
-        <button onClick={onClose} className="text-muted">
+        <button onClick={onClose} aria-label="Close" className="text-muted hover:text-ink">
           ✕
         </button>
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto p-4 text-[12.5px]">
-        <div className="flex items-baseline justify-between">
-          <span className="text-2xl font-semibold tabular">{inr(c.unit_inr)}</span>
-          <Badge tone={c.status === "ok" ? "good" : c.status === "review" ? "warn" : c.status === "missing" ? "neutral" : "warn"}>{c.status}</Badge>
-        </div>
-        {c.per_kg !== null && (
-          <div className="text-muted">
-            ≈ ₹{c.per_kg.toFixed(1)}/kg · annual {crore(c.annual_inr || 0)} · confidence {c.confidence !== null ? Math.round(c.confidence * 100) + "%" : "–"}
+      <div className="flex-1 space-y-5 overflow-y-auto p-4 text-[12.5px]">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-2xl font-semibold tabular">{inr(c.unit_inr)}</span>
+            <Badge tone={st.tone}>{st.label}</Badge>
           </div>
-        )}
+          <div className="mt-1 text-muted">
+            per {line.uom}, delivered, ex-GST
+            {c.per_kg !== null && ` · about ₹${c.per_kg.toFixed(1)}/kg · ${crore(c.annual_inr || 0)} a year`}
+          </div>
+        </div>
         {c.missing_reason && <div className="rounded bg-panel p-2">{c.missing_reason}</div>}
-        {c.steps.length > 0 && (
+        {alerts.length > 0 && (
           <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">How we got this number</div>
-            <ol className="space-y-1">
-              {c.steps.map((st, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="w-5 text-muted">{i + 1}.</span>
-                  <span>
-                    <b>{st.label}:</b> {st.value}
-                  </span>
+            <div className={cx(head, "mb-1.5")}>Why this needs a look</div>
+            <ul className="space-y-1.5">
+              {alerts.map((f, i) => (
+                <li key={i} className={cx("rounded px-2.5 py-2 leading-snug", f.sev === "warn" ? "bg-warn-soft text-warn" : "bg-bad-soft text-bad")}>
+                  {f.msg}
                 </li>
               ))}
-            </ol>
+            </ul>
           </div>
         )}
-        {c.flags.length > 0 && (
-          <div className="space-y-1.5">
-            {c.flags.map((f, i) => (
-              <div key={i} className={cx("rounded px-2 py-1.5", f.sev === "info" ? "bg-panel" : f.sev === "warn" ? "bg-warn-soft text-warn" : "bg-bad-soft text-bad")}>
-
-                {f.msg}
-              </div>
-            ))}
+        {c.steps.length > 0 && (
+          <div>
+            <div className={cx(head, "mb-1.5")}>How we got this price</div>
+            <dl className="divide-y divide-line rounded border border-line">
+              {c.steps.map((x, i) => (
+                <div key={i} className={cx("px-2.5 py-2", i === c.steps.length - 1 && "bg-panel font-semibold")}>
+                  <dt className="text-[11.5px] font-medium text-muted">{x.label}</dt>
+                  <dd className="mt-0.5 leading-snug">{x.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+        {notes.length > 0 && (
+          <div>
+            <div className={cx(head, "mb-1.5")}>Good to know</div>
+            <ul className="list-disc space-y-1 pl-4 leading-snug text-muted">
+              {notes.map((f, i) => (
+                <li key={i}>{f.msg}</li>
+              ))}
+            </ul>
           </div>
         )}
         {c.source && (
           <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Source</div>
-            <div className="rounded border border-line p-2">
-              <div className="font-mono text-[11.5px]">“{c.source.quote}”</div>
-              <div className="mt-1 text-[11px] text-muted">
+            <div className={cx(head, "mb-1.5")}>Where it came from</div>
+            <div className="rounded border border-line p-2.5">
+              <div className="font-mono text-[11.5px] leading-snug">&ldquo;{c.source.quote}&rdquo;</div>
+              <div className="mt-1.5 text-[11px] text-muted">
                 {srcUrl ? (
-                  <a className="text-kraft hover:underline" href={srcUrl} target="_blank">
+                  <a className="text-kraft hover:underline" href={srcUrl} target="_blank" rel="noreferrer">
                     {c.source.file}
                   </a>
                 ) : (
                   c.source.file
-                )}{" "}
-                · {c.source.location}
+                )}
+                {c.source.location ? ` · ${c.source.location}` : ""}
               </div>
             </div>
           </div>
         )}
-        <div className="space-y-2 border-t border-line pt-3">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">Buyer decision</div>
+        <div className="space-y-3 border-t border-line pt-4">
+          <div className={head}>Your decision</div>
           {c.override && (
-            <div className="rounded bg-good-soft p-2 text-good">
-              {c.override.action} {c.override.unit_inr ? inr(c.override.unit_inr) : ""} · {c.override.note || "no note"} · {new Date(c.override.at).toLocaleString("en-IN")}
+            <div className="rounded bg-good-soft p-2.5 leading-snug text-good">
+              {ovText}
+              <span className="text-[11px] opacity-80"> · {new Date(c.override.at).toLocaleString("en-IN")}</span>
             </div>
           )}
-          <input className="w-full rounded border border-line px-2 py-1.5" placeholder="Note (why) — goes to the audit log" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex flex-wrap gap-2">
             {c.unit_inr !== null && <Button onClick={() => act("accept")}>Looks right</Button>}
             <Button variant="danger" onClick={() => act("exclude")}>
-              Exclude
+              Exclude this price
             </Button>
             {c.override && (
               <Button variant="ghost" onClick={() => act("reset")}>
-                Reset
+                Undo my decision
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
-            <input className="w-28 rounded border border-line px-2 py-1.5 tabular" placeholder="₹ / piece" value={ov} onChange={(e) => setOv(e.target.value)} />
-            <Button disabled={!ov || isNaN(parseFloat(ov))} onClick={() => act("override")}>
-              Override price
-            </Button>
+          <div>
+            <label htmlFor="ov-price" className="mb-1 block text-[12px] text-muted">
+              Or use a different price
+            </label>
+            <div className="flex gap-2">
+              <input id="ov-price" className="w-28 rounded border border-line px-2 py-1.5 tabular" inputMode="decimal" placeholder={`₹ per ${line.uom}`} value={ov} onChange={(e) => setOv(e.target.value)} />
+              <Button disabled={!ov || isNaN(parseFloat(ov))} onClick={() => act("override")}>
+                Use this price
+              </Button>
+            </div>
           </div>
+          <input className="w-full rounded border border-line px-2 py-1.5" aria-label="Note" placeholder="Add a note (optional). It is saved in the audit log." value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
       </div>
     </Card>
