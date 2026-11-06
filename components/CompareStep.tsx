@@ -242,7 +242,7 @@ function CellView({ c, best, bestQ }: { c: Cell; best: number | null; bestQ: num
       <div className="flex items-center justify-between gap-1">
         <span className={cx("font-semibold", isBest && "text-good", c.status === "deviation" && "text-muted line-through decoration-1")}>{inr(c.unit_inr)}</span>
         <span className="flex gap-0.5">
-          {isBestQ && <span title="Lowest among qualified vendors" className="h-1.5 w-1.5 self-center rounded-full bg-good" />}
+          {isBestQ && <span title="Lowest among approved vendors" className="h-1.5 w-1.5 self-center rounded-full bg-good" />}
           {c.status === "review" && <span title="Needs review" className="h-1.5 w-1.5 self-center rounded-full bg-warn" />}
           {c.status === "deviation" && <Badge tone="warn">alt spec</Badge>}
           {c.override && <span title="Buyer decided" className="text-[10px] font-medium text-good">checked</span>}
