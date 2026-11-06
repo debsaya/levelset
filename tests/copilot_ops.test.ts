@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { applyOps, cleanScope, cleanTitle, incomplete, type Op } from "../lib/rfxOps";
-import { buildLine, describeLine, tidyLines } from "../lib/spec";
+import { buildLine, describeLine, tidyLines, titleInSentence } from "../lib/spec";
 import { RFX } from "./helpers";
 
 const op = (o: Partial<Op>): Op => ({ op: "set_meta", why: "test", ...o });
@@ -114,5 +114,16 @@ describe("Saved data from an older version is tidied when loaded", () => {
   it("leaves already-clean lines unchanged", () => {
     const out = tidyLines(RFX);
     assert.deepEqual(out.lines.map((l) => l.description), RFX.lines.map((l) => l.description));
+  });
+});
+
+
+describe("titleInSentence", () => {
+  it("keeps FY27 and other acronyms in capitals", () => {
+    assert.equal(titleInSentence("FY27 Annual Rate Contract — Corrugated Packaging"), "FY27 annual rate contract — corrugated packaging");
+    assert.equal(titleInSentence("Annual RFQ for 3PL Services"), "annual RFQ for 3PL services");
+  });
+  it("lowercases an ordinary title", () => {
+    assert.equal(titleInSentence("Corrugated Packaging"), "corrugated packaging");
   });
 });

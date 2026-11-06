@@ -74,3 +74,8 @@ export function buildLine(p: any, id: string): RfxLine {
   line.description = describeLine(line);
   return line;
 }
+
+/** A request title as it reads mid-sentence: ordinary words go lowercase, but acronyms and codes ("FY27", "RFQ", "3PL") keep their capitals. */
+export function titleInSentence(title: string) {
+  return title.replace(/[^\s—–-]+/g, (w) => (/[A-Z]{2,}|\d/.test(w) ? w : w.toLowerCase()));
+}
