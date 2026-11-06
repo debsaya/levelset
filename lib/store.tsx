@@ -6,6 +6,7 @@ import seedVendors from "@/data/vendors.json";
 import seedPrior from "@/data/prior_contracts.json";
 import savedRaw from "@/data/saved_reading.json";
 import { MASTER, type PoolVendor } from "./vendorpool";
+import { tidyLines } from "./spec";
 
 const savedReading = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
 /** true once a real reading of the five demo quotes has been recorded (see scripts/record_reading.mjs) */
@@ -151,6 +152,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             state: {
               ...base,
               ...parsed,
+              rfx: tidyLines(parsed.rfx),
+              rfxDraft: parsed.rfxDraft && Array.isArray(parsed.rfxDraft.lines) ? tidyLines(parsed.rfxDraft) : null,
               assumptions: { ...base.assumptions, ...(parsed.assumptions || {}) },
               sentTo: Array.isArray(parsed.sentTo) ? parsed.sentTo : base.sentTo,
               pool: Array.isArray(parsed.pool) ? parsed.pool : structuredClone(MASTER),
