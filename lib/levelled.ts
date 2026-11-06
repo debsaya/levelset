@@ -61,3 +61,9 @@ export function levelled(n: Normalized, rfx: Rfx): Record<string, Levelled> {
   if (lowest) for (const r of Object.values(out)) if (r.total !== null) r.vsLowestApproved = (r.total / lowest - 1) * 100;
   return out;
 }
+
+/** What the payment terms are worth on a yearly spend: paying `days` later at `ratePct` a year. */
+export function creditValue(total: number, days: number | null | undefined, ratePct: number): number {
+  if (!days || days <= 0 || ratePct <= 0) return 0;
+  return (total * ratePct * days) / (100 * 365);
+}
