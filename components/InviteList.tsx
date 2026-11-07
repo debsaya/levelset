@@ -2,14 +2,13 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { useStore } from "@/lib/store";
-import { MASTER, certificate, isCategory, parseVendorLines, suggest, type PoolVendor } from "@/lib/vendorpool";
+import { MASTER, certificate, isCategory, parseVendorLines, type PoolVendor } from "@/lib/vendorpool";
 import { Badge, Button, Card, cx } from "./ui";
 
-type Channel = "list" | "suggest" | "lastyear" | "upload" | "paste" | "email";
+type Channel = "list" | "lastyear" | "upload" | "paste" | "email";
 
 const CHANNELS: { id: Channel; label: string; tip: string }[] = [
   { id: "list", label: "Vendor list", tip: "Pick from the vendors your company already works with." },
-  { id: "suggest", label: "Suggest a shortlist", tip: "A shortlist chosen by rules you can read: right category, valid certificate, near the plant, plus the incumbent." },
   { id: "lastyear", label: "Last year's vendors", tip: "Invite everyone who held the previous contract." },
   { id: "upload", label: "Upload a list", tip: "An Excel or CSV file with vendor names and emails." },
   { id: "paste", label: "Paste emails", tip: "Paste names and emails from anywhere: an email, a chat, a sheet." },
@@ -24,8 +23,7 @@ export default function InviteList() {
   const pool = s.pool ?? MASTER;
   const due = s.rfx.due_date;
   const invitees = s.sentTo.map((id) => pool.find((v) => v.id === id)).filter(Boolean) as PoolVendor[];
-  const [ch, setCh] = useState<Channel | null>(invitees.length ? null : "suggest");
-  const [why, setWhy] = useState<Record<string, string>>({});
+  const [ch, setCh] = useState<Channel | null>(invitees.length ? null : "list");
   const [q, setQ] = useState("");
   const [paste, setPaste] = useState("");
   const [one, setOne] = useState({ name: "", email: "" });
@@ -70,7 +68,6 @@ export default function InviteList() {
   }
   const certParts = [cert.valid && `${cert.valid} valid`, cert.expired && `${cert.expired} expired`, cert.missing && `${cert.missing} missing`].filter(Boolean) as string[];
   const compliance = certParts.length > 1 ? `${certParts.slice(0, -1).join(", ")} & ${certParts[certParts.length - 1]}` : certParts[0] || "";
-  const shortlist = suggest(pool, due);
   const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
   const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
 
@@ -90,18 +87,19 @@ export default function InviteList() {
       </div>
 
       <div className="divide-y divide-line">
-        {invitees.map((v) => {
+        {invitees.map((v, i) => {
           const fit = certificate(v, due);
           return (
             <div key={v.id} className="flex items-center gap-4 px-5 py-2.5">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
+                  <span className="tabular w-5 shrink-0 text-right text-[12.5px] text-muted">{i + 1}.</span>
                   <span className="truncate text-[13.5px] font-medium">{v.name}</span>
                   {s.prior[v.id] && <Badge tone="brand">incumbent</Badge>}
                   {v.source !== "master" && <Badge>{SOURCE[v.source]}</Badge>}
                 </div>
-                <div className="truncate text-[11.5px] text-muted">
-                  {why[v.id] ? why[v.id] : `${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
+                <div className="truncate pl-7 text-[11.5px] text-muted">
+                  {`${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
                 </div>
               </div>
               {v.source === "master" && (
@@ -119,18 +117,17 @@ export default function InviteList() {
       </div>
 
       <div className="border-t border-line bg-white px-5 py-4">
-        <div className="text-[13.5px] font-semibold">Add vendors</div>
-        <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="text-[13.5px] font-semibold">Add vendors</div>
           {CHANNELS.map((c) => (
-            <button key={c.id} onClick={() => (setCh(ch === c.id ? null : c.id), setMsg(null))} aria-pressed={ch === c.id} className={cx("rounded-xl border px-3.5 py-2.5 text-left", ch === c.id ? "border-ink bg-ink text-white" : "border-line hover:border-ink/40 hover:bg-panel")}>
-              <span className="block text-[13px] font-medium">{c.label}</span>
-              <span className={cx("mt-0.5 block text-[11.5px] leading-snug", ch === c.id ? "text-white/75" : "text-muted")}>{c.tip}</span>
+            <button key={c.id} onClick={() => (setCh(ch === c.id ? null : c.id), setMsg(null))} aria-pressed={ch === c.id} title={c.tip} className={cx("inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[12.5px] font-medium transition", ch === c.id ? "border-ink bg-ink text-white" : "border-line bg-white text-ink hover:border-[#cfd3da] hover:bg-panel")}>
+              <span aria-hidden className="text-[13px] leading-none opacity-60">+</span>
+              {c.label}
             </button>
           ))}
-          <div title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="cursor-help rounded-xl border border-dashed border-line px-3.5 py-2.5">
-            <span className="block text-[13px] font-medium text-muted">Connect ERP · planned</span>
-            <span className="mt-0.5 block text-[11.5px] leading-snug text-muted">Sync your vendor master from SAP, Tally, Oracle or Ariba.</span>
-          </div>
+          <span title="Connecting your ERP or vendor master (SAP, Tally, Oracle, Ariba) is stubbed in this prototype. The built-in vendor list stands in for it." className="inline-flex cursor-help items-center rounded-full border border-dashed border-line px-3 py-1 text-[12.5px] text-muted">
+            Connect ERP · planned
+          </span>
         </div>
 
       {ch && (
@@ -158,35 +155,6 @@ export default function InviteList() {
                 })}
                 {!available.length && <div className="px-3 py-4 text-center text-muted">{q ? "No vendor matches." : "Everyone on your list is already chosen."}</div>}
               </div>
-            </div>
-          )}
-          {ch === "suggest" && (
-            <div>
-              <p className="text-muted">Chosen by rules you can read: makes corrugated, no expired certificate, within 400 km of the plant, and the incumbent is always in.</p>
-              <div className="mt-2 divide-y divide-line rounded-md border border-line bg-white">
-                {shortlist.map((p) => {
-                  const v = pool.find((x) => x.id === p.id)!;
-                  return (
-                    <div key={p.id} className="flex items-baseline justify-between gap-3 px-3 py-1.5">
-                      <span className="font-medium">{v.name}</span>
-                      <span className="truncate text-[11.5px] text-muted">{p.why}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                variant="primary"
-                className="mt-2.5"
-                onClick={() => {
-                  setWhy(Object.fromEntries(shortlist.map((p) => [p.id, p.why])));
-                  set((x) => ({ ...x, sentTo: shortlist.map((p) => p.id) }));
-                  log(`Chose the suggested shortlist of ${shortlist.length} vendors`);
-                  setCh(null);
-                }}
-              >
-                Use shortlist
-              </Button>
-              <span className="ml-3 text-[11.5px] text-muted">Replaces the current choice. You can still add or remove after.</span>
             </div>
           )}
           {ch === "lastyear" && (
