@@ -140,6 +140,18 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
   const asked = s.asked?.[v.vendor_id];
   const q = QUAL[v.qualification];
   const warn = v.flags.filter((f) => f.sev !== "info");
+  // Everything that used to be its own line, as one short line. The full wording is on hover.
+  const short: Record<string, string> = { TOTAL_MISMATCH: "total differs from lines", TAX_UNCLEAR: "GST not stated" };
+  const issues = [
+    ...(v.deviation > 0 ? [`${v.deviation} off-spec`] : []),
+    ...(v.review > 0 ? [`${v.review} to review`] : []),
+    ...warn.map((f) => short[f.code] || f.msg.split(/[.;:]/)[0].slice(0, 40)),
+  ];
+  const full = [
+    ...(v.deviation > 0 ? [`${v.deviation} on a different spec, not counted`] : []),
+    ...(v.review > 0 ? [`${v.review} need review`] : []),
+    ...warn.map((f) => f.msg),
+  ];
   return (
     <div className="space-y-1 text-left font-normal normal-case tracking-normal">
       <div className="text-[12.5px] font-semibold text-ink">{v.name}</div>
@@ -151,15 +163,13 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
       <div className="text-[11px] text-muted">
         {v.quoted - v.deviation}/{n.cells.filter((c) => c.vendor_id === v.vendor_id).length} priced · {v.terms.currency} · {v.terms.freight}
       </div>
-      {v.deviation > 0 && <div className="text-[11px] text-warn">{v.deviation} on a different spec, not counted</div>}
-      {v.review > 0 && <div className="text-[11px] text-warn">{v.review} need review</div>}
-      {warn.map((f, i) => (
-        <div key={i} className="text-[11px] leading-snug text-warn" title={f.msg}>
-          {f.code === "TOTAL_MISMATCH" ? "Stated total doesn't match its lines" : f.msg.slice(0, 60)}
+      {issues.length > 0 && (
+        <div className="text-[11px] leading-snug text-warn" title={full.join("\n")}>
+          {issues.join(" · ")}
         </div>
-      ))}
+      )}
       <button onClick={onClarify} className="text-[11px] font-medium text-kraft hover:underline">
-        {asked ? `Emailed ${new Date(asked.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · email again` : "Email this vendor"}
+        {asked ? `Emailed ${new Date(asked.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · resend` : "Email vendor"}
       </button>
     </div>
   );
