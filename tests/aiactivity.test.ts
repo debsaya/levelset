@@ -25,4 +25,15 @@ describe("AI progress panel maths", () => {
     assert.equal(g.done, 2);
     assert.equal(g.left, 0);
   });
+  it("the bar and the time left come from the same clock", () => {
+    for (const now of [10_000, 30_000, 60_000]) {
+      const g = groupProgress([job(1, 0), job(2, 0)], 90_000, now);
+      assert.ok(Math.abs(g.pct - (1 - g.left / 90_000)) < 1e-9);
+    }
+  });
+  it("the bar never moves backwards when an early job finishes", () => {
+    const before = groupProgress([job(1, 0), job(2, 20_000)], 90_000, 40_000).pct;
+    const after = groupProgress([job(1, 0, 40_000), job(2, 20_000)], 90_000, 41_000).pct;
+    assert.ok(after >= before);
+  });
 });
