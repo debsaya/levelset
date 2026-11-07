@@ -7,7 +7,7 @@ export type Kind = "extract" | "copilot" | "analyst" | "clarify";
 export type Job = { id: number; kind: Kind; label: string; start: number; end?: number; ok?: boolean };
 export type Snap = { jobs: Job[]; slow: boolean; expected: Record<Kind, number> };
 
-const DEFAULTS: Record<Kind, number> = { extract: 90_000, copilot: 15_000, analyst: 45_000, clarify: 12_000 };
+const DEFAULTS: Record<Kind, number> = { extract: 65_000, copilot: 15_000, analyst: 45_000, clarify: 12_000 };
 const KEY = "levelset-ai-timing";
 
 function loadExpected(): Record<Kind, number> {
@@ -78,9 +78,9 @@ export function groupProgress(jobs: Job[], expectedMs: number, now: number) {
   const total = jobs.length;
   const done = jobs.filter((j) => j.end).length;
   const active = jobs.filter((j) => !j.end);
-  const part = active.reduce((a, j) => a + Math.min(0.92, (now - j.start) / expectedMs), 0);
-  const pct = total ? (done + part) / total : 0;
-  const elapsed = active.length ? now - Math.min(...active.map((j) => j.start)) : 0;
+  // One clock for both: the bar is the share of the expected time that has passed, and "left" is the rest of it.
+  const elapsed = total ? Math.max(0, now - Math.min(...jobs.map((j) => j.start))) : 0;
   const left = active.length ? Math.max(0, expectedMs - elapsed) : 0;
-  return { total, done, pct: Math.min(0.97, pct), elapsed, left, over: active.length > 0 && elapsed > expectedMs };
+  const pct = active.length ? Math.min(0.97, elapsed / expectedMs) : total ? 1 : 0;
+  return { total, done, pct, elapsed, left, over: active.length > 0 && elapsed > expectedMs };
 }
