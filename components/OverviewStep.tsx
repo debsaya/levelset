@@ -84,7 +84,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 <div className="flex items-center gap-2">
                   {hasSaved && (
                     <Button variant="ghost" onClick={loadSaved} disabled={reading > 0}>
-                      Load saved reading
+                      Load saved
                     </Button>
                   )}
                   <Button onClick={readAll} disabled={reading > 0}>
@@ -107,8 +107,8 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                 {facts.length > 0 && <p className="mt-2 text-[13px] text-muted">{facts.join(" · ")}</p>}
                 {best && best.linesMissing.length > 0 && <p className="mt-1 text-[13px] text-warn">No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>Export to Excel</Button>
-                  <Button onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>Ask AI why</Button>
+                  <Button onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>Export Excel</Button>
+                  <Button onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>Why this?</Button>
                 </div>
               </div>
               {review > 0 && (
