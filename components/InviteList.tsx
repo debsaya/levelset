@@ -66,24 +66,33 @@ export default function InviteList() {
     else if (t === "warn") cert.missing++;
     else cert.valid++;
   }
-  const certParts = [cert.valid && `${cert.valid} valid`, cert.expired && `${cert.expired} expired`, cert.missing && `${cert.missing} missing`].filter(Boolean) as string[];
-  const compliance = certParts.length > 1 ? `${certParts.slice(0, -1).join(", ")} & ${certParts[certParts.length - 1]}` : certParts[0] || "";
   const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
   const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex items-center gap-3.5 border-b border-kraft/25 border-l-4 border-l-kraft bg-kraft-soft px-5 py-3.5">
-        <span className="tabular grid h-10 w-10 shrink-0 place-items-center rounded-full bg-kraft text-[17px] font-semibold text-white" aria-hidden>
-          {invitees.length}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 bg-ink px-5 py-3.5 text-white">
         <div className="min-w-0">
-          <div className="text-[15px] font-semibold text-ink">{invitees.length ? `Request quotations from ${invitees.length === 1 ? "1 onboarded vendor" : `${invitees.length} onboarded vendors`}` : "No vendors selected yet"}</div>
-          <div className="mt-0.5 text-[12.5px] text-kraft">
-            {invitees.length ? "Remove anyone you do not want to invite, or add more below." : "Pick one of the options below to add vendors."}
-            {invitees.length > 0 && compliance && <span className={cx("ml-1.5 font-medium", cert.expired > 0 ? "text-bad" : "text-kraft")}>Compliance: {compliance} ISO certificate.</span>}
-          </div>
+          <div className="text-[15px] font-semibold">{invitees.length ? `Request quotations from ${invitees.length === 1 ? "1 onboarded vendor" : `${invitees.length} onboarded vendors`}` : "No vendors selected yet"}</div>
+          <div className="mt-0.5 text-[12.5px] text-white/65">{invitees.length ? "Remove any vendor you don't want to invite, or add more below." : "Pick one of the options below to add vendors."}</div>
         </div>
+        {invitees.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 text-[12px]" title="ISO 9001 certificate on file, checked against the quote due date">
+            <span className="mr-0.5 text-white/65">Compliance · ISO 9001</span>
+            {[
+              { n: cert.valid, label: "valid", dot: "bg-[#4ade80]" },
+              { n: cert.expired, label: "expired", dot: "bg-[#f87171]" },
+              { n: cert.missing, label: "missing", dot: "bg-[#fbbf24]" },
+            ]
+              .filter((c) => c.n > 0)
+              .map((c) => (
+                <span key={c.label} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium">
+                  <span aria-hidden className={cx("h-1.5 w-1.5 rounded-full", c.dot)} />
+                  {c.n} {c.label}
+                </span>
+              ))}
+          </div>
+        )}
       </div>
 
       <div className="divide-y divide-line">
