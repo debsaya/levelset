@@ -168,11 +168,11 @@ export function ClarifyModal({ v, points, onClose }: { v: VendorSummary; points:
               {busy ? <Spinner /> : null}Smooth the wording
             </Button>
             <CopyButton text={() => `Subject: ${subject}\n\n${body}`} label="Copy email" />
-            <Button onClick={openMail} disabled={!vendor?.email}>Open in my email app</Button>
+            <Button onClick={openMail} disabled={!vendor?.email}>Open email</Button>
             {asked ? (
               <Button variant="primary" onClick={onClose}>Done</Button>
             ) : (
-              <Button variant="primary" onClick={markSent} disabled={!chosen.length}>Mark as sent</Button>
+              <Button variant="primary" onClick={markSent} disabled={!chosen.length}>Mark sent</Button>
             )}
           </div>
         </div>
