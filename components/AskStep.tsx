@@ -8,7 +8,6 @@ import { checkGrounding } from "@/lib/grounding";
 import { runScenario } from "@/lib/award";
 import { postJson } from "@/lib/api";
 import { endJob, startJob } from "@/lib/aiActivity";
-import { downloadTable } from "@/lib/export";
 import { Badge, Button, Card, CopyButton, Dots, Md, cx } from "./ui";
 
 const SUGGESTED = [
@@ -355,14 +354,6 @@ function TableBlock({ b }: { b: Extract<Block, { kind: "table" }> }) {
         <div className="text-[13px] font-semibold">
           {b.title} {b.rows.length > 8 && <span className="ml-1 font-normal text-muted">· {b.rows.length} rows</span>}
         </div>
-        <div className="flex gap-1">
-          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns.map(niceHeader), b.rows.map((r) => r.map(niceCell)), "csv")}>
-            CSV
-          </Button>
-          <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns.map(niceHeader), b.rows.map((r) => r.map(niceCell)), "xlsx")}>
-            XLSX
-          </Button>
-        </div>
       </div>
       <div className="max-h-[60vh] overflow-auto">
         <table className="w-full text-[12.5px] tabular">
@@ -402,9 +393,6 @@ function ChartBlock({ b }: { b: Extract<Block, { kind: "chart" }> }) {
     <Card className="p-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[13px] font-semibold">{b.title}</div>
-        <Button variant="ghost" onClick={() => downloadTable(b.title.replace(/[^\w]+/g, "_"), b.columns, b.rows, "xlsx")}>
-          Data XLSX
-        </Button>
       </div>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
