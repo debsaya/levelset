@@ -13,7 +13,7 @@ export function blocker(s: State): Blocker | null {
   if (!waiting) return { title: "No vendor has replied yet", text: "Replies arrive in Collect quotes. If a vendor sent a quote another way, add it there.", to: "rfx", cta: "Go to Collect quotes" };
   const reading = s.responses.filter((r) => r.status === "reading").length;
   if (reading) return { title: `Reading ${reading} ${reading === 1 ? "quote" : "quotes"}…`, text: "The AI is working through them. This page fills in as each one finishes.", to: "quotes", cta: "Watch it in Read quotes" };
-  return { title: `${waiting} ${waiting === 1 ? "quote is" : "quotes are"} waiting to be read`, text: "Read them with the AI first. Then every price shows here.", to: "quotes", cta: "Go to Read quotes" };
+  return { title: `${waiting} ${waiting === 1 ? "quote is" : "quotes are"} waiting to be read`, text: "Read vendor quotation first.", to: "quotes", cta: "Go to Read quotes" };
 }
 
 export type NextStep = { text: string; cta: string; to: "rfx" | "send" | "quotes" | "compare" | "overview" };
