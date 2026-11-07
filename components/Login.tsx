@@ -12,16 +12,18 @@ export default function Login({ onEnter }: { onEnter: (email: string) => void })
           <span className="text-[20px] font-semibold tracking-tight">Levelset</span>
         </div>
         <div className="rounded-2xl border border-line bg-white p-7 text-center shadow-sm">
-          <h1 className="text-[18px] font-semibold tracking-tight">Sign in to Levelset</h1>
-          <p className="mt-1.5 text-[13px] text-muted">Turn a pile of vendor quotes into one comparison and a decision you can defend.</p>
-          <Button variant="primary" className="mt-6 w-full justify-center py-2.5 text-[14px]" onClick={() => onEnter(email)}>
+          <h1 className="text-[20px] font-semibold leading-snug tracking-tight">Turn a pile of quotes into one decision that you can defend.</h1>
+          <div className="mt-6 flex items-center gap-3 rounded-xl border border-line bg-panel px-3.5 py-3 text-left">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-kraft-soft text-[12px] font-semibold text-ink">AR</span>
+            <div className="min-w-0">
+              <div className="text-[11.5px] text-muted">Signing in as</div>
+              <div className="truncate text-[14px] font-medium text-ink">{email}</div>
+            </div>
+          </div>
+          <Button variant="primary" className="mt-3 w-full justify-center py-2.5 text-[14px]" onClick={() => onEnter(email)}>
             Continue with company SSO
           </Button>
-          <div className="mt-3 text-[11.5px] text-muted">
-            Signs in as <span className="text-ink">{email}</span>
-          </div>
         </div>
-        <p className="mt-4 text-center text-[11.5px] text-muted">Demo sign-in. No password and nothing stored on a server. The companies and quotes are made up.</p>
       </div>
     </div>
   );
