@@ -54,7 +54,7 @@ export function greeting(rfx: Rfx, o: Where): string {
   let status: string;
   if (unread > 0) status = `**${replied} of ${o.vendors}** vendors have replied. ${plural(unread, "quote")} ${unread === 1 ? "is" : "are"} not read yet. Read ${unread === 1 ? "it" : "them"} to see the prices.`;
   else if ((o.flagged ?? 0) > 0) status = `All **${plural(read, "quote")}** are read. **${plural(o.flagged!, "price")}** ${o.flagged === 1 ? "needs" : "need"} your check in Compare before you decide.`;
-  else status = `All **${plural(read, "quote")}** are read and no price is flagged. Review the award in Decision.`;
+  else status = `All **${plural(read, "quote")}** are read and no price is flagged. Review the award in Finalise.`;
 
   return `${status}${chase}\n\n${change}`;
 }
