@@ -20,7 +20,7 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
   const [replacing, setReplacing] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const visible = s.sentAt || s.mode === "blank" ? s.responses : [];
-  const cur = s.responses.find((r) => r.vendor.id === sel);
+  const cur = visible.find((r) => r.vendor.id === sel);
 
   const { read, readAll, hasSaved, loadSaved } = useReader();
 
@@ -79,7 +79,6 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
           {!s.sentAt && s.mode === "demo" && (
             <div className="space-y-3 p-5 text-sm text-muted">
               <p>Nothing to read yet: the request has not been sent.</p>
-              <Button onClick={() => go("rfx")}>Go to Collect quotes</Button>
             </div>
           )}
           {visible.map((r) => (
@@ -102,11 +101,11 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
         </div>
         <div className="space-y-2 border-t border-line p-3">
           <Button className="w-full justify-center" onClick={() => (setReplacing(null), setAdding(true))}>
-            + Add a vendor response (upload any file)
+            + Add reply
           </Button>
           {doneCount > 0 && (
             <Button variant="primary" className="w-full justify-center" onClick={onNext}>
-              Continue to compare →
+              Compare →
             </Button>
           )}
         </div>
@@ -316,8 +315,8 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
               )}
               </div>
             </Disclosure>
-            <button className="text-xs text-kraft" onClick={() => setShowRaw(!showRaw)}>
-              {showRaw ? "Hide" : "Show"} raw extraction JSON
+            <button className="inline-flex items-center rounded-md border border-line bg-white px-2.5 py-1 text-[12px] font-medium text-ink transition hover:border-[#cfd3da] hover:bg-panel" onClick={() => setShowRaw(!showRaw)}>
+              {showRaw ? "Hide raw" : "Raw data"}
             </button>
             {showRaw && <pre className="max-h-96 overflow-auto rounded bg-panel p-3 text-[11px]">{JSON.stringify(ex, null, 1)}</pre>}
           </>
