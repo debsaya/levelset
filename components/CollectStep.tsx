@@ -181,7 +181,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   const headline = showStart
     ? "Start by telling the co-pilot what you are buying."
     : showInvite
-      ? "Onboarded vendors"
+      ? "Onboarded vendor(s):"
       : !replies.length
         ? `Sent to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
         : `${replies.length} of ${vendorsInvited} vendors replied`;
