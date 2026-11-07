@@ -386,30 +386,50 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
         )}
         <div className="space-y-3 border-t border-line pt-4">
           <div className={head}>Your decision</div>
+          {(() => {
+            const d = c.override?.action;
+            const pick = "inline-flex items-center justify-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition focus-visible:outline-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
+            return (
+              <div className="flex gap-2" role="group" aria-label="Decision">
+                {c.unit_inr !== null && (
+                  <button
+                    type="button"
+                    aria-pressed={d === "accept"}
+                    onClick={(e) => { e.currentTarget.blur(); act("accept"); }}
+                    className={cx(pick, "flex-1", d === "accept" ? "border-good bg-good text-white shadow-sm" : "border-line bg-white hover:border-good/50 hover:bg-good-soft", d && d !== "accept" && "text-muted")}
+                  >
+                    {d === "accept" ? "✓ Approved" : "Looks right"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-pressed={d === "exclude"}
+                  onClick={(e) => { e.currentTarget.blur(); act("exclude"); }}
+                  className={cx(pick, "flex-1", d === "exclude" ? "border-bad bg-bad text-white shadow-sm" : "bg-white hover:bg-bad-soft", d === "exclude" ? "" : d ? "border-line text-muted" : "border-bad/30 text-bad")}
+                >
+                  {d === "exclude" ? "✕ Excluded" : "Exclude"}
+                </button>
+              </div>
+            );
+          })()}
           {c.override && (
-            <div className="rounded bg-good-soft p-2.5 leading-snug text-good">
-              {ovText}
-              <span className="text-[11px] opacity-80"> · {new Date(c.override.at).toLocaleString("en-IN")}</span>
+            <div className={cx("flex items-start justify-between gap-3 rounded-lg px-3 py-2 leading-snug", c.override.action === "exclude" ? "bg-bad-soft text-bad" : "bg-good-soft text-good")}>
+              <div>
+                {ovText}
+                <div className="text-[11px] opacity-80">{new Date(c.override.at).toLocaleString("en-IN")}</div>
+              </div>
+              <button type="button" className="shrink-0 text-[12px] font-medium underline underline-offset-2 hover:no-underline" onClick={(e) => { e.currentTarget.blur(); act("reset"); }}>
+                Undo
+              </button>
             </div>
           )}
-          <div className="flex flex-wrap gap-2">
-            {c.unit_inr !== null && <Button onClick={() => act("accept")}>Looks right</Button>}
-            <Button variant="danger" onClick={() => act("exclude")}>
-              Exclude
-            </Button>
-            {c.override && (
-              <Button variant="ghost" onClick={() => act("reset")}>
-                Undo
-              </Button>
-            )}
-          </div>
           <div>
             <label htmlFor="ov-price" className="mb-1 block text-[12px] text-muted">
               Or use a different price
             </label>
             <div className="flex gap-2">
               <input id="ov-price" className="w-28 rounded border border-line px-2 py-1.5 tabular" inputMode="decimal" placeholder={`₹ per ${line.uom}`} value={ov} onChange={(e) => setOv(e.target.value)} />
-              <Button disabled={!ov || isNaN(parseFloat(ov))} onClick={() => act("override")}>
+              <Button variant={ov && !isNaN(parseFloat(ov)) ? "primary" : "default"} disabled={!ov || isNaN(parseFloat(ov))} onClick={() => act("override")}>
                 Use price
               </Button>
             </div>
