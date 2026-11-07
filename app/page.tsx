@@ -91,7 +91,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
     { id: "rfx", label: "Collect quotes", hint: "See which vendor quotes and documents have come in, and what each one still needs to give us. Change what you ask for with the co-pilot.", state: s.sentAt ? "done" : "active", note: s.sentAt ? `${total} in` : "not sent" },
     { id: "quotes", label: "Read quotes", hint: "The AI reads each quote, in any format, into one standard layout. Every price shows where it was found.", state: total && read === total ? "done" : s.sentAt || read ? "active" : "todo", note: total && s.sentAt ? `${read}/${total} read` : undefined },
     { id: "compare", label: "Compare", hint: "Every vendor side by side, on the same items, units and currency. Check anything flagged.", state: read === 0 ? "todo" : read === total && review === 0 ? "done" : "active", note: read > 0 && review > 0 ? `${review} to check` : undefined },
-    { id: "overview", label: "Decision", hint: "Your recommended award and the reasons behind it.", state: read === 0 ? "todo" : "active" },
+    { id: "overview", label: "Finalise", hint: "Your recommended award and the reasons behind it.", state: read === 0 ? "todo" : "active" },
   ];
   const cur: Page = page === "send" ? "rfx" : page;
   const here = () => go(!s.sentAt && s.mode === "demo" ? "rfx" : total && read < total ? "quotes" : read > 0 ? (review > 0 ? "compare" : "overview") : "quotes");
