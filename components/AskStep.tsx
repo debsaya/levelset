@@ -186,7 +186,7 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
           <div className="relative flex gap-1">
             {archive.length > 0 && (
               <Button variant="ghost" disabled={busy} onClick={() => setShowPrev(!showPrev)}>
-                Previous chats ({archive.length})
+                History ({archive.length})
               </Button>
             )}
             {s.analyst.length > 0 && (
@@ -316,12 +316,12 @@ function Answer({ m }: { m: Extract<AnalystMsg, { role: "assistant" }> }) {
       {m.blocks.map((b, i) => (b.kind === "table" ? <TableBlock key={i} b={b} /> : <ChartBlock key={i} b={b} />))}
       <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-muted">
         {m.trace.length > 0 && (
-          <button className="text-kraft" onClick={() => setShowSql(!showSql)}>
-            {showSql ? "Hide details" : "How this was worked out"}
+          <button className="inline-flex items-center rounded-md border border-line bg-white px-2.5 py-1 text-[12px] font-medium text-ink transition hover:border-[#cfd3da] hover:bg-panel" onClick={() => setShowSql(!showSql)}>
+            {showSql ? "Hide steps" : "Show steps"}
           </button>
         )}
         {m.text && (
-          <CopyButton link text={() => plain(m.text)} label="Copy text" />
+          <CopyButton link text={() => plain(m.text)} label="Copy" />
         )}
       </div>
       {showSql && (
