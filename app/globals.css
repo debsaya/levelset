@@ -49,6 +49,26 @@ h1, h2 { text-wrap: balance; letter-spacing: -0.02em; }
 .lv-dots span:nth-child(2) { animation-delay: .15s; }
 .lv-dots span:nth-child(3) { animation-delay: .3s; margin-right: 0; }
 .lv-skeleton { border-radius: 6px; background: var(--color-panel); animation: lv-skeleton 1.4s ease-in-out infinite; }
+/* Sign-in: the headline arrives word by word, and five quotes in five shapes gather into one decision. With reduced motion everything simply sits in its final place. */
+@keyframes lv-word { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes lv-drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(40px, 30px) scale(1.12); } }
+@keyframes lv-gather {
+  0% { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(var(--sr)) scale(.92); }
+  8%, 34% { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(var(--sr)) scale(1); }
+  54%, 88% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@keyframes lv-decide {
+  0%, 52% { opacity: 0; transform: translateX(-10px) scale(.96); }
+  64%, 88% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+@keyframes lv-draw { 0%, 62% { stroke-dashoffset: 16; } 74%, 100% { stroke-dashoffset: 0; } }
+.lv-word { animation: lv-word .7s cubic-bezier(.2,.7,.3,1) both; }
+.lv-orb { animation: lv-drift 18s ease-in-out infinite alternate; }
+.lv-pile { width: 214px; height: 44px; animation: lv-gather 9s cubic-bezier(.2,.7,.3,1) infinite; animation-delay: var(--d, 0ms); }
+.lv-decision { animation: lv-decide 9s cubic-bezier(.2,.7,.3,1) infinite; }
+.lv-check { stroke-dasharray: 16; animation: lv-draw 9s ease-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .lv-rise, .lv-settle, .lv-bar::after, .lv-dots span, .lv-skeleton { animation: none !important; }
+  .lv-rise, .lv-settle, .lv-bar::after, .lv-dots span, .lv-skeleton, .lv-word, .lv-orb, .lv-pile, .lv-decision, .lv-check { animation: none !important; }
 }
