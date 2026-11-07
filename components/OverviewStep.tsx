@@ -69,11 +69,13 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
     : [];
   const ranked = [...n.vendors].sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18));
 
+  if (done === 0) return <Blocked b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />;
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-[1040px] space-y-4 px-5 py-6 lg:px-8">
         {done === 0 ? (
-          <Blocked bare b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />
+          null
         ) : (
           <>
             {done < total && (
@@ -94,7 +96,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             )}
 
-            <section className="rounded-xl border border-line bg-white">
+            <section className="overflow-hidden rounded-xl border border-line border-l-4 border-l-kraft bg-[linear-gradient(135deg,var(--color-kraft-soft),#ffffff_65%)] shadow-[0_10px_28px_-14px_rgba(80,55,20,0.35)]">
               <div className="px-6 py-5">
                 <div className="text-[12px] font-medium uppercase tracking-wide text-muted">Recommended award</div>
                 <h1 className="mt-1 text-[24px] font-semibold leading-snug">{headline}</h1>
