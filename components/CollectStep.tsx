@@ -18,7 +18,7 @@ import { EmailDraftModal } from "./EmailDraftModal";
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
   { label: "Prices", tip: "A price for every item you asked for." },
-  { label: "GST", tip: "Whether prices are with or without GST, and the rate. You asked for prices excluding GST." },
+  { label: "GST", tip: "Green: the vendor quoted prices without GST, with GST charged on top (the rate is shown). Amber: GST is already inside the price (we take it out) or was not stated (we assume it is extra). You asked for prices without GST." },
   { label: "Freight", tip: "Whether delivery to your plant is included in the price, or charged extra (ex-works)." },
   { label: "Pay · lead", tip: "Payment terms (days to pay after delivery) and lead time (days from order to delivery)." },
   { label: "Certificate", tip: "A valid ISO 9001 certificate, still in date on the quote due date." },
@@ -61,7 +61,7 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
   const quoted = v?.quoted ?? 0;
 
   const tax: Req =
-    ex.tax.basis === "exclusive" ? { label: "Tax", state: "ok", text: `ex-GST${ex.tax.gst_rate_pct ? ` ${ex.tax.gst_rate_pct}%` : ""}` } : ex.tax.basis === "inclusive" ? { label: "Tax", state: "warn", text: "GST included, we remove it" } : { label: "Tax", state: "warn", text: "GST not stated" };
+    ex.tax.basis === "exclusive" ? { label: "Tax", state: "ok", text: `GST extra${ex.tax.gst_rate_pct ? ` (${ex.tax.gst_rate_pct}%)` : ""}` } : ex.tax.basis === "inclusive" ? { label: "Tax", state: "warn", text: "GST in price, we remove it" } : { label: "Tax", state: "warn", text: "GST not stated, assumed extra" };
 
   const freight: Req = ex.freight.included === true ? { label: "Freight", state: "ok", text: "delivered" } : ex.freight.included === false ? { label: "Freight", state: "warn", text: "ex-works, we add freight" } : { label: "Freight", state: "warn", text: "not stated" };
 

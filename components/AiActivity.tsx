@@ -27,7 +27,7 @@ export default function AiActivity() {
   const longest = Math.max(0, ...a.jobs.filter((j) => !j.end).map((j) => now - j.start));
   const showWhy = anyActive && (a.slow || longest > 10_000);
   return (
-    <div role="status" aria-live="polite" className="lv-rise fixed bottom-4 left-4 z-50 w-[340px] rounded-xl border border-line bg-white p-3 shadow-lg">
+    <div role="status" aria-live="polite" className="lv-rise pointer-events-none fixed inset-x-0 bottom-4 z-50 mx-auto w-[min(340px,calc(100vw-2rem))] rounded-xl border border-line bg-white/95 p-3 shadow-lg backdrop-blur">
       {kinds.map((k) => {
         const g = groupProgress(a.jobs.filter((j) => j.kind === k), a.expected[k], now);
         const finished = g.done === g.total;
@@ -41,7 +41,7 @@ export default function AiActivity() {
               </span>
             </div>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-panel" aria-hidden>
-              <div className={`h-full rounded-full transition-[width,background-color] duration-500 ease-out ${finished ? "bg-good" : "lv-bar bg-kraft"} ${g.over ? "animate-pulse" : ""}`} style={{ width: `${Math.round((finished ? 1 : g.pct) * 100)}%` }} />
+              <div className={`h-full rounded-full transition-[width,background-color] duration-500 ease-out ${finished ? "bg-good" : "lv-bar bg-kraft"} ${g.over ? "animate-pulse" : ""}`} style={{ width: `${Math.round(g.pct * 100)}%` }} />
             </div>
           </div>
         );
