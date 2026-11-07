@@ -61,7 +61,15 @@ export default function InviteList() {
     }
   }
 
-  const expired = invitees.filter((v) => v.source === "master" && certificate(v, due).tone === "bad").length;
+  const cert = { valid: 0, expired: 0, missing: 0 };
+  for (const v of invitees) {
+    const t = certificate(v, due).tone;
+    if (t === "bad") cert.expired++;
+    else if (t === "warn") cert.missing++;
+    else cert.valid++;
+  }
+  const certParts = [cert.valid && `${cert.valid} valid`, cert.expired && `${cert.expired} expired`, cert.missing && `${cert.missing} missing`].filter(Boolean) as string[];
+  const compliance = certParts.length > 1 ? `${certParts.slice(0, -1).join(", ")} & ${certParts[certParts.length - 1]}` : certParts[0] || "";
   const shortlist = suggest(pool, due);
   const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
   const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
@@ -73,10 +81,10 @@ export default function InviteList() {
           {invitees.length}
         </span>
         <div className="min-w-0">
-          <div className="text-[15px] font-semibold text-ink">{invitees.length ? `${invitees.length === 1 ? "vendor" : "vendors"} will receive this request` : "No vendors selected yet"}</div>
+          <div className="text-[15px] font-semibold text-ink">{invitees.length ? `Request quotations from ${invitees.length === 1 ? "1 onboarded vendor" : `${invitees.length} onboarded vendors`}` : "No vendors selected yet"}</div>
           <div className="mt-0.5 text-[12.5px] text-kraft">
             {invitees.length ? "Remove anyone you do not want to invite, or add more below." : "Pick one of the options below to add vendors."}
-            {expired > 0 && <span className="ml-1.5 font-medium text-bad">{expired === 1 ? "1 has an expired ISO certificate." : `${expired} have an expired ISO certificate.`}</span>}
+            {invitees.length > 0 && compliance && <span className={cx("ml-1.5 font-medium", cert.expired > 0 ? "text-bad" : "text-kraft")}>Compliance: {compliance} ISO certificate.</span>}
           </div>
         </div>
       </div>
@@ -176,7 +184,7 @@ export default function InviteList() {
                   setCh(null);
                 }}
               >
-                Use this shortlist of {shortlist.length}
+                Use shortlist
               </Button>
               <span className="ml-3 text-[11.5px] text-muted">Replaces the current choice. You can still add or remove after.</span>
             </div>
@@ -193,7 +201,7 @@ export default function InviteList() {
                       setCh(null);
                     }}
                   >
-                    Invite {lastYear.length === 1 ? "this vendor" : `these ${lastYear.length} vendors`}
+                    Invite {lastYear.length === 1 ? "vendor" : "all"}
                   </Button>
                 </>
               ) : (
@@ -206,7 +214,7 @@ export default function InviteList() {
               <p className="text-muted">Excel or CSV, one vendor per row: name and email, and optionally city. A header row is fine. Your own vendor-master export works as it is.</p>
               <input ref={fileRef} type="file" hidden accept=".xlsx,.xls,.csv,.txt" onChange={(e) => (e.target.files?.[0] && onFile(e.target.files[0]), (e.target.value = ""))} />
               <Button className="mt-2.5" onClick={() => fileRef.current?.click()}>
-                Choose a file
+                Choose file
               </Button>
             </div>
           )}

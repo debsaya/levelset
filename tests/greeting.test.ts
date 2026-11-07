@@ -69,10 +69,10 @@ describe("Co-pilot greeting", () => {
     assert.match(g, /3 prices\*\* need your check in Compare/);
   });
 
-  it("all read and clean: points to Decision", () => {
+  it("all read and clean: points to Finalise", () => {
     const g = greeting(RFX, { sentAt: SENT, vendors: 5, hasDraft: false, replied: 5, read: 5, flagged: 0 });
     assert.match(g, /no price is flagged/);
-    assert.match(g, /Decision/);
+    assert.match(g, /Finalise/);
   });
 
   it("past the due date, a silent vendor can be chased", () => {

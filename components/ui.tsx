@@ -14,7 +14,7 @@ export function Button({ variant = "default", className, ...p }: React.ButtonHTM
         "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-medium transition disabled:opacity-40 disabled:cursor-not-allowed",
         variant === "primary" && "bg-ink text-white hover:bg-black shadow-sm",
         variant === "default" && "border border-line bg-white hover:border-[#cfd3da] hover:bg-panel",
-        variant === "ghost" && "hover:bg-panel text-muted",
+        variant === "ghost" && "border border-line bg-white text-ink/80 hover:border-[#cfd3da] hover:bg-panel hover:text-ink",
         variant === "danger" && "border border-bad/30 text-bad bg-white hover:bg-bad-soft",
         className
       )}
@@ -286,8 +286,8 @@ export function CopyButton({ text, label = "Copy", link, className }: { text: st
     setState(ok ? "copied" : "failed");
     setTimeout(() => setState("idle"), ok ? 2200 : 4000);
   }
-  const base = link ? "text-[11.5px] font-medium" : "inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition";
-  const tone = state === "copied" ? (link ? "text-good" : "border-good/40 bg-good-soft text-good") : state === "failed" ? (link ? "text-bad" : "border-bad/30 bg-bad-soft text-bad") : link ? "text-kraft" : "border-line bg-white hover:border-[#cfd3da] hover:bg-panel";
+  const base = link ? "inline-flex items-center rounded-md border px-2.5 py-1 text-[12px] font-medium transition" : "inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition";
+  const tone = state === "copied" ? "border-good/40 bg-good-soft text-good" : state === "failed" ? "border-bad/30 bg-bad-soft text-bad" : "border-line bg-white text-ink hover:border-[#cfd3da] hover:bg-panel";
   return (
     <button type="button" onClick={go} aria-live="polite" className={cx(base, tone, className)}>
       {state === "copied" ? "✓ Copied!" : state === "failed" ? "Couldn't copy. Select the text and press Ctrl+C" : label}

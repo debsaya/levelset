@@ -48,12 +48,13 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
           <button onClick={() => setShowBasis(!showBasis)} aria-expanded={showBasis} className="flex items-center gap-2 text-left" title="The assumptions behind every price. Open to change them.">
             <span aria-hidden="true" className={cx("text-[10px] text-muted transition-transform", showBasis && "rotate-90")}>▶</span>
             <span className="font-semibold">Prices are ₹ per piece, delivered to Bidadi, ex-GST</span>
-            <span className="text-muted">· USD at ₹{a.fx_usd_inr} (your assumption, not a live rate){showBasis ? "" : " · change assumptions"}</span>
+            <span className="text-muted">· USD at ₹{a.fx_usd_inr} (your assumption, not a live rate)</span>
+            <span className="inline-flex items-center rounded-md border border-line bg-white px-2.5 py-1 text-[12px] font-medium text-ink transition hover:border-[#cfd3da] hover:bg-panel">{showBasis ? "Close" : "Assumptions"}</span>
           </button>
           <div className="ml-auto flex gap-2">
-            <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export to Excel</Button>
+            <Button onClick={() => exportWorkbook(s.rfx, n, a, s.audit)}>Export Excel</Button>
             <Button variant="primary" onClick={onNext}>
-              Continue to decision →
+              Finalise →
             </Button>
           </div>
         </div>
@@ -63,7 +64,7 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
               USD→INR
               <input type="number" step="0.1" value={a.fx_usd_inr} onChange={(e) => setA({ fx_usd_inr: parseFloat(e.target.value) || 0 }, `Set FX to ${e.target.value}`)} className="w-20 rounded border border-line px-1.5 py-0.5 tabular" />
             </label>
-            <label className="flex items-center gap-1.5" title="What paying later is worth to you, a year. Used on the Decision page to value payment terms: 60 days to pay is worth more than 30.">
+            <label className="flex items-center gap-1.5" title="What paying later is worth to you, a year. Used on the Finalise page to value payment terms: 60 days to pay is worth more than 30.">
               Cost of money (% a year)
               <input type="number" step="0.5" min="0" value={a.cost_of_capital_pct ?? 10} onChange={(e) => setA({ cost_of_capital_pct: Math.max(0, parseFloat(e.target.value) || 0) }, `Set cost of money to ${e.target.value}%`)} className="w-16 rounded border border-line px-1.5 py-0.5 tabular" />
             </label>
@@ -384,11 +385,11 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
           <div className="flex flex-wrap gap-2">
             {c.unit_inr !== null && <Button onClick={() => act("accept")}>Looks right</Button>}
             <Button variant="danger" onClick={() => act("exclude")}>
-              Exclude this price
+              Exclude
             </Button>
             {c.override && (
               <Button variant="ghost" onClick={() => act("reset")}>
-                Undo my decision
+                Undo
               </Button>
             )}
           </div>
@@ -399,7 +400,7 @@ function CellDrawer({ c, v, onClose }: { c: Cell; v: VendorSummary; onClose: () 
             <div className="flex gap-2">
               <input id="ov-price" className="w-28 rounded border border-line px-2 py-1.5 tabular" inputMode="decimal" placeholder={`₹ per ${line.uom}`} value={ov} onChange={(e) => setOv(e.target.value)} />
               <Button disabled={!ov || isNaN(parseFloat(ov))} onClick={() => act("override")}>
-                Use this price
+                Use price
               </Button>
             </div>
           </div>

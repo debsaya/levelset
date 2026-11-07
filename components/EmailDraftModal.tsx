@@ -31,7 +31,7 @@ export function EmailDraftModal({ title, hint, to, initial, sentLabel, onSent, o
           <div className="flex flex-wrap items-center gap-2">
             <CopyButton text={() => `Subject: ${subject}\n\n${body}`} label="Copy email" />
             <Button onClick={openMail} disabled={!to}>
-              Open in my email app
+              Open email
             </Button>
             <Button variant="primary" onClick={onSent}>
               {sentLabel}

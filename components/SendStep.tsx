@@ -48,16 +48,16 @@ export default function SendStep({ onNext }: { onNext: () => void }) {
             <div className="space-y-2">
               <div className="text-xs text-good">✓ Marked as sent {new Date(s.sentAt).toLocaleString("en-IN")}. Demo only: no real email left this app.</div>
               <Button variant="primary" className="w-full justify-center" onClick={onNext}>
-                Back to collected quotes →
+                Back to quotes →
               </Button>
             </div>
           ) : (
             <div className="space-y-2">
               <Button variant="primary" className="w-full justify-center" onClick={sendAll} disabled={!vendors.length}>
-                Send request to {vendors.length} {vendors.length === 1 ? "vendor" : "vendors"}
+                Request quotes ({vendors.length})
               </Button>
               <Button className="w-full justify-center" onClick={onNext}>
-                Change who gets it
+                Change vendors
               </Button>
             </div>
           )}

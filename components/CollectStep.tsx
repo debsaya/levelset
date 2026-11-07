@@ -113,7 +113,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   // main action: one clear next move
   let primary: { label: string; run: () => void; disabled?: boolean };
   if (showStart) primary = { label: "Send request →", run: onSend, disabled: true };
-  else if (showInvite) primary = { label: `Send to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}`, run: onSend, disabled: !r.lines.length || !invitees.length };
+  else if (showInvite) primary = { label: `Request quotes (${invitees.length})`, run: onSend, disabled: !r.lines.length || !invitees.length };
   else if (!replies.length) primary = { label: "Add a quote file or email text", run: () => onRead(true) };
   else if (unread > 0) primary = { label: `Read ${unread} ${unread === 1 ? "quote" : "quotes"} →`, run: () => (readAll(), onRead()) };
   else primary = { label: "Continue to compare →", run: onNext };
@@ -234,17 +234,17 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
             <div className="flex shrink-0 gap-2">
               <Button onClick={discardAmendment}>Discard</Button>
               <Button variant="primary" onClick={() => setDraft({ kind: "amend" })}>
-                Email amendment to {vendorsInvited} vendors
+                Email amendment
               </Button>
             </div>
           </div>
         )}
 
         {draft?.kind === "remind" && (
-          <EmailDraftModal title={`${pastDue ? "Chase" : "Remind"} ${draft.name}`} to={draft.email} initial={buildReminderEmail({ rfx: r, vendorName: draft.name, contact: draft.contact, pastDue })} sentLabel="Mark as sent" onSent={() => markReminded(draft)} onClose={() => setDraft(null)} />
+          <EmailDraftModal title={`${pastDue ? "Chase" : "Remind"} ${draft.name}`} to={draft.email} initial={buildReminderEmail({ rfx: r, vendorName: draft.name, contact: draft.contact, pastDue })} sentLabel="Mark sent" onSent={() => markReminded(draft)} onClose={() => setDraft(null)} />
         )}
         {draft?.kind === "amend" && amend && (
-          <EmailDraftModal title="Email the amendment to your vendors" hint="One email to everyone you invited. Check it, send it from your own mail, then mark it as sent. Marking it sent makes the changes the live request." to={invitees.map((v) => v.email).filter(Boolean).join(",")} initial={buildAmendmentEmail({ rfx: s.rfxDraft || r, revision: (s.revision || 1) + 1, parts: amend.parts })} sentLabel="Mark as sent and update the request" onSent={sendAmendment} onClose={() => setDraft(null)} />
+          <EmailDraftModal title="Email the amendment to your vendors" hint="One email to everyone you invited. Check it, send it from your own mail, then mark it as sent. Marking it sent makes the changes the live request." to={invitees.map((v) => v.email).filter(Boolean).join(",")} initial={buildAmendmentEmail({ rfx: s.rfxDraft || r, revision: (s.revision || 1) + 1, parts: amend.parts })} sentLabel="Mark sent" onSent={sendAmendment} onClose={() => setDraft(null)} />
         )}
 
         {showStart ? (
@@ -279,7 +279,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
                         {when ? ` · ${pastDue ? "chased" : "reminded"} ${new Date(when).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}` : ""}
                       </span>
                       <Button onClick={() => setDraft({ kind: "remind", id: v.id, name: v.name, email: v.email, contact: (v as { contact?: string }).contact || pool.find((p) => p.id === v.id)?.contact || "" })} title="Opens a reminder email you can send from your own mail.">
-                        {pastDue ? "Chase by email" : "Email a reminder"}
+                        {pastDue ? "Chase" : "Remind"}
                       </Button>
                     </div>
                   </div>
@@ -313,9 +313,9 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed border-line px-4 py-3 text-[12.5px]">
             <span className="text-muted">Quotes arrive by reply to the request email. Got one another way?</span>
             <span className="ml-auto flex flex-wrap gap-2">
-              <Button onClick={() => onRead(true)}>Add a quote file or email text</Button>
+              <Button onClick={() => onRead(true)}>Add quote</Button>
               <Button onClick={() => downloadBidSheet(r)} title="Optional. The items and questions pre-filled, for vendors who prefer a form. Vendors can still reply in any format.">
-                Download Excel bid sheet
+                Bid sheet
               </Button>
             </span>
           </div>
