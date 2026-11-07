@@ -5,7 +5,7 @@ import { groupProgress, useAiActivity, type Kind } from "@/lib/aiActivity";
 const WORD: Record<Kind, [string, string]> = {
   extract: ["Reading quotes", "Quotes read"],
   copilot: ["Co-pilot is working on your request", "Co-pilot done"],
-  analyst: ["Ask AI is looking at your data", "Ask AI done"],
+  analyst: ["AI is looking at your data", "AI done"],
   clarify: ["Drafting the email", "Email drafted"],
 };
 
