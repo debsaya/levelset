@@ -65,6 +65,7 @@ ${facts}
 
 How to work:
 - For any award, split or "what if we only use..." question, call award_scenario. Run it more than once to compare options (e.g. qualified vs qualified_or_conditional, single_vendor vs cheapest_per_line) and report the difference.
+- A split scenario returns comparison_vs_single_vendor: the best single approved vendor, and the saving on the lines BOTH cover. Use it to say what splitting saves. Report the lines only the split covers (and their cost) separately as extra scope. NEVER subtract a single vendor's total from a split total when they cover different lines, and never call the split dearer because it buys more lines.
 - award_scenario already shows the buyer a table of vendors, items won and totals. Do NOT build another table with the same totals; only add a table if it shows something new (e.g. which items moved, or a comparison between two scenarios).
 - Never write markdown tables. Use show_table for any table; the buyer only sees tables that come from tools.
 - Mention a vendor's qualification status exactly as in VENDOR FACTS. 'conditional' is not 'qualified'.

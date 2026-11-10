@@ -166,6 +166,57 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
       return gap > 0.15 ? { line_id: r.line_id, winner: r.vendor_name, winning_price_inr: r.unit_price_inr, next_best_price_inr: Math.round(next * 100) / 100, below_next_best_pct: Math.round(gap * 1000) / 10 } : null;
     })
     .filter(Boolean) as { line_id: string; winner: string; winning_price_inr: number; next_best_price_inr: number; below_next_best_pct: number }[];
+  // A split is only fairly compared with a single vendor on the lines BOTH cover. A single vendor that skipped a line
+  // would otherwise look cheaper (or the split dearer) just because it is buying less. Report the like-for-like saving,
+  // and the lines only the split can cover, separately.
+  let vsSingle: null | {
+    single_vendor: string;
+    single_vendor_lines: number;
+    single_vendor_total_inr: number;
+    lines_compared: number;
+    saving_on_shared_lines_inr: number;
+    saving_pct_on_shared_lines: number;
+    lines_only_the_split_covers: string[];
+    cost_of_those_lines_inr: number;
+    note: string;
+  } = null;
+  if ((a.strategy || "cheapest_per_line") === "cheapest_per_line" && pool.length > 1) {
+    const splitRows = rows.slice();
+    const options = pool
+      .map((v) => {
+        pick([v.vendor_id]);
+        return { v, rows: rows.slice(), total: rows.reduce((t, r) => t + r.annual_value_inr, 0) };
+      })
+      .filter((o) => o.rows.length)
+      .sort((x, y) => y.rows.length - x.rows.length || x.total - y.total);
+    const best = options[0];
+    if (best) {
+      const mine = new Map(splitRows.map((r) => [r.line_id, r.annual_value_inr]));
+      let singleShared = 0;
+      let splitShared = 0;
+      for (const r of best.rows) {
+        const sv = mine.get(r.line_id);
+        if (sv !== undefined) {
+          singleShared += r.annual_value_inr;
+          splitShared += sv;
+        }
+      }
+      const onlyLines = splitRows.filter((r) => !best.rows.some((b) => b.line_id === r.line_id));
+      const saving = singleShared - splitShared;
+      vsSingle = {
+        single_vendor: best.v.name,
+        single_vendor_lines: best.rows.length,
+        single_vendor_total_inr: best.total,
+        lines_compared: best.rows.filter((r) => mine.has(r.line_id)).length,
+        saving_on_shared_lines_inr: saving,
+        saving_pct_on_shared_lines: singleShared ? Math.round((saving / singleShared) * 1000) / 10 : 0,
+        lines_only_the_split_covers: onlyLines.map((r) => r.line_id),
+        cost_of_those_lines_inr: onlyLines.reduce((t, r) => t + r.annual_value_inr, 0),
+        note: "Compare the split with this single vendor ONLY on the lines both cover (saving_on_shared_lines_inr). Lines only the split covers are extra scope the single vendor cannot supply; report their cost separately. Never subtract the two totals directly.",
+      };
+    }
+    pick(chosen);
+  }
   const total = rows.reduce((s, r) => s + r.annual_value_inr, 0);
   const byVendor = Object.values(
     rows.reduce((m: Record<string, { vendor: string; lines: number; annual_value_inr: number }>, r) => {
@@ -175,5 +226,5 @@ export function runScenario(rfx: Rfx, n: Normalized, a: ScenarioArgs) {
       return m;
     }, {})
   ).sort((x, y) => y.annual_value_inr - x.annual_value_inr);
-  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.needs_check).length, prices_read_from_photos: rows.filter((r) => r.from_photo).length, winning_prices_far_below_next_best: winnersFarBelowNext, by_vendor: byVendor, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
+  return { total_annual_value_inr: total, lines_awarded: rows.length, lines_without_eligible_price: missing, unverified_prices_in_award: rows.filter((r) => r.needs_check).length, prices_read_from_photos: rows.filter((r) => r.from_photo).length, winning_prices_far_below_next_best: winnersFarBelowNext, by_vendor: byVendor, comparison_vs_single_vendor: vsSingle, vendors_in_pool: pool.map((v) => `${v.name} (${v.qualification})`), vendors_excluded: excluded, rows };
 }

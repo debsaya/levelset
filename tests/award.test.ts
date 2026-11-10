@@ -107,4 +107,35 @@ describe("Answer checker: every figure in the AI's prose must trace to a query r
     assert.deepEqual(checkGrounding("Splitting saves ₹20.00 L.", [43000000, 45000000, 2000000]).ungrounded, []);
     assert.deepEqual(checkGrounding("Splitting saves ₹25.00 L.", [43000000, 45000000, 2000000]).ungrounded, ["₹25.00 L"]);
   });
+
+  // The question a VP asks: "split it, cheapest per line, only among approved vendors: what does that save?"
+  // Comparing totals directly is wrong when the single vendor skipped a line the split can cover.
+  it("a split is compared with the best single vendor only on lines both cover, and the extra lines are reported apart", () => {
+    const n = run({ V1: extraction([line("L01", 5.0), line("L02", 5.5)]), V2: extraction([line("L01", 3.3), line("L03", 4.0), line("L02", 6.0)]) });
+    const r = runScenario(RFX, n, { eligibility: "all" });
+    const c = r.comparison_vs_single_vendor!;
+    assert.ok(c, "a split result carries the comparison");
+    assert.equal(c.single_vendor, "Vendor V2"); // quoted the most lines
+    assert.deepEqual(c.lines_only_the_split_covers, []); // V2 covers everything the split does
+    assert.equal(c.saving_on_shared_lines_inr, Math.round(6.0 * L02.annual_qty) - Math.round(5.5 * L02.annual_qty));
+    assert.ok(c.saving_on_shared_lines_inr >= 0);
+  });
+
+  it("lines only the split can cover never make the split look dearer", () => {
+    const n = run({ V1: extraction([line("L01", 5.0), line("L02", 5.5)]), V2: extraction([line("L01", 3.3), line("L03", 4.0)]) });
+    const r = runScenario(RFX, n, { eligibility: "all" });
+    const c = r.comparison_vs_single_vendor!;
+    // each single vendor covers 2 of the 3 lines the split covers, so exactly one line is extra scope
+    assert.equal(c.lines_only_the_split_covers.length, 1);
+    assert.equal(c.lines_compared, 2);
+    // the like-for-like saving is never negative: cheapest-per-line is at most any one vendor's price on a shared line
+    assert.ok(c.saving_on_shared_lines_inr >= 0);
+    // and it differs from the naive difference of totals, which is exactly the trap this guards against
+    assert.notEqual(r.total_annual_value_inr - c.single_vendor_total_inr, -c.saving_on_shared_lines_inr);
+  });
+
+  it("a single-vendor result carries no comparison with itself", () => {
+    const r = runScenario(RFX, market(), { eligibility: "qualified", strategy: "single_vendor" });
+    assert.equal(r.comparison_vs_single_vendor, null);
+  });
 });
