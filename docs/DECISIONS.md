@@ -18,7 +18,7 @@ A language model is very good at reading a messy photo of a rate card. It is not
 
 | Who | Does | Never does |
 |---|---|---|
-| **AI (Gemini)** | Reads each reply and writes down each price *exactly as written*, with a quote and location, plus how sure it is | Converts units, currency, tax or freight; decides who is approved |
+| **AI (Gemini)** | Reads each reply and writes down each price *exactly as written*, with a quote and location, plus how sure it is | Converts units, currency, tax or freight; decides who is eligible |
 | **Code** (`lib/normalize.ts`) | Does every conversion, re-checks matches, applies the must-have rules, raises the flags | Guesses. If it can't be sure, it flags |
 | **Buyer** | Resolves amber cells (accept / override / exclude), changes assumptions, makes the award | — |
 
@@ -31,8 +31,8 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | # | What goes wrong in real life | The rule I chose | Where | Proof (test) |
 |---|---|---|---|---|
 | 1 | **An expired ISO certificate.** Vendor says "ISO certified", the attached certificate ran out in March. The AI reads "yes" and moves on. | The **code** checks the certificate's validity date against the RFx due date. Expired → the must-have **fails**, whatever the vendor or model said. Judged on the *event date*, not today, so a certificate valid on the due date passes. | `normalize.ts`, questionnaire block | *"an EXPIRED ISO certificate fails the must-have even though the vendor (and the model) said yes"*; *"valid on the RFx due date still counts"* |
-| 2 | **ISO claimed, nothing attached.** | A claim without evidence is at most **needs proof**, never approved. | same | *"claiming ISO without attaching a certificate downgrades to needs proof"* |
-| 3 | **Must-have left blank.** Vendor skipped the food-safe inks question. | No answer = no evidence = **not approved**. Silence must never qualify a vendor by default. Partly met = **needs proof**: the buyer judges. | same | *"a must-have left unanswered is NOT approved"*; *"only partly met → needs proof"* |
+| 2 | **ISO claimed, nothing attached.** | A claim without evidence is at most **needs proof**, never eligible. | same | *"claiming ISO without attaching a certificate downgrades to needs proof"* |
+| 3 | **Must-have left blank.** Vendor skipped the food-safe inks question. | No answer = no evidence = **not eligible**. Silence must never qualify a vendor by default. Partly met = **needs proof**: the buyer judges. | same | *"a must-have left unanswered is NOT approved"*; *"only partly met → needs proof"* |
 | 4 | **"Size in inches" read as a different product.** The photo vendor writes sizes in inches; the AI flags "different spec" and the vendor gets thrown out of the comparison. | A **unit is not a spec.** Inches or cm alone never creates a deviation. A real change (ply, flute, board, GSM, print, "instead of") still does. I fixed it twice: in the prompt (rule 6) *and* in code (`realDeviation`) because prompts alone drift. | `extract/route.ts` rule 6; `realDeviation()` in `normalize.ts` | *"'size given in inches' is a unit, not a different spec"*; *"a real change … is a deviation"*, including the tricky *"Size in inches but 5-ply board instead"* |
 | 5 | **"Rest same as last year."** One-line email, no prices. | The AI marks the line `prior_contract`; **code looks the price up** in the FY26 contract and shows where it came from. The AI never types a price it didn't read. | `normalize.ts` prior-contract block | *"pulls the FY26 contract price and says where it came from"* |
 | 6 | **"Same as last year" for a line that didn't exist last year.** | Stay **empty** with a warning ("ask the vendor"). Never invent a price. | same | *"stays EMPTY with a warning, rather than inventing a price"*; *"a vendor with no prior contract cannot use 'same as last year'"* |
@@ -47,7 +47,7 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 15 | **One vendor way off the pack.** | Price ±60% off the median of the others → amber. **Needs 3+ vendors**, so thin data doesn't create false alarms. | `OUTLIER` | both outlier tests |
 | 16 | **Blurry or uncertain reads.** | Confidence below the buyer's threshold (default 80%) → amber. An unreadable price is **empty**, never zero. | `LOW_CONFIDENCE`, `UNREADABLE` | the confidence tests |
 | 17 | **A cheaper vendor who offered a different spec.** | Deviating prices **never** count toward totals, "best price", or an award. | `SPEC_DEVIATION` | *"deviating lines never count toward totals"*; *"never used as the best price"* |
-| 18 | **Awarding to someone who isn't approved just because they're cheapest.** | Awards only use approved vendors by default. Anyone excluded is **named with the reason**. Widening is a visible choice, and the tool shows the price of doing so. | `lib/award.ts` | the award tests |
+| 18 | **Awarding to someone who isn't eligible just because they're cheapest.** | Awards only use eligible vendors by default. Anyone excluded is **named with the reason**. Widening is a visible choice, and the tool shows the price of doing so. | `lib/award.ts` | the award tests |
 | 19 | **Holes in coverage.** | Lines nobody eligible priced are reported as **gaps**, never costed at zero. Awards report how many winning prices still rest on unverified cells. | `runScenario` | *"lines nobody eligible quoted are reported as gaps"*; *"unverified prices … are counted"* |
 | 20 | **AI writes a confident number that isn't in the data.** | Every figure in the analyst's prose is checked against the query results of that turn; anything that doesn't trace is highlighted. Tables and charts come only from SQL, never from model-typed numbers. | `lib/grounding.ts` | the four grounding tests (invented figure caught; ISO numbers, years and line ids not mistaken for figures) |
 
@@ -67,7 +67,7 @@ Why this matters for trust: a buyer can click any price and see the original quo
 | 33 | **Vendor's own total includes GST.** It looked like an error in their line prices. | If the difference is exactly 5/12/18/28% GST the message says so. A total in another currency is not compared. | `TOTAL_MISMATCH` / `TOTAL_CURRENCY` | the two total tests |
 | 34 | **The word "ISO" hiding in other words.** A question about "isolation" or "precision" would trigger the certificate check. *(Gap, fixed.)* | Whole-word match only. | questionnaire block | the "precision/isolation" test |
 | 35 | **Sloppy reads.** The model omits tax, freight, documents, confidence scores or the whole questionnaire. | Never crashes. Missing evidence means **no approval**; missing confidence means **review**, not trust. | `normalize()` | the "Sloppy extractions" tests |
-| 36 | **Nothing to award.** No approved vendors, a vendor id that doesn't exist, ties. | Empty awards, not errors; ties resolve the same way every time. | `lib/award.ts` | the "Awards with nothing to award" tests |
+| 36 | **Nothing to award.** No eligible vendors, a vendor id that doesn't exist, ties. | Empty awards, not errors; ties resolve the same way every time. | `lib/award.ts` | the "Awards with nothing to award" tests |
 | 37 | **Unit confusion in sizes:** millimetres labelled inches, a ply nobody asked for, length and width swapped, flat items with no height. | Left out visibly or matched correctly; never forced onto the wrong line. | size check | the four size tests |
 
 | 38 | **Per tonne / per 100 kg quotes.** Read as plain per-kg, the price is 1,000× or 100× off. *(Gap, fixed.)* | Weight-based prices are divided by the pack size before conversion (prompt rule 2 teaches the reader to record it). | `normalize()` per-kg step | *"₹42,000 per tonne and ₹4,200 per 100 kg both equal ₹42 per kg"* |
@@ -90,14 +90,14 @@ A cell is **trusted** only if nothing questions it. Any warning-level flag (unit
 
 **Why a queue and not a block:** stopping on every doubt makes the tool unusable at 30 lines × 5 vendors; trusting every number makes it dangerous. The queue is ordered by what could change the award, and the buyer can **accept** (keep, I've looked), **override** (use my price, with a note) or **exclude**. Each action is written to the audit log and flows straight into totals (tested).
 
-**Honest labels.** "Not approved" vendors still show prices, because buyers need to see what they'd be giving up. They are marked clearly, never ranked, and never in the default award.
+**Honest labels.** "Not eligible" vendors still show prices, because buyers need to see what they'd be giving up. They are marked clearly, never ranked, and never in the default award.
 
 ---
 
 ## 4. How I wrote the prompts
 
 - **Extraction prompt** (`app/api/extract/route.ts`): the first rule is *"Do NOT convert currency, units, tax or freight."* The AI is a reader, not an accountant. It must cite a quote and location for every number, record the vendor's *own* size (so code can re-check the match), lower confidence when unsure, list what it couldn't read, and *"Never invent a price."*
-- **Analyst prompt** (`app/api/analyst/route.ts`): *"Always query before answering; every figure you state must come from a query result."* Award questions go through a deterministic calculator tool rather than SQL the model writes itself. It speaks the buyer's language (approved / needs proof / not approved), never database words.
+- **Analyst prompt** (`app/api/analyst/route.ts`): *"Always query before answering; every figure you state must come from a query result."* Award questions go through a deterministic calculator tool rather than SQL the model writes itself. It speaks the buyer's language (eligible / needs proof / not eligible), never database words.
 - **Co-pilot** (`app/api/copilot/route.ts`): edits the RFx through structured operations, and an `add_line` is rejected unless the item is complete (a real bug I found: it once added a 0×0 box).
 - **Prompts don't carry the rules; code does.** Where a mistake would be costly (inches vs spec, expired certificates, line matching) the prompt asks nicely **and** code enforces it. Prompts drift between model versions; tests don't.
 
@@ -143,7 +143,7 @@ What this does **not** prove: it's one fictional dataset I built, so accuracy on
 ## 7. Known limits (so you don't have to find them)
 
 - Box weight is **computed from the spec**, so per-kg quotes are accurate to a few percent, and the tool says so on each converted cell.
-- "Needs proof" and "not approved" depend on questions the RFx marks as must-haves. A badly written must-have gives a badly drawn line.
+- "Needs proof" and "not eligible" depend on questions the RFx marks as must-haves. A badly written must-have gives a badly drawn line.
 - The size re-match assumes the vendor's written size is reliable; a mis-read size can still send a price to review or drop it (both visible, neither silent).
 - **What the checks cannot see:** a misread that stays in a believable range, such as 3.40 read as 3.04, or a few-percent GST or freight error with consistent wording. These are caught indirectly, and for photos and scans by process (rows 46 and 47): by confidence scores, the peer comparison when 3+ vendors quoted the line, the 15% winner check, and the citation next to every price so the buyer can look. If the vendor quotes the only price on a line there is no peer to compare with.
 - **Not modelled yet:** quantity price breaks as a structure (they arrive as duplicates and the buyer picks), and minimum order quantities. Both would need new fields in the reading step, which I chose not to risk this close to the demo.
@@ -182,3 +182,6 @@ I tested the live site as a QA engineer would, and fixed what I found.
 | Large photos | 10 MB phone photo | Resized and re-encoded in the browser (`lib/image.ts`): request body ~2.3 MB |
 
 All of this is covered by `npm test` where it is code (237 tests) and by the browser checks above where it is not.
+
+
+**Why "Eligible", not "Approved".** The buyer approves the award on Finalise. A vendor badge that also said "Approved" read as if the award had been signed off. The badge now says Eligible (answered every must-have, so can be awarded), Needs proof, or Not eligible.
