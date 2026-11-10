@@ -152,35 +152,40 @@ function VendorHead({ v, n, onClarify }: { v: VendorSummary; n: Normalized; onCl
   const asked = s.asked?.[v.vendor_id];
   const q = QUAL[v.qualification];
   const warn = v.flags.filter((f) => f.sev !== "info");
-  // Everything that used to be its own line, as one short line. The full wording is on hover.
-  const short: Record<string, string> = { TOTAL_MISMATCH: "total differs from lines", TAX_UNCLEAR: "GST not stated" };
-  const issues = [
-    ...(v.deviation > 0 ? [`${v.deviation} off-spec`] : []),
-    ...(v.review > 0 ? [`${v.review} to review`] : []),
-    ...warn.map((f) => short[f.code] || f.msg.split(/[.;:]/)[0].slice(0, 40)),
-  ];
+  // Every vendor gets the same five slots, so the header is the same height with or without issues.
+  // The detail sits on hover and in the "Email vendor" draft, not in wrapped text under the name.
   const full = [
     ...(v.deviation > 0 ? [`${v.deviation} on a different spec, not counted`] : []),
     ...(v.review > 0 ? [`${v.review} need review`] : []),
     ...warn.map((f) => f.msg),
   ];
+  const count = v.deviation + v.review + warn.length;
+  const total = n.cells.filter((c) => c.vendor_id === v.vendor_id).length;
   return (
-    <div className="space-y-1 text-left font-normal normal-case tracking-normal">
-      <div className="text-[12.5px] font-semibold text-ink">{v.name}</div>
-      <div className="flex flex-wrap gap-1">
+    <div className="w-[150px] space-y-1 text-left font-normal normal-case tracking-normal">
+      <div className="truncate text-[12.5px] font-semibold text-ink" title={v.name}>{v.name}</div>
+      <div className="flex h-5 items-center">
         <Badge tone={q.tone} title={`${q.label}: ${v.qualification === "qualified" ? "answered every must-have question and the documents are in date." : v.qualification === "conditional" ? "something still needs proof before this vendor can be approved." : "failed at least one must-have."}${v.qual_reasons.length ? "\n" + v.qual_reasons.join("\n") : ""}`}>
           {q.label}
         </Badge>
       </div>
-      <div className="text-[11px] text-muted">
-        {v.quoted - v.deviation}/{n.cells.filter((c) => c.vendor_id === v.vendor_id).length} priced · {v.terms.currency} · {v.terms.freight}
+      <div className="text-[11px] leading-tight text-muted">
+        <div>{v.quoted - v.deviation}/{total} priced</div>
+        <div className="truncate" title={`${v.terms.currency} · ${v.terms.freight}`}>{v.terms.currency} · {v.terms.freight}</div>
       </div>
-      {issues.length > 0 && (
-        <div className="text-[11px] leading-snug text-warn" title={full.join("\n")}>
-          {issues.join(" · ")}
-        </div>
-      )}
-      <button onClick={onClarify} className="text-[11px] font-medium text-kraft hover:underline">
+      <div className="flex h-5 items-center">
+        {count > 0 ? (
+          <span className="inline-flex cursor-help items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-medium text-warn" title={full.join("\n")}>
+            <span aria-hidden>●</span>
+            {count} to check
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-0.5 text-[11px] text-muted">
+            <span aria-hidden className="text-good">✓</span> No issues
+          </span>
+        )}
+      </div>
+      <button onClick={onClarify} className="block text-[11px] font-medium text-kraft hover:underline">
         {asked ? `Emailed ${new Date(asked.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · resend` : "Email vendor"}
       </button>
     </div>
