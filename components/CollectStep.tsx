@@ -82,7 +82,7 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
   return [{ label: "Prices", state: quoted === total ? "ok" : quoted > 0 ? "warn" : "bad", text: `${quoted}/${total} lines` }, tax, freight, terms, cert, qn];
 }
 
-export default function CollectStep({ n, onSend, onRead, onNext, suggested }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void; suggested?: Suggestion[] }) {
+export default function CollectStep({ n, onSend, onRead, onNext, suggested, askSignal = 0 }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void; suggested?: Suggestion[]; askSignal?: number }) {
   const { s, set, log, reset, loadExample } = useStore();
   const { readAll } = useReader();
   const r = s.rfx;
@@ -122,8 +122,11 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested }: { 
   // ---------- request co-pilot (side panel) ----------
   // One assistant, two jobs: change the request (it edits what you send) or ask about the quotes (it only reads).
   const [mode, setMode] = useState<"change" | "ask">(readN > 0 ? "ask" : "change");
-  const canAsk = readN > 0;
-  const asking = canAsk && mode === "ask";
+  const asking = mode === "ask";
+  // The Ask AI button in the header lands here on this step: show the question side of the panel.
+  useEffect(() => {
+    if (askSignal) setMode("ask");
+  }, [askSignal]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string[]>([]);
@@ -343,21 +346,28 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested }: { 
         <div className="border-b border-line px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="font-semibold">Ask AI</div>
-            {canAsk && (
-              <div role="tablist" aria-label="What to ask AI" className="inline-flex rounded-lg border border-line bg-panel p-0.5 text-[12px]">
-                {([["ask", "About quotes"], ["change", "Change request"]] as const).map(([m, label]) => (
-                  <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={cx("rounded-md px-2.5 py-1 font-medium transition", mode === m ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink")}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div role="tablist" aria-label="What to ask AI" className="inline-flex rounded-lg border border-line bg-panel p-0.5 text-[12px]">
+              {([["ask", "About quotes"], ["change", "Change request"]] as const).map(([m, label]) => (
+                <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={cx("rounded-md px-2.5 py-1 font-medium transition", mode === m ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink")}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="mt-0.5 text-xs text-muted">{asking ? "Questions about the quotes you have read. It only reads, nothing here changes your request." : locked ? "Changes you ask for here become an amendment. Vendors are told only when you send it." : "Talk the request into shape. It updates as you talk."}</div>
         </div>
         {asking && (
           <div className="min-h-[460px] flex-1 lg:min-h-0">
-            <AskStep n={n} compact suggested={suggested} />
+            {readN > 0 ? (
+              <AskStep n={n} compact suggested={suggested} />
+            ) : (
+              <div className="grid h-full place-items-center p-6 text-center text-[12.5px] text-muted">
+                <div>
+                  <div className="font-medium text-ink">Nothing to ask about yet</div>
+                  <p className="mt-1">Once vendors reply and you read their quotes, you can ask questions about them here. Until then, use Change request to shape what you send.</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <div className={cx("flex-1 space-y-3 overflow-y-auto p-3", asking && "hidden")}>
