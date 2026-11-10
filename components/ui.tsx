@@ -256,9 +256,9 @@ export function Blocked({ b, go, bare = false }: { b: { title: string; text: str
 }
 
 /** The request this whole session is about, shown the same way on every step. */
-export function EventBar({ id, title, due, revision, blank, sent, next }: { id: string; title: string; due: string; revision: number; blank: boolean; sent: boolean; next?: { text: string; cta: string; onClick: () => void } }) {
+export function EventBar({ id, title, due, revision, blank, sent, next, now }: { id: string; title: string; due: string; revision: number; blank: boolean; sent: boolean; now?: Date; next?: { text: string; cta: string; onClick: () => void } }) {
   const d = new Date(due);
-  const days = Math.ceil((d.getTime() - Date.now()) / 864e5);
+  const days = Math.ceil((d.getTime() - (now ?? new Date()).getTime()) / 864e5);
   const dueText = d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   const left = days > 1 ? `${days} days left` : days === 1 ? "1 day left" : days === 0 ? "due today" : "past due";
   const untitled = blank && /^untitled/i.test(title);
