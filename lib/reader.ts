@@ -55,7 +55,7 @@ export function useReader() {
       const j: any = await postJson("/api/extract", { vendor: r.vendor, files, rfx: s.rfx, prior: pc ? { contract_ref: pc.contract_ref, period: pc.period, line_ids: Object.keys(pc.prices) } : null }, 3, { kind: "extract", label: r.vendor.name });
       if (j.error) throw new Error(j.error);
       patch(r.vendor.id, { status: "done", extraction: j.extraction, model: j.model, ms: j.ms });
-      log(`Read quote from ${r.vendor.name} (${j.extraction.lines?.length ?? 0} prices, ${(j.ms / 1000).toFixed(0)}s)`);
+      log(`Read quote from ${r.vendor.name} (${(j.extraction.lines || []).filter((l: any) => l.price != null).length} prices, ${(j.ms / 1000).toFixed(0)}s)`);
       return { ok: true, retry: false };
     } catch (e: any) {
       const raw: string = e?.message || "";
