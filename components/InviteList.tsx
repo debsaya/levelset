@@ -77,12 +77,12 @@ export default function InviteList() {
           <div className="mt-0.5 text-[12.5px] text-white/65">{invitees.length ? "Remove any vendor you don't want to invite, or add more below." : "Pick one of the options below to add vendors."}</div>
         </div>
         {invitees.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 text-[12px]" title="ISO 9001 certificate on file, checked against the quote due date">
-            <span className="mr-0.5 text-white/65">Compliance · ISO 9001</span>
+          <div className="flex flex-wrap items-center gap-1.5 text-[12px]" title="The ISO 9001 date in your vendor records, checked against the quote due date. Vendors are asked for the certificate itself with the quote.">
+            <span className="mr-0.5 text-white/65">Vendor records · ISO 9001</span>
             {[
               { n: cert.valid, label: "valid", dot: "bg-[#4ade80]" },
               { n: cert.expired, label: "expired", dot: "bg-[#f87171]" },
-              { n: cert.missing, label: "missing", dot: "bg-[#fbbf24]" },
+              { n: cert.missing, label: "not on record", dot: "bg-[#fbbf24]" },
             ]
               .filter((c) => c.n > 0)
               .map((c) => (
