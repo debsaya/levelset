@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
 import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor, OnEscape } from "./ui";
@@ -181,7 +181,7 @@ function StatusBadge({ r, n }: { r: VendorResponse; n: Normalized }) {
     const v = n.vendors.find((x) => x.vendor_id === r.vendor.id);
     return (
       <span className="lv-settle flex gap-1">
-        <Badge tone="good">{v ? v.quoted : 0} priced</Badge>
+        <Badge tone={v && v.quoted > 0 ? "good" : "warn"}>{v && v.quoted > 0 ? `${v.quoted} priced` : "no prices found"}</Badge>
         {v && v.review > 0 && <Badge tone="warn">{v.review} to check</Badge>}
       </span>
     );
@@ -236,7 +236,20 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
             </a>
           )}
         </div>
-        {r.status === "error" && <div className="rounded-md bg-bad-soft p-3 text-sm text-bad">{r.error}</div>}
+        {r.status === "error" && (
+          <div role="alert" className="rounded-md bg-bad-soft p-3 text-sm text-bad">
+            <div>{r.error}</div>
+            {(() => {
+              const saved = menu.find((m) => m.label === "Load the saved reading");
+              return saved ? (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-ink">
+                  <Button onClick={saved.onClick}>Load the saved reading</Button>
+                  <span className="text-[12px] text-muted">Real results from an earlier live run. No AI needed.</span>
+                </div>
+              ) : null;
+            })()}
+          </div>
+        )}
         {r.status === "reading" && (
           <div className="space-y-2.5" role="status">
             <div className="flex items-center gap-2 text-sm text-muted">
@@ -374,6 +387,8 @@ function AddResponse({ onCancel, onAdd, nextId, replacing, names }: { onCancel: 
   const [name, setName] = useState(replacing?.name || "");
   const [body, setBody] = useState("");
   const [picked, setFiles] = useState<File[]>([]);
+  const [skipped, setSkipped] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-3 p-5">
       <div className="font-semibold">{replacing ? `Replace the response from ${replacing.name}` : "Add a vendor response"}</div>
@@ -381,7 +396,28 @@ function AddResponse({ onCancel, onAdd, nextId, replacing, names }: { onCancel: 
       <input list="levelset-vendors" className="w-full rounded-md border border-line px-3 py-2" placeholder="Vendor name" value={name} onChange={(e) => setName(e.target.value)} />
       <datalist id="levelset-vendors">{names.map((n) => <option key={n} value={n} />)}</datalist>
       <textarea className="h-36 w-full rounded-md border border-line px-3 py-2 text-[13px]" placeholder="Paste the email body (optional)" value={body} onChange={(e) => setBody(e.target.value)} />
-      <input type="file" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt" onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          hidden
+          accept=".pdf,.xlsx,.xls,.csv,.docx,.jpg,.jpeg,.png,.txt"
+          onChange={(e) => {
+            const all = Array.from(e.target.files || []);
+            e.target.value = "";
+            const ok = all.filter((f) => /\.(pdf|xlsx|xls|csv|docx|jpe?g|png|txt)$/i.test(f.name));
+            const bad = all.filter((f) => !ok.includes(f));
+            setFiles(ok.slice(0, 5));
+            setSkipped(bad.length ? `Skipped ${bad.map((f) => f.name).join(", ")}: the reader takes PDF, Excel, CSV, Word, photos and text.` : ok.length > 5 ? "Only the first 5 files are used." : "");
+          }}
+        />
+        <Button type="button" onClick={() => fileRef.current?.click()}>
+          {picked.length ? "Change files" : "Attach files"}
+        </Button>
+        {picked.length > 0 ? <span className="text-[12.5px] text-muted">{picked.map((f) => f.name).join(", ")}</span> : <span className="text-[12.5px] text-muted">PDF, Excel, CSV, Word, a photo or text</span>}
+      </div>
+      {skipped && <div role="status" className="text-[12.5px] text-warn">{skipped}</div>}
       <div className="flex gap-2">
         <Button
           variant="primary"

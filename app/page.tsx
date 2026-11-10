@@ -12,6 +12,7 @@ import CompareStep from "@/components/CompareStep";
 import AskStep, { type Suggestion } from "@/components/AskStep";
 import { EventBar, cx } from "@/components/ui";
 import { nextStep } from "@/lib/flow";
+import { appNow } from "@/lib/clock";
 
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
@@ -180,7 +181,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
           </button>
         </div>
       </header>
-      <EventBar next={(() => { const nx = nextStep(s, review); /* The Collect and Decision steps already have their own main button for these moves; don't say the same thing twice. */ if (nx.to === page || (page === "rfx" && (nx.to === "send" || nx.to === "quotes")) || (page === "overview" && nx.to === "compare")) return undefined; return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
+      <EventBar next={(() => { const nx = nextStep(s, review); /* The Collect and Decision steps already have their own main button for these moves; don't say the same thing twice. */ if (nx.to === page || (page === "rfx" && (nx.to === "send" || nx.to === "quotes")) || (page === "overview" && nx.to === "compare")) return undefined; return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} now={appNow(s.mode)} />
       <main id="main" tabIndex={-1} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
         <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
@@ -201,7 +202,16 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
               </button>
             </div>
             <div className="min-h-0 flex-1">
-              <AskStep key={askUi.k} n={n} initialAsk={askUi.q} compact suggested={ASK_BY_STEP[cur as keyof typeof ASK_BY_STEP]} />
+              {s.responses.some((x) => x.status === "done") ? (
+                <AskStep key={askUi.k} n={n} initialAsk={askUi.q} compact suggested={ASK_BY_STEP[cur as keyof typeof ASK_BY_STEP]} />
+              ) : (
+                <div className="grid h-full place-items-center p-6 text-center text-[12.5px] text-muted">
+                  <div>
+                    <div className="font-medium text-ink">Nothing to ask about yet</div>
+                    <p className="mt-1">Once vendors reply and you read their quotes, you can ask questions about them here.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
         )}

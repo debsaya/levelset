@@ -180,7 +180,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                           {t.tone !== "plain" && <span aria-hidden="true" className="text-[13px]">{t.tone === "good" ? "✓" : "!"}</span>}
                           {t.value}
                         </dd>
-                        <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{t.note}</div>
+                        <dd className="mt-0.5 text-[11.5px] leading-snug text-muted">{t.note}</dd>
                       </div>
                     ))}
                   </dl>
@@ -343,7 +343,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                               ["gap", "Close call (next best within 2%)", counts.gap],
                             ] as const).map(([k, label, c]) => (
                               <button key={k} onClick={() => setFilter(k)} aria-pressed={filter === k} className={cx("rounded-full border px-2.5 py-0.5 text-[12px] transition", filter === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:bg-panel hover:text-ink")}>
-                                {label} <span className="tabular opacity-80">{c}</span>
+                                {label} <span className="tabular font-medium">{c}</span>
                               </button>
                             ))}
                           </div>

@@ -8,6 +8,7 @@ import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
 import { Badge, Button, Card, Disclosure, Dots, Md, cx, fileToB64, mimeFor } from "./ui";
 import { prepFile } from "@/lib/image";
+import { appNow } from "@/lib/clock";
 import InviteList from "./InviteList";
 import { MASTER, type PoolVendor } from "@/lib/vendorpool";
 import { downloadBidSheet } from "@/lib/bidsheet";
@@ -101,7 +102,7 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
   const matchResp = (v: { id: string; name: string }) => s.responses.find((x) => x.vendor.id === v.id || x.vendor.name.toLowerCase() === v.name.toLowerCase());
   const rows: { v: { id: string; name: string; email: string }; resp?: VendorResponse }[] = repliesIn ? [...invitees.map((v) => ({ v, resp: matchResp(v) })), ...s.responses.filter((x) => !invitees.some((v) => matchResp(v) === x)).map((x) => ({ v: x.vendor, resp: x }))] : [];
   const noReply = rows.filter((x) => !x.resp).length;
-  const pastDue = r.due_date < new Date().toISOString().slice(0, 10);
+  const pastDue = r.due_date < appNow(s.mode).toISOString().slice(0, 10);
   const showStart = blank && !sent && !s.responses.length && !r.lines.length;
   const showInvite = !sent && !showStart && !(blank && s.responses.length > 0);
   // The reminder and the amendment each open an email the buyer sends from their own mail, then marks as sent.
