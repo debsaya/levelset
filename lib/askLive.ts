@@ -44,3 +44,17 @@ export function useCopilotBusy(): boolean {
     () => copilotBusy
   );
 }
+
+/** Stopping one Ask AI question. The question's own signal is separate from the global stop in api.ts (Start over, Sign out). */
+let askCtl: AbortController | null = null;
+let askByUser = false;
+export function askSignal(): AbortSignal {
+  askByUser = false;
+  askCtl = new AbortController();
+  return askCtl.signal;
+}
+export function stopAsk() {
+  askByUser = true;
+  askCtl?.abort();
+}
+export const askStoppedByUser = () => askByUser;

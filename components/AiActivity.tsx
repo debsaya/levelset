@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { groupProgress, useAiActivity, type Kind } from "@/lib/aiActivity";
+import { stopAsk } from "@/lib/askLive";
 
 const WORD: Record<Kind, [string, string]> = {
   extract: ["Reading quotes", "Quotes read"],
@@ -35,7 +36,12 @@ export default function AiActivity() {
           <div key={k} className="mb-2 last:mb-0">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-[13px] font-medium">{finished ? <span key="done" className="lv-settle inline-block">✓ {WORD[k][1]}</span> : WORD[k][0]}</span>
-              <span className="tabular text-xs text-muted">
+              <span className="tabular flex items-center gap-2 text-xs text-muted">
+                {k === "analyst" && !finished && (
+                  <button type="button" onClick={stopAsk} className="pointer-events-auto rounded-md border border-line bg-white px-2 py-0.5 text-[11.5px] font-medium text-ink hover:bg-panel">
+                    Stop
+                  </button>
+                )}
                 {k === "extract" && g.total > 1 ? `${g.done} of ${g.total} · ` : ""}
                 {finished ? "" : g.over ? "a little longer than usual" : `about ${secs(g.left)} left`}
               </span>

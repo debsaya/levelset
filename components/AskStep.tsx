@@ -1,5 +1,5 @@
 "use client";
-import { setAskLive, useAskLive } from "@/lib/askLive";
+import { askSignal, askStoppedByUser, setAskLive, stopAsk, useAskLive } from "@/lib/askLive";
 import React, { useEffect, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useStore, type AnalystMsg, type Block } from "@/lib/store";
@@ -7,8 +7,8 @@ import { buildDb, contextDoc, runQuery, vendorFacts } from "@/lib/db";
 import type { Normalized } from "@/lib/normalize";
 import { checkGrounding } from "@/lib/grounding";
 import { runScenario } from "@/lib/award";
-import { postStream } from "@/lib/api";
-import { endJob, startJob } from "@/lib/aiActivity";
+import { postStream, STOPPED } from "@/lib/api";
+import { dropJob, endJob, startJob } from "@/lib/aiActivity";
 import { Badge, Button, Card, CopyButton, Dots, Md, cx } from "./ui";
 
 const SUGGESTED = [
@@ -112,11 +112,13 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     let finalText = "";
     let model = "";
     let error: string | undefined;
+    const sig = askSignal();
     const job = startJob("analyst", "Ask AI"); // one job for the whole question, however many lookups it takes
     try {
       for (let step = 0; step < 10; step++) {
         setDraft("");
-        const j = await postStream("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions), stream: true }, (d) => setDraft((t) => t + d), () => setDraft(""));
+        if (sig.aborted) throw new Error(STOPPED);
+        const j = await postStream("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions), stream: true }, (d) => setDraft((t) => t + d), () => setDraft(""), 2, sig);
         if (j.error) throw new Error(j.error);
         model = j.model;
         history.push(j.content);
@@ -171,7 +173,18 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     } catch (e: any) {
       error = e.message;
     }
-    endJob(job, !error, { model });
+    if (error !== STOPPED) endJob(job, !error, { model });
+    if (error === STOPPED) {
+      dropJob(job);
+      // Stopped: take the question back out of the chat. If you pressed Stop, it goes back in the box to edit or resend.
+      set((x) => ({ ...x, analyst: x.analyst.filter((m) => m !== userMsg) }));
+      if (askStoppedByUser()) setInput(q);
+      setBusy(false);
+      setLive([]);
+      setDraft("");
+      setLiveBlocks([]);
+      return;
+    }
     // a saving is the difference between two scenario totals the buyer was shown
     for (let i = 0; i < scTotals.length; i++) for (let j = i + 1; j < scTotals.length; j++) nums.push(Math.abs(scTotals[i] - scTotals[j]));
     // figures the analyst was given as context (FX, freight, terms) also count as traceable
@@ -277,9 +290,15 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
             className="flex gap-2"
           >
             <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask anything about the bids…" className="flex-1 rounded-md border border-line px-3 py-2 outline-none focus:border-kraft" />
-            <Button variant="primary" disabled={busy || !input.trim()}>
-              Ask
-            </Button>
+            {busy ? (
+              <Button key="stop" type="button" onClick={stopAsk}>
+                Stop
+              </Button>
+            ) : (
+              <Button key="ask" variant="primary" disabled={!input.trim()}>
+                Ask
+              </Button>
+            )}
           </form>
         </div>
       </Card>

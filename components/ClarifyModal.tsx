@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
-import { postJson } from "@/lib/api";
+import { postJson, STOPPED } from "@/lib/api";
 import { buildEmail, type Point } from "@/lib/clarify";
 import type { VendorSummary } from "@/lib/normalize";
 import { Badge, Button, Card, CopyButton, Spinner, cx, useEscape } from "./ui";
@@ -72,6 +72,7 @@ export function ClarifyModal({ v, points, onClose }: { v: VendorSummary; points:
       setEdited(true);
       setPolished(true);
     } catch (e: any) {
+      if (e.message === STOPPED) return;
       setErr(`The AI couldn't polish it right now (${e.message}). Your email is unchanged and still ready to send.`);
     } finally {
       setBusy(false);

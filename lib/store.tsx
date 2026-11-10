@@ -7,6 +7,7 @@ import seedPrior from "@/data/prior_contracts.json";
 import savedRaw from "@/data/saved_reading.json";
 import { MASTER, type PoolVendor } from "./vendorpool";
 import { tidyLines } from "./spec";
+import { stopAllAi } from "./api";
 
 const savedReading = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
 /** true once a real reading of the five demo quotes has been recorded (see scripts/record_reading.mjs) */
@@ -191,8 +192,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [s, hydrated]);
   const set = (fn: (s: State) => State) => dispatch({ type: "set", fn });
-  const reset = (mode: "demo" | "blank") => dispatch({ type: "replace", state: mode === "demo" ? demoState() : blankState() });
-  const loadExample = () => dispatch({ type: "replace", state: exampleState() });
+  const reset = (mode: "demo" | "blank") => (stopAllAi(), dispatch)({ type: "replace", state: mode === "demo" ? demoState() : blankState() });
+  const loadExample = () => (stopAllAi(), dispatch)({ type: "replace", state: exampleState() });
   const log = (what: string) => set((x) => ({ ...x, audit: [{ at: new Date().toISOString(), who: x.rfx.buyer.name, what }, ...x.audit] }));
   return <Ctx.Provider value={{ s, set, reset, loadExample, log, hydrated }}>{children}</Ctx.Provider>;
 }

@@ -13,6 +13,7 @@ import AskStep, { type Suggestion } from "@/components/AskStep";
 import { EventBar, cx } from "@/components/ui";
 import { nextStep } from "@/lib/flow";
 import { appNow } from "@/lib/clock";
+import { stopAllAi } from "@/lib/api";
 
 type Page = "overview" | "compare" | "ask" | "quotes" | "rfx" | "send";
 
@@ -284,6 +285,7 @@ function Gate() {
     <App
       email={auth.email}
       onSignOut={() => {
+        stopAllAi();
         try {
           localStorage.removeItem(SESSION_KEY);
         } catch {}

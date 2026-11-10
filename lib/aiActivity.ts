@@ -62,6 +62,17 @@ export function endJob(id: number, ok: boolean, meta?: { model?: string; attempt
   }
 }
 
+/** Remove one job (a stopped question leaves no "done" tick behind). */
+export function dropJob(id: number) {
+  emit({ jobs: snap.jobs.filter((j) => j.id !== id) });
+}
+
+/** Drop every job from the progress panel (used when the AI calls behind them were cancelled). */
+export function clearJobs() {
+  if (clearTimer) clearTimeout(clearTimer);
+  emit({ jobs: [] });
+}
+
 export function useAiActivity(): Snap {
   return useSyncExternalStore(
     (f) => {
