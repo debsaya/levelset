@@ -5,13 +5,20 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Models that just told us their quota is used up are skipped for a while (per server instance).
 const exhausted = new Map<string, number>();
+// Models that just answered "busy" (5xx) or timed out go to the back of the line for a short while, so the next question
+// does not spend its whole time budget waiting on the same overloaded model again (per server instance).
+const busy = new Map<string, number>();
+const BUSY_MS = 120_000;
 
 export function modelChain(): string[] {
   const fromEnv = (process.env.GEMINI_MODEL || "").split(",").map((s) => s.trim()).filter(Boolean);
   const defaults = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.5-flash-lite"];
   const all = Array.from(new Set([...fromEnv, ...defaults]));
   const ok = all.filter((m) => (exhausted.get(m) || 0) < Date.now());
-  return ok.length ? ok : all;
+  const pool = ok.length ? ok : all;
+  const now = Date.now();
+  const isBusy = (m: string) => (busy.get(m) || 0) > now;
+  return [...pool.filter((m) => !isBusy(m)), ...pool.filter(isBusy)];
 }
 
 export type GeminiPart = Record<string, unknown>;
@@ -130,6 +137,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
         if (e?.name === "TimeoutError" || e?.name === "AbortError") {
           if (req.attemptMs && left > req.attemptMs) {
             attempts.push(`${model}:timeout:${Date.now() - tStart}ms`);
+            busy.set(model, Date.now() + BUSY_MS);
             lastErr = new GeminiError(`${model} did not answer in time`, 504);
             break; // this model is stuck: go to the next one
           }
@@ -150,6 +158,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
           if (e?.name === "TimeoutError" || e?.name === "AbortError") {
             if (req.attemptMs && left > req.attemptMs) {
               attempts.push(`${model}:stream-timeout:${Date.now() - tStart}ms`);
+              busy.set(model, Date.now() + BUSY_MS);
               lastErr = new GeminiError(`${model} did not answer in time`, 504);
               break;
             }
@@ -178,11 +187,15 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
         exhausted.set(model, Date.now() + 10 * 60_000);
         break; // quota used up: go straight to the next model, don't wait
       }
-      if (res.status === 429 || res.status >= 500) {
+      if (res.status >= 500) {
+        busy.set(model, Date.now() + BUSY_MS);
+        break; // overloaded: switching models costs less than waiting on this one
+      }
+      if (res.status === 429) {
         const m = errText.match(/retry in ([\d.]+)s/i);
         const wait = m ? Math.min(parseFloat(m[1]) * 1000, 8000) : 2500 * (attempt + 1);
         if (attempt < 1) { // one short retry, then the next model: waiting on a busy one costs more than switching
-          await sleep(res.status === 503 ? 2500 * (attempt + 1) : wait);
+          await sleep(wait);
           continue;
         }
         break; // quota exhausted for this model: fall back to the next one
