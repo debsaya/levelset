@@ -1,5 +1,5 @@
 // Bid levelling: put every vendor on the same full scope so partial quotes can be compared fairly.
-// Items a vendor did not quote (or quoted on a different spec) are filled at the median of the other approved vendors' prices.
+// Items a vendor did not quote (or quoted on a different spec) are filled at the median of the other eligible vendors' prices.
 // These fills are estimates for comparison only. The award itself still uses real quotes.
 import type { Normalized } from "./normalize";
 import type { Rfx } from "./types";
@@ -17,7 +17,7 @@ export type Levelled = {
   filledValue: number;
   /** Yearly cost of the full scope, or null when some item could not be priced at all. */
   total: number | null;
-  /** % above the cheapest approved vendor on the same full scope (negative if below). Null when not comparable. */
+  /** % above the cheapest eligible vendor on the same full scope (negative if below). Null when not comparable. */
   vsLowestApproved: number | null;
 };
 

@@ -65,7 +65,7 @@ ${facts}
 
 How to work:
 - For any award, split or "what if we only use..." question, call award_scenario. Run it more than once to compare options (e.g. qualified vs qualified_or_conditional, single_vendor vs cheapest_per_line) and report the difference.
-- A split scenario returns comparison_vs_single_vendor: the best single approved vendor, and the saving on the lines BOTH cover. Use it to say what splitting saves. Report the lines only the split covers (and their cost) separately as extra scope. NEVER subtract a single vendor's total from a split total when they cover different lines, and never call the split dearer because it buys more lines.
+- A split scenario returns comparison_vs_single_vendor: the best single eligible vendor, and the saving on the lines BOTH cover. Use it to say what splitting saves. Report the lines only the split covers (and their cost) separately as extra scope. NEVER subtract a single vendor's total from a split total when they cover different lines, and never call the split dearer because it buys more lines.
 - award_scenario already shows the buyer a table of vendors, items won and totals. Do NOT build another table with the same totals; only add a table if it shows something new (e.g. which items moved, or a comparison between two scenarios).
 - Never write markdown tables. Use show_table for any table; the buyer only sees tables that come from tools.
 - Mention a vendor's qualification status exactly as in VENDOR FACTS. 'conditional' is not 'qualified'.
@@ -85,7 +85,7 @@ How to work:
 - Use show_table for anything with more than 3 numbers and show_chart when a picture helps. Do not repeat a table's contents in your text.
 - Final answer: lead with the answer in one or two sentences, then caveats (coverage gaps, unverified cells, conditional vendors, assumptions like FX and freight). Be concise. Use Indian number formatting (lakh, crore) for rupee totals. Write money as ₹.
 - If the question cannot be answered from the data, say what is missing and what you would ask the vendor.
-- Use the buyer's words for vendor status: say "approved" (qualified), "needs proof" (conditional) and "not approved" (not_qualified); never say "conditional vendor" or "qualified" to the buyer. Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not qualified", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
+- Use the buyer's words for vendor status: say "eligible" (qualified), "needs proof" (conditional) and "not eligible" (not_qualified); never say "approved" for vendor status (the buyer approves the award, not the vendor), and never say "conditional vendor" or "qualified" to the buyer. Write for a procurement buyer, not an engineer. Never use database words in prose or in table headers: say "not eligible", not not_qualified; "Reason", not qualification_reason. Alias SQL columns to plain English headers (e.g. AS "Vendor", AS "Unit price (₹)"). Do not explain your own labels or the schema; just state the finding (e.g. "2 vendors are out and 1 is conditional").`;
 
 export async function POST(req: Request) {
   const g = await guard(req, "ai", (b) => (Array.isArray(b.contents) && b.contents.length ? null : "Missing contents."), 80);

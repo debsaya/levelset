@@ -11,7 +11,7 @@ A working prototype for a buyer who gets five quotes in five different shapes (E
 1. **Collect.** Describe what you are buying to the AI co-pilot. It drafts the request: items, questions and terms. Pick the vendors and send it. Sending email is simulated.
 2. **Read.** The AI reads every reply into one table, with the exact quote and location for each number.
 3. **Compare.** Prices are converted to the same basis (per piece, delivered, ex-GST). Anything uncertain goes to a review list for you to accept, change or exclude.
-4. **Decide.** See the recommended award, who is approved, and what still needs attention. Export to Excel.
+4. **Decide.** See the recommended award, who is eligible, and what still needs attention. Export to Excel.
 
 **Ask AI** is on every tab. Ask a question in plain words and it answers from the comparison data.
 
