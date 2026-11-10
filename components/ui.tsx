@@ -1,9 +1,28 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { copyText } from "@/lib/copy";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
+}
+
+/** Escape closes a modal, and only the modal: the handlers behind it (like the Ask AI drawer) don't also react. */
+export function useEscape(onClose: () => void) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      onClose();
+    };
+    window.addEventListener("keydown", h, true);
+    return () => window.removeEventListener("keydown", h, true);
+  }, [onClose]);
+}
+
+/** Same as useEscape, for a modal that is rendered conditionally. */
+export function OnEscape({ onClose }: { onClose: () => void }) {
+  useEscape(onClose);
+  return null;
 }
 
 export function Button({ variant = "default", className, ...p }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "default" | "primary" | "ghost" | "danger" }) {
