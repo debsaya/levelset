@@ -41,15 +41,19 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const approved = n.vendors.filter((v) => v.qualification === "qualified").length;
   // Problems on vendors you could still award to: a different spec on an item, or a total that does not match their own lines.
   const awardable = n.vendors.filter((v) => v.qualification !== "not_qualified");
-  const altSpec = awardable.filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
-  const totalOff = awardable.filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
+  // Only vendors inside the recommended award can hold up approving it. The rest are listed once, quietly, as left out.
+  const inAward = new Set(best ? best.vendorsUsed.map((u) => u.vendor_id) : []);
+  const inPlay = (v: { vendor_id: string }) => !best || inAward.has(v.vendor_id);
+  const leftOut = best ? n.vendors.filter((v) => v.qualification !== "qualified" && !inAward.has(v.vendor_id)) : [];
+  const altSpec = awardable.filter(inPlay).filter((v) => v.deviation > 0).map((v) => ({ v, lines: n.cells.filter((c) => c.vendor_id === v.vendor_id && c.status === "deviation").map((c) => c.line_id) }));
+  const totalOff = awardable.filter(inPlay).filter((v) => v.flags.some((f) => f.code === "TOTAL_MISMATCH"));
   // Every vendor on the same full scope, with gaps estimated, so a partial quote can't look cheaper or dearer than it is.
   const lv = useMemo(() => levelled(n, s.rfx), [n, s.rfx]);
   const nLines = s.rfx.lines.length;
   const rate = s.assumptions.cost_of_capital_pct ?? 10;
   // Vendors with gaps whose full-scope cost would already undercut the recommended award once they quote the rest.
   const couldWin = best && best.linesCovered === nLines ? awardable.filter((v) => lv[v.vendor_id]?.filled > 0 && lv[v.vendor_id].total !== null && lv[v.vendor_id].total! < best.total * 0.995 && !(best.vendorsUsed.length === 1 && best.vendorsUsed[0].vendor_id === v.vendor_id)) : [];
-  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length + (review > 0 ? 1 : 0);
+  const attention = n.vendors.filter((v) => v.qualification !== "qualified" && inPlay(v)).length + n.vendors.filter((v) => inPlay(v) && v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length + (review > 0 ? 1 : 0);
   const askedOn = (id: string) => {
     const a = s.asked?.[id];
     return a ? new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
@@ -121,6 +125,10 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
         const lyNow = mine.reduce((a, r) => a + (prior1?.prices[r.l.id] ? r.spend : 0), 0);
         return { ...u, v: n.vendors.find((x) => x.vendor_id === u.vendor_id)!, check: mine.filter((r) => r.check).length, lyPct: lyBase ? ((lyNow - lyBase) / lyBase) * 100 : null };
       });
+
+  const vendorRow = (v: Normalized["vendors"][number], tone: "bad" | "warn" | "neutral") => (
+    <Attention key={v.vendor_id} tone={tone} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
+  );
 
   if (done === 0) return <Blocked b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />;
 
@@ -198,12 +206,10 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       />
                     )}
                     {n.vendors
-                      .filter((v) => v.qualification !== "qualified")
-                      .map((v) => (
-                        <Attention key={v.vendor_id} tone={v.qualification === "not_qualified" ? "bad" : "warn"} title={`${v.name}: ${QUAL[v.qualification].label.toLowerCase()}`} body={v.qual_reasons.length && v.qual_reasons.every((r) => /not answered/i.test(r)) ? `Didn't answer the ${v.qual_reasons.length} must-have questions` : v.qual_reasons.join("; ") || "Questionnaire incomplete"} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
-                      ))}
+                      .filter((v) => v.qualification !== "qualified" && inPlay(v))
+                      .map((v) => vendorRow(v, v.qualification === "not_qualified" ? "bad" : "warn"))}
                     {n.vendors
-                      .filter((v) => v.adjustments.some((a) => a.conditional))
+                      .filter((v) => inPlay(v) && v.adjustments.some((a) => a.conditional))
                       .map((v) => (
                         <Attention key={"r" + v.vendor_id} tone="neutral" title={`${v.name}: ${v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "one_time_charge") ? "one-time charge" : v.adjustments.filter((a) => a.conditional).every((a) => a.kind === "surcharge") ? "surcharge" : "conditional rebate"}`} body={v.adjustments.filter((a) => a.conditional).map((a) => a.description.replace(/\.+$/, "")).join("; ") + ". Not counted in totals."} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                       ))}
@@ -217,6 +223,17 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body={v.flags.find((f) => f.code === "TOTAL_MISMATCH")?.msg ?? "We use their line prices, not the total they wrote. Check which one they meant."} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
               </div>
+              {leftOut.length > 0 && (
+                <details className="group border-t border-line">
+                  <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-3 text-[12.5px] text-muted hover:text-ink">
+                    <span>
+                      <span className="font-medium text-ink">Left out of this award</span> · {leftOut.map((v) => v.name.split(" ")[0]).join(", ")}
+                    </span>
+                    <span aria-hidden className="text-[11px] group-open:rotate-90">▶</span>
+                  </summary>
+                  <div className="space-y-0.5 px-2 pb-2">{leftOut.map((v) => vendorRow(v, "neutral"))}</div>
+                </details>
+              )}
             </Panel>
 
             {sc.length > 0 && (
