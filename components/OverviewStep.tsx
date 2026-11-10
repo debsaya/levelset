@@ -8,7 +8,7 @@ import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
 import { ClarifyModal } from "./ClarifyModal";
 import { vendorPoints } from "@/lib/clarify";
-import { Badge, Blocked, Button, Disclosure, Spinner, cx } from "./ui";
+import { Badge, Blocked, Button, Spinner, cx } from "./ui";
 import { blocker } from "@/lib/flow";
 
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
@@ -60,11 +60,15 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
       : `Split the award: ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
   const lyUp = !!ly && ly.delta > 0;
-  const facts = best
+  // The four questions an approver asks before signing: is everything priced, are the prices checked, are the winners approved, what does it do to last year's spend.
+  const winners = best ? best.vendorsUsed.map((w) => n.vendors.find((v) => v.vendor_id === w.vendor_id)).filter(Boolean) as Normalized["vendors"] : [];
+  const notApproved = winners.filter((v) => v.qualification !== "qualified");
+  const tiles: { label: string; value: string; note: string; tone: "good" | "warn" | "plain" }[] = best
     ? [
-        `${best.linesCovered} of ${nLines} items covered`,
-        ly ? `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}% vs last year (${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items that had a price then)` : "no last-year price to compare with",
-        ...(best.vendorsUsed.length > 1 ? [best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} ${crore(v.value)}`).join(", ")] : []),
+        { label: "Coverage", value: `${best.linesCovered} of ${nLines}`, note: best.linesMissing.length ? `No approved price for ${best.linesMissing.join(", ")}` : "every item has a price", tone: best.linesMissing.length ? "warn" : "good" },
+        { label: "Prices checked", value: best.unverified === 0 ? "Yes" : `${best.unverified} to check`, note: best.unverified === 0 ? (review > 0 ? `${review} flagged elsewhere, none behind this award` : "nothing flagged") : "behind this award, can change the total", tone: best.unverified === 0 ? "good" : "warn" },
+        { label: best.vendorsUsed.length > 1 ? "Winning vendors" : "Winning vendor", value: notApproved.length === 0 ? "Approved" : `${notApproved.length} needs proof`, note: notApproved.length === 0 ? "must-have questions answered" : notApproved.map((v) => v.name.split(" ")[0]).join(", ") + " owes proof", tone: notApproved.length === 0 ? "good" : "warn" },
+        { label: "Against last year", value: ly ? `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}%` : "n/a", note: ly ? `${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items priced then` : "no last-year price to compare with", tone: "plain" },
       ]
     : [];
   const ranked = [...n.vendors].sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18));
@@ -106,8 +110,21 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     <span className="text-[13px] text-muted">a year, delivered to your plant, ex-GST</span>
                   </div>
                 )}
-                {facts.length > 0 && <p className="mt-2 text-[13px] text-muted">{facts.join(" · ")}</p>}
-                {best && best.linesMissing.length > 0 && <p className="mt-1 text-[13px] text-warn">No approved price for {best.linesMissing.length === 1 ? "item" : "items"} {best.linesMissing.join(", ")}</p>}
+                {best && best.vendorsUsed.length > 1 && <p className="mt-2 text-[13px] text-muted">{best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} ${crore(v.value)}`).join(" · ")}</p>}
+                {tiles.length > 0 && (
+                  <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    {tiles.map((t) => (
+                      <div key={t.label} className="rounded-lg border border-line bg-white/80 px-3 py-2.5">
+                        <dt className="text-[11px] font-medium uppercase tracking-wide text-muted">{t.label}</dt>
+                        <dd className={cx("mt-0.5 flex items-center gap-1.5 text-[16px] font-semibold tabular", t.tone === "good" && "text-good", t.tone === "warn" && "text-warn")}>
+                          {t.tone !== "plain" && <span aria-hidden="true" className="text-[13px]">{t.tone === "good" ? "✓" : "!"}</span>}
+                          {t.value}
+                        </dd>
+                        <div className="mt-0.5 text-[11.5px] leading-snug text-muted">{t.note}</div>
+                      </div>
+                    ))}
+                  </dl>
+                )}
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button onClick={() => exportWorkbook(s.rfx, n, s.assumptions, s.audit)}>Export Excel</Button>
                   <Button onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>Why this?</Button>
@@ -132,7 +149,77 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               )}
             </section>
 
-            <Panel title="Needs your attention" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
+            <Panel title="Ways to award it" summary={sc.length > 1 ? `${sc.length} ways compared · same items, different rules` : undefined}>
+              {sc.length === 0 ? (
+                <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>
+              ) : sc.length === 1 ? (
+                <div className="px-5 py-4 text-[13px] text-muted">
+                  <span className="font-medium text-ink">{sc[0].label}</span> is the only way this can be awarded right now. {sc[0].detail}
+                </div>
+              ) : (
+                <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                  {sc.map((x) => {
+                    const isBest = !!best && x.key === best.key;
+                    const d = best && !isBest ? savingOnCommon(x, best) : 0;
+                    const common = best ? Object.keys(x.byLine).filter((l) => best.byLine[l] !== undefined).length : 0;
+                    return (
+                      <div key={x.key} className={cx("flex flex-col rounded-xl border p-4", isBest ? "border-kraft bg-kraft-soft/50" : "border-line bg-white")}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-[13.5px] font-semibold leading-snug">{x.label}</div>
+                          {isBest && <Badge tone="brand">recommended</Badge>}
+                        </div>
+                        <div className="mt-1 text-[12px] leading-snug text-muted">{x.detail}</div>
+                        <div className="mt-3 flex items-baseline gap-2">
+                          <span className="text-[22px] font-semibold leading-none tabular">{crore(x.total)}</span>
+                          <span className="text-[12px] text-muted">{x.linesCovered}/{nLines} items</span>
+                        </div>
+                        {best && !isBest && (
+                          <div className={cx("mt-1.5 text-[12px] font-medium", d > 1 ? "text-warn" : d < -1 ? "text-good" : "text-muted")}>
+                            {Math.abs(d) < 1 ? "Same cost as the recommended option" : `${crore(Math.abs(d))} ${d > 0 ? "more" : "less"} than recommended`}
+                            <span className="font-normal text-muted"> on the {common} items both cover</span>
+                          </div>
+                        )}
+                        <div className="mt-3 space-y-0.5 border-t border-line pt-2 text-[12px] text-muted">
+                          {x.vendorsUsed.map((v) => (
+                            <div key={v.vendor_id} className="flex justify-between gap-3">
+                              <span>{v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"}</span>
+                              <span className="tabular">{crore(v.value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {(x.linesMissing.length > 0 || x.unverified > 0) && (
+                          <div className="mt-2 text-[12px] text-warn">
+                            {x.linesMissing.length > 0 && `No approved price for ${x.linesMissing.join(", ")}. `}
+                            {x.unverified > 0 && `${x.unverified} winning ${x.unverified === 1 ? "price needs" : "prices need"} your check.`}
+                          </div>
+                        )}
+                        {!isBest && (
+                          <button onClick={() => go("ask", { ask: `Compare "${x.label}" with the recommended award. Which items change vendor, and what does it cost or save?` })} className="mt-3 self-start text-[12px] font-medium text-kraft hover:underline">
+                            What changes? →
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
+                <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
+                <div className="mt-2 space-y-1.5">
+                  <p>Each option is a different rule for who can win each item. The recommended one is the lowest total that covers the most items.</p>
+                  <dl className="grid gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
+                    <dt className="font-medium text-ink">Total</dt>
+                    <dd>The winning price for each item times your yearly volume, added up. Delivered to your plant, ex-GST.</dd>
+                    <dt className="font-medium text-ink">Items</dt>
+                    <dd>How many of your {nLines} items have a price under that rule. Totals only compare fairly when this number matches, so each option also shows its difference on the items both cover.</dd>
+                    <dt className="font-medium text-ink">Approved</dt>
+                    <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
+                  </dl>
+                </div>
+              </details>
+            </Panel>
+
+            <Panel title="Open items before you approve" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
               <div className="space-y-0.5 p-2">
                     {attention === 0 && <div className="p-3 text-[13px] text-muted">No vendor or document problems.{review > 0 ? ` The ${review} flagged ${review === 1 ? "price is" : "prices are"} in Compare.` : ""}</div>}
                     {n.vendors
@@ -259,68 +346,6 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </details>
             </Panel>
 
-            <Disclosure title="Other ways to award it" summary={`${sc.length} ${sc.length === 1 ? "way" : "ways"} compared`}>
-                  <details className="border-b border-line bg-panel px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
-                    <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
-                    <div className="mt-2 space-y-1.5">
-                      <p>Each option is a different rule for who can win each item. The recommended one is the lowest total that covers the most items.</p>
-                      <dl className="grid gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
-                        <dt className="font-medium text-ink">Total</dt>
-                        <dd>The winning price for each item times your yearly volume, added up. Delivered to your plant, ex-GST.</dd>
-                        <dt className="font-medium text-ink">Items</dt>
-                        <dd>How many of your {s.rfx.lines.length} items have a price under that rule. Totals only compare fairly when this number matches, so each option also shows its difference on the items both cover.</dd>
-                        <dt className="font-medium text-ink">Approved</dt>
-                        <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
-                      </dl>
-                    </div>
-                  </details>
-                  <div className="divide-y divide-line">
-                    {sc.map((x) => {
-                      const isBest = best && x.key === best.key;
-                      return (
-                        <div key={x.key} className="px-5 py-4">
-                          <div className="flex items-baseline justify-between gap-4">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2 font-medium">
-                                {x.label} {isBest && <Badge tone="brand">recommended</Badge>}
-                              </div>
-                              <div className="text-[12.5px] text-muted">{x.detail}</div>
-                            </div>
-                            <div className="shrink-0 text-right">
-                              <div className="text-[18px] font-semibold tabular">{crore(x.total)}</div>
-                              <div className="text-[12px] text-muted">
-                                {x.linesCovered}/{s.rfx.lines.length} items
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-                            {x.vendorsUsed.map((v) => (
-                              <span key={v.vendor_id}>
-                                {v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"} · {crore(v.value)}
-                              </span>
-                            ))}
-                          </div>
-                          {best && !isBest && (() => {
-                            const d = savingOnCommon(x, best);
-                            const common = Object.keys(x.byLine).filter((l) => best.byLine[l] !== undefined).length;
-                            return (
-                              <div className="mt-1.5 text-[12px] text-muted">
-                                {Math.abs(d) < 1 ? "Same cost as the recommended option" : `${crore(Math.abs(d))} ${d > 0 ? "more" : "less"} than the recommended option`} on the {common} items both cover
-                              </div>
-                            );
-                          })()}
-                          {(x.linesMissing.length > 0 || x.unverified > 0) && (
-                            <div className="mt-1.5 text-[12px] text-warn">
-                              {x.linesMissing.length > 0 && `No approved price for ${x.linesMissing.join(", ")}. `}
-                              {x.unverified > 0 && `${x.unverified} winning prices still need your check.`}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {!sc.length && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
-                  </div>
-            </Disclosure>
           </>
         )}
       </div>
