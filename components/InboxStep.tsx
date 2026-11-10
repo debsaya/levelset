@@ -229,8 +229,10 @@ function ResponseDetail({ r, onRead, menu }: { r: VendorResponse; onRead: () => 
             </div>
           )}
           {r.vendor.attachments.some((a) => /\.(jpe?g|png)$/i.test(fileName(a))) && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={r.vendor.attachments.find((a) => /\.(jpe?g|png)$/i.test(fileName(a)))} alt="attachment" className="mt-3 max-h-72 rounded border border-line" />
+            <a href={r.vendor.attachments.find((a) => /\.(jpe?g|png)$/i.test(fileName(a)))} target="_blank" rel="noreferrer" title="Open the photo full size" className="mt-3 block w-fit cursor-zoom-in">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={r.vendor.attachments.find((a) => /\.(jpe?g|png)$/i.test(fileName(a)))} alt="attachment" className="max-h-72 rounded border border-line" />
+            </a>
           )}
         </div>
         {r.status === "error" && <div className="rounded-md bg-bad-soft p-3 text-sm text-bad">{r.error}</div>}
