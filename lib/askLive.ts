@@ -24,3 +24,23 @@ export function useAskLive(): AskLive {
     () => state
   );
 }
+
+/** Whether the request co-pilot is working on a message. Kept here for the same reason: leaving the step mid-reply must not lose it. */
+let copilotBusy = false;
+const copilotSubs = new Set<() => void>();
+
+export function setCopilotBusy(b: boolean) {
+  copilotBusy = b;
+  copilotSubs.forEach((f) => f());
+}
+
+export function useCopilotBusy(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      copilotSubs.add(cb);
+      return () => void copilotSubs.delete(cb);
+    },
+    () => copilotBusy,
+    () => copilotBusy
+  );
+}
