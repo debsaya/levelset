@@ -2,7 +2,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, type Normalized } from "@/lib/normalize";
-import { lastYear, savingOnCommon, scenarios } from "@/lib/award";
+import { lastYear, needsCheck, savingOnCommon, scenarios } from "@/lib/award";
 import { creditValue, levelled } from "@/lib/levelled";
 import { exportWorkbook } from "@/lib/export";
 import { useReader } from "@/lib/reader";
@@ -25,6 +25,10 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const { readAll, hasSaved, loadSaved } = useReader();
   const [clarify, setClarify] = useState<string | null>(null);
   const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
+  const [selKey, setSelKey] = useState<string | null>(null);
+  const [view, setView] = useState<"item" | "vendor">("item");
+  const [filter, setFilter] = useState<"all" | "up" | "check" | "gap">("all");
+  const [showAll, setShowAll] = useState(false);
   const total = s.responses.length;
   const done = s.responses.filter((r) => r.status === "done").length;
   const reading = s.responses.filter((r) => r.status === "reading").length;
@@ -45,7 +49,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
   const rate = s.assumptions.cost_of_capital_pct ?? 10;
   // Vendors with gaps whose full-scope cost would already undercut the recommended award once they quote the rest.
   const couldWin = best && best.linesCovered === nLines ? awardable.filter((v) => lv[v.vendor_id]?.filled > 0 && lv[v.vendor_id].total !== null && lv[v.vendor_id].total! < best.total * 0.995 && !(best.vendorsUsed.length === 1 && best.vendorsUsed[0].vendor_id === v.vendor_id)) : [];
-  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length;
+  const attention = n.vendors.filter((v) => v.qualification !== "qualified").length + n.vendors.filter((v) => v.adjustments.some((a) => a.conditional)).length + altSpec.length + totalOff.length + couldWin.length + (review > 0 ? 1 : 0);
   const askedOn = (id: string) => {
     const a = s.asked?.[id];
     return a ? new Date(a.at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "";
@@ -71,7 +75,52 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
         { label: "Against last year", value: ly ? `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}%` : "n/a", note: ly ? `${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items priced then` : "no last-year price to compare with", tone: "plain" },
       ]
     : [];
+  const blockers = best ? [best.linesMissing.length > 0, best.unverified > 0, notApproved.length > 0].filter(Boolean).length : 0;
+  const verdict: { tone: "good" | "warn" | "bad"; text: string } = !best ? { tone: "bad", text: "Not ready" } : blockers === 0 ? { tone: "good", text: "Ready to approve" } : { tone: "warn", text: `${blockers} to settle before approving` };
   const ranked = [...n.vendors].sort((a, b) => ({ qualified: 0, conditional: 1, not_qualified: 2 }[a.qualification] - { qualified: 0, conditional: 1, not_qualified: 2 }[b.qualification]) || (lv[a.vendor_id]?.total ?? 1e18) - (lv[b.vendor_id]?.total ?? 1e18));
+
+  // The option being looked at (the recommended one until you click another), cut item by item.
+  const cur = (selKey && sc.find((x) => x.key === selKey)) || best;
+  const prior1 = Object.values(s.prior)[0];
+  const itemRows = !cur
+    ? []
+    : s.rfx.lines.map((l) => {
+        const wid = cur.winners[l.id];
+        const w = wid ? n.cells.find((c) => c.line_id === l.id && c.vendor_id === wid) : undefined;
+        if (!w || w.unit_inr === null) return { l, w: undefined, vendor: "", spend: 0, nextGap: null as number | null, lyPct: null as number | null, check: false };
+        const others = n.cells.filter((c) => c.line_id === l.id && c.vendor_id !== wid && cur.pool.includes(c.vendor_id) && c.unit_inr !== null && !["deviation", "excluded", "missing"].includes(c.status));
+        const next = others.length ? Math.min(...others.map((c) => c.unit_inr!)) : null;
+        const lyU = prior1?.prices[l.id];
+        const spend = w.annual_inr || 0;
+        return {
+          l,
+          w,
+          vendor: n.vendors.find((v) => v.vendor_id === wid)?.name ?? "",
+          spend,
+          nextGap: next !== null ? ((next - w.unit_inr) / w.unit_inr) * 100 : null,
+          lyPct: lyU && spend ? ((spend / l.annual_qty - lyU) / lyU) * 100 : null,
+          check: needsCheck(w),
+        };
+      });
+  const priced = itemRows.filter((r) => r.w);
+  const counts = {
+    all: itemRows.length,
+    up: priced.filter((r) => r.lyPct !== null && r.lyPct > 0.05).length,
+    check: priced.filter((r) => r.check).length,
+    gap: priced.filter((r) => r.nextGap !== null && r.nextGap < 2).length,
+  };
+  const shownItems = [...itemRows]
+    .filter((r) => (filter === "all" ? true : filter === "up" ? r.w && r.lyPct !== null && r.lyPct > 0.05 : filter === "check" ? r.check : r.w && r.nextGap !== null && r.nextGap < 2))
+    .sort((a, b) => (filter === "up" ? (b.lyPct ?? 0) - (a.lyPct ?? 0) : filter === "gap" ? (a.nextGap ?? 99) - (b.nextGap ?? 99) : b.spend - a.spend));
+  const visibleItems = showAll || filter !== "all" ? shownItems : shownItems.slice(0, 8);
+  const byVendor = !cur
+    ? []
+    : cur.vendorsUsed.map((u) => {
+        const mine = priced.filter((r) => r.w!.vendor_id === u.vendor_id);
+        const lyBase = mine.reduce((a, r) => a + (prior1?.prices[r.l.id] ? prior1.prices[r.l.id] * r.l.annual_qty : 0), 0);
+        const lyNow = mine.reduce((a, r) => a + (prior1?.prices[r.l.id] ? r.spend : 0), 0);
+        return { ...u, v: n.vendors.find((x) => x.vendor_id === u.vendor_id)!, check: mine.filter((r) => r.check).length, lyPct: lyBase ? ((lyNow - lyBase) / lyBase) * 100 : null };
+      });
 
   if (done === 0) return <Blocked b={blocker(s) || { title: "Nothing to decide yet", text: "Read the quotes first. Your recommended award then appears here.", to: "quotes", cta: "Go to Read quotes" }} go={(p) => go(p)} />;
 
@@ -102,7 +151,10 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
 
             <section className="overflow-hidden rounded-xl border border-line border-l-4 border-l-kraft bg-[linear-gradient(135deg,var(--color-kraft-soft),#ffffff_65%)] shadow-[0_10px_28px_-14px_rgba(80,55,20,0.35)]">
               <div className="px-6 py-5">
-                <div className="text-[12px] font-medium uppercase tracking-wide text-muted">Recommended award</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[12px] font-medium uppercase tracking-wide text-muted">Recommended award</span>
+                  <Badge tone={verdict.tone}>{verdict.text}</Badge>
+                </div>
                 <h1 className="mt-1 text-[24px] font-semibold leading-snug">{headline}</h1>
                 {best && (
                   <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -130,98 +182,20 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                   <Button onClick={() => go("ask", { ask: "Why is this the recommended award? Compare the options and show the line-level split." })}>Why this?</Button>
                 </div>
               </div>
-              {review > 0 && (
-                <div role="status" className="flex flex-col gap-2 border-t border-line bg-kraft-soft px-6 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <span className="font-semibold">
-                      {best && best.unverified === 0
-                        ? `${review} flagged ${review === 1 ? "price" : "prices"} to check. None is behind this award.`
-                        : best
-                          ? `Not final: ${best.unverified} of the ${review} flagged ${review === 1 ? "price is" : "prices are"} behind this award.`
-                          : `${review} flagged ${review === 1 ? "price" : "prices"} to check.`}
-                    </span>{" "}
-                    <span className="text-muted">{best ? (best.unverified > 0 ? "Checking them can change the total." : "The total stands, but a correction could still change which vendor wins an item.") : ""}</span>
-                  </div>
-                  <Button className="shrink-0" onClick={() => go("compare", { review: true })}>
-                    Check {review === 1 ? "it" : "them"} →
-                  </Button>
-                </div>
-              )}
             </section>
 
-            <Panel title="Ways to award it" summary={sc.length > 1 ? `${sc.length} ways compared · same items, different rules` : undefined}>
-              {sc.length === 0 ? (
-                <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>
-              ) : sc.length === 1 ? (
-                <div className="px-5 py-4 text-[13px] text-muted">
-                  <span className="font-medium text-ink">{sc[0].label}</span> is the only way this can be awarded right now. {sc[0].detail}
-                </div>
-              ) : (
-                <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
-                  {sc.map((x) => {
-                    const isBest = !!best && x.key === best.key;
-                    const d = best && !isBest ? savingOnCommon(x, best) : 0;
-                    const common = best ? Object.keys(x.byLine).filter((l) => best.byLine[l] !== undefined).length : 0;
-                    return (
-                      <div key={x.key} className={cx("flex flex-col rounded-xl border p-4", isBest ? "border-kraft bg-kraft-soft/50" : "border-line bg-white")}>
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="text-[13.5px] font-semibold leading-snug">{x.label}</div>
-                          {isBest && <Badge tone="brand">recommended</Badge>}
-                        </div>
-                        <div className="mt-1 text-[12px] leading-snug text-muted">{x.detail}</div>
-                        <div className="mt-3 flex items-baseline gap-2">
-                          <span className="text-[22px] font-semibold leading-none tabular">{crore(x.total)}</span>
-                          <span className="text-[12px] text-muted">{x.linesCovered}/{nLines} items</span>
-                        </div>
-                        {best && !isBest && (
-                          <div className={cx("mt-1.5 text-[12px] font-medium", d > 1 ? "text-warn" : d < -1 ? "text-good" : "text-muted")}>
-                            {Math.abs(d) < 1 ? "Same cost as the recommended option" : `${crore(Math.abs(d))} ${d > 0 ? "more" : "less"} than recommended`}
-                            <span className="font-normal text-muted"> on the {common} items both cover</span>
-                          </div>
-                        )}
-                        <div className="mt-3 space-y-0.5 border-t border-line pt-2 text-[12px] text-muted">
-                          {x.vendorsUsed.map((v) => (
-                            <div key={v.vendor_id} className="flex justify-between gap-3">
-                              <span>{v.name.split(" ")[0]} · {v.lines} {v.lines === 1 ? "item" : "items"}</span>
-                              <span className="tabular">{crore(v.value)}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {(x.linesMissing.length > 0 || x.unverified > 0) && (
-                          <div className="mt-2 text-[12px] text-warn">
-                            {x.linesMissing.length > 0 && `No approved price for ${x.linesMissing.join(", ")}. `}
-                            {x.unverified > 0 && `${x.unverified} winning ${x.unverified === 1 ? "price needs" : "prices need"} your check.`}
-                          </div>
-                        )}
-                        {!isBest && (
-                          <button onClick={() => go("ask", { ask: `Compare "${x.label}" with the recommended award. Which items change vendor, and what does it cost or save?` })} className="mt-3 self-start text-[12px] font-medium text-kraft hover:underline">
-                            What changes? →
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
-                <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
-                <div className="mt-2 space-y-1.5">
-                  <p>Each option is a different rule for who can win each item. The recommended one is the lowest total that covers the most items.</p>
-                  <dl className="grid gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
-                    <dt className="font-medium text-ink">Total</dt>
-                    <dd>The winning price for each item times your yearly volume, added up. Delivered to your plant, ex-GST.</dd>
-                    <dt className="font-medium text-ink">Items</dt>
-                    <dd>How many of your {nLines} items have a price under that rule. Totals only compare fairly when this number matches, so each option also shows its difference on the items both cover.</dd>
-                    <dt className="font-medium text-ink">Approved</dt>
-                    <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
-                  </dl>
-                </div>
-              </details>
-            </Panel>
-
-            <Panel title="Open items before you approve" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
+            <Panel title="Before you approve" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
               <div className="space-y-0.5 p-2">
-                    {attention === 0 && <div className="p-3 text-[13px] text-muted">No vendor or document problems.{review > 0 ? ` The ${review} flagged ${review === 1 ? "price is" : "prices are"} in Compare.` : ""}</div>}
+                    {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open. You can approve this award.</div>}
+                    {review > 0 && (
+                      <Attention
+                        tone={best && best.unverified > 0 ? "warn" : "neutral"}
+                        title={best && best.unverified > 0 ? `${best.unverified} of the ${review} flagged prices are behind this award` : `${review} flagged ${review === 1 ? "price" : "prices"} to check, none behind this award`}
+                        body={best ? (best.unverified > 0 ? "Checking them can change the total." : "The total stands, but a correction could still change which vendor wins an item.") : "Check them in Compare."}
+                        action="Check them"
+                        onClick={() => go("compare", { review: true })}
+                      />
+                    )}
                     {n.vendors
                       .filter((v) => v.qualification !== "qualified")
                       .map((v) => (
@@ -242,6 +216,185 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body={v.flags.find((f) => f.code === "TOTAL_MISMATCH")?.msg ?? "We use their line prices, not the total they wrote. Check which one they meant."} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
               </div>
+            </Panel>
+
+            <Panel title={sc.length > 1 ? "Ways to award it" : "The award, item by item"} summary={sc.length > 1 ? "Pick one to see it item by item" : undefined}>
+              {sc.length === 0 ? (
+                <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>
+              ) : (
+                <>
+                  <div role="radiogroup" aria-label="Ways to award" className={cx("grid gap-3 p-4", sc.length === 1 && "hidden", sc.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
+                    {sc.map((x) => {
+                      const isBest = !!best && x.key === best.key;
+                      const on = !!cur && x.key === cur.key;
+                      const d = best && !isBest ? savingOnCommon(x, best) : 0;
+                      const common = best ? Object.keys(x.byLine).filter((l) => best.byLine[l] !== undefined).length : 0;
+                      return (
+                        <button key={x.key} role="radio" aria-checked={on} onClick={() => (setSelKey(x.key), setShowAll(false), setFilter("all"))} className={cx("flex flex-col rounded-xl border p-3.5 text-left transition", on ? "border-kraft bg-kraft-soft/60 ring-1 ring-kraft" : "border-line bg-white hover:border-[#cfd3da] hover:bg-panel/60")}>
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-[13px] font-semibold leading-snug">{x.label}</span>
+                            {isBest && <Badge tone="brand">recommended</Badge>}
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-[20px] font-semibold leading-none tabular">{crore(x.total)}</span>
+                            <span className="text-[12px] text-muted">{x.linesCovered}/{nLines} items</span>
+                          </div>
+                          {best && !isBest && (
+                            <div className={cx("mt-1 text-[12px] font-medium", d > 1 ? "text-warn" : d < -1 ? "text-good" : "text-muted")}>
+                              {Math.abs(d) < 1 ? "Same cost as recommended" : `${crore(Math.abs(d))} ${d > 0 ? "more" : "less"} than recommended`}
+                              <span className="font-normal text-muted"> (on {common} shared items)</span>
+                            </div>
+                          )}
+                          <div className="mt-1.5 text-[11.5px] leading-snug text-muted">{x.vendorsUsed.map((v) => v.name.split(" ")[0]).join(" + ")}</div>
+                          {(x.linesMissing.length > 0 || x.unverified > 0) && (
+                            <div className="mt-1.5 text-[11.5px] leading-snug text-warn">
+                              {x.linesMissing.length > 0 && `${x.linesMissing.length} unpriced. `}
+                              {x.unverified > 0 && `${x.unverified} to check.`}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {cur && (
+                    <div className="border-t border-line">
+                      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                        <div className="min-w-0">
+                          <div className="text-[13.5px] font-semibold">{cur.label}</div>
+                          <div className="text-[12px] leading-snug text-muted">{cur.detail}</div>
+                        </div>
+                        <div role="tablist" aria-label="Break it down by" className="inline-flex rounded-lg border border-line bg-panel p-0.5 text-[12.5px]">
+                          {([["item", "By item"], ["vendor", "By vendor"]] as const).map(([m, label]) => (
+                            <button key={m} role="tab" aria-selected={view === m} onClick={() => setView(m)} className={cx("rounded-md px-3 py-1 font-medium transition", view === m ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink")}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {view === "vendor" ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse text-left text-[13px]">
+                            <caption className="sr-only">Who supplies what under this option</caption>
+                            <thead>
+                              <tr className="border-y border-line text-[11.5px] font-medium text-muted">
+                                <th scope="col" className="py-2 pl-5 pr-3 font-medium">Vendor</th>
+                                <th scope="col" className="px-3 py-2 text-right font-medium">Items</th>
+                                <th scope="col" className="px-3 py-2 font-medium">Share of spend</th>
+                                <th scope="col" className="px-3 py-2 text-right font-medium">A year</th>
+                                <th scope="col" className="hidden px-3 py-2 text-right font-medium sm:table-cell">Vs last year</th>
+                                <th scope="col" className="hidden py-2 pl-3 pr-5 font-medium md:table-cell">To sort out</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {byVendor.map((u) => (
+                                <tr key={u.vendor_id} className="border-b border-line last:border-b-0">
+                                  <td className="py-2.5 pl-5 pr-3">
+                                    <div className="font-medium">{u.name}</div>
+                                    <Badge tone={QUAL[u.v.qualification].tone}>{QUAL[u.v.qualification].label}</Badge>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right tabular">{u.lines}</td>
+                                  <td className="px-3 py-2.5">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-panel">
+                                        <div className="h-full rounded-full bg-kraft" style={{ width: `${Math.max(3, (u.value / cur.total) * 100)}%` }} />
+                                      </div>
+                                      <span className="text-[12px] text-muted tabular">{Math.round((u.value / cur.total) * 100)}%</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right font-semibold tabular">{crore(u.value)}</td>
+                                  <td className={cx("hidden px-3 py-2.5 text-right tabular sm:table-cell", u.lyPct !== null && u.lyPct > 0.05 && "text-warn")}>{u.lyPct === null ? "–" : `${u.lyPct > 0 ? "+" : "−"}${Math.abs(u.lyPct).toFixed(1)}%`}</td>
+                                  <td className="hidden py-2.5 pl-3 pr-5 text-[12px] text-muted md:table-cell">
+                                    {[u.v.qualification !== "qualified" ? "owes proof" : "", u.check ? `${u.check} ${u.check === 1 ? "price" : "prices"} to check` : ""].filter(Boolean).join(" · ") || "nothing"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap gap-1.5 px-5 pb-3">
+                            {([
+                              ["all", "All items", counts.all],
+                              ["up", "Price up vs last year", counts.up],
+                              ["check", "Needs your check", counts.check],
+                              ["gap", "Close call (next best within 2%)", counts.gap],
+                            ] as const).map(([k, label, c]) => (
+                              <button key={k} onClick={() => setFilter(k)} aria-pressed={filter === k} className={cx("rounded-full border px-2.5 py-0.5 text-[12px] transition", filter === k ? "border-ink bg-ink text-white" : "border-line bg-white text-muted hover:bg-panel hover:text-ink")}>
+                                {label} <span className="tabular opacity-80">{c}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse text-left text-[13px]">
+                              <caption className="sr-only">Winning vendor for each item under this option</caption>
+                              <thead>
+                                <tr className="border-y border-line text-[11.5px] font-medium text-muted">
+                                  <th scope="col" className="py-2 pl-5 pr-3 font-medium">Item</th>
+                                  <th scope="col" className="px-3 py-2 font-medium">Goes to</th>
+                                  <th scope="col" className="px-3 py-2 text-right font-medium">₹ / piece</th>
+                                  <th scope="col" className="px-3 py-2 text-right font-medium">A year</th>
+                                  <th scope="col" className="hidden px-3 py-2 text-right font-medium sm:table-cell">Vs last year</th>
+                                  <th scope="col" className="hidden py-2 pl-3 pr-5 text-right font-medium md:table-cell">Next best is</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {visibleItems.length === 0 && (
+                                  <tr>
+                                    <td colSpan={6} className="px-5 py-4 text-[13px] text-muted">Nothing matches this filter.</td>
+                                  </tr>
+                                )}
+                                {visibleItems.map((r) => (
+                                  <tr key={r.l.id} className="border-b border-line last:border-b-0 hover:bg-panel/60">
+                                    <td className="max-w-[260px] py-2 pl-5 pr-3">
+                                      <span className="font-medium tabular">{r.l.id}</span> <span className="text-muted">{r.l.description}</span>
+                                    </td>
+                                    {r.w ? (
+                                      <>
+                                        <td className="px-3 py-2">
+                                          {r.vendor.split(" ")[0]}
+                                          {r.check && <span className="ml-1.5 rounded bg-warn-soft px-1 py-0.5 text-[10.5px] font-medium text-warn">check</span>}
+                                        </td>
+                                        <td className="px-3 py-2 text-right tabular">{r.w.unit_inr!.toFixed(2)}</td>
+                                        <td className="px-3 py-2 text-right font-medium tabular">{crore(r.spend)}</td>
+                                        <td className={cx("hidden px-3 py-2 text-right tabular sm:table-cell", r.lyPct !== null && r.lyPct > 0.05 ? "text-warn" : r.lyPct !== null && r.lyPct < -0.05 ? "text-good" : "text-muted")}>
+                                          {r.lyPct === null ? (r.l.is_new ? "new item" : "–") : `${r.lyPct > 0 ? "+" : "−"}${Math.abs(r.lyPct).toFixed(1)}%`}
+                                        </td>
+                                        <td className={cx("hidden py-2 pl-3 pr-5 text-right tabular md:table-cell", r.nextGap !== null && r.nextGap < 2 ? "text-warn" : "text-muted")}>{r.nextGap === null ? "only quote" : `+${r.nextGap.toFixed(1)}%`}</td>
+                                      </>
+                                    ) : (
+                                      <td colSpan={5} className="px-3 py-2 text-warn">No approved price under this option</td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          {filter === "all" && shownItems.length > 8 && (
+                            <button onClick={() => setShowAll(!showAll)} className="w-full border-t border-line px-5 py-2.5 text-left text-[12.5px] font-medium text-kraft hover:bg-panel">
+                              {showAll ? "Show only the 8 biggest" : `Show all ${shownItems.length} items`}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+              <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
+                <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
+                <div className="mt-2 space-y-1.5">
+                  <p>Each option is a different rule for who can win each item. The recommended one is the lowest total that covers the most items. Prices are per piece, delivered to your plant, ex-GST.</p>
+                  <dl className="grid gap-x-3 gap-y-1 sm:grid-cols-[auto_1fr]">
+                    <dt className="font-medium text-ink">Vs last year</dt>
+                    <dd>The winning price against last year&apos;s contract price for that item. Only items that had a price then.</dd>
+                    <dt className="font-medium text-ink">Next best is</dt>
+                    <dd>How much higher the runner-up&apos;s price is. A small gap means the choice of vendor on that item barely matters, so it is a good one to trade for a better term.</dd>
+                    <dt className="font-medium text-ink">Approved</dt>
+                    <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
+                  </dl>
+                </div>
+              </details>
             </Panel>
 
             <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
