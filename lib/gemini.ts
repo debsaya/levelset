@@ -26,6 +26,8 @@ type Req = {
   maxOutputTokens?: number;
   /** epoch ms after which no new attempt starts and in-flight calls are cut */
   deadline?: number;
+  /** longest one call may take before we give up on that model and try the next (a stuck model must not eat the whole budget) */
+  attemptMs?: number;
   /** small, simple input: try the lightest model first (it answers in seconds) and fall back to the stronger ones */
   fast?: boolean;
 };
@@ -77,10 +79,17 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": key },
           body: JSON.stringify(body),
-          signal: AbortSignal.timeout(left),
+          signal: AbortSignal.timeout(req.attemptMs ? Math.min(left, req.attemptMs) : left),
         });
       } catch (e: any) {
-        if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new GeminiError("The AI service took too long. Try again.", 504);
+        if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+          if (req.attemptMs && left > req.attemptMs) {
+            attempts.push(`${model}:timeout:${Date.now() - tStart}ms`);
+            lastErr = new GeminiError(`${model} did not answer in time`, 504);
+            break; // this model is stuck: go to the next one
+          }
+          throw new GeminiError("The AI service took too long. Try again.", 504);
+        }
         lastErr = new GeminiError(`Network error calling Gemini: ${e?.message}`, 502);
         await sleep(800);
         continue;
@@ -109,8 +118,8 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       }
       if (res.status === 429 || res.status >= 500) {
         const m = errText.match(/retry in ([\d.]+)s/i);
-        const wait = m ? Math.min(parseFloat(m[1]) * 1000, 20000) : 2500 * (attempt + 1);
-        if (attempt < 2) {
+        const wait = m ? Math.min(parseFloat(m[1]) * 1000, 8000) : 2500 * (attempt + 1);
+        if (attempt < 1) { // one short retry, then the next model: waiting on a busy one costs more than switching
           await sleep(res.status === 503 ? 2500 * (attempt + 1) : wait);
           continue;
         }

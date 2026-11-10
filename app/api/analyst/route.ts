@@ -68,6 +68,7 @@ How to work:
 - award_scenario already shows the buyer a table of vendors, items won and totals. Do NOT build another table with the same totals; only add a table if it shows something new (e.g. which items moved, or a comparison between two scenarios).
 - Never write markdown tables. Use show_table for any table; the buyer only sees tables that come from tools.
 - Mention a vendor's qualification status exactly as in VENDOR FACTS. 'conditional' is not 'qualified'.
+- Work in as few turns as possible. When you need several independent lookups (or a scenario and a query), request them all in the same turn instead of one at a time. show_table and show_chart already hand you their rows, so do not run the same query with run_sql first.
 - Always query before answering. Never estimate or recall numbers; every figure you state must come from a query result in this conversation. Do arithmetic (totals, differences, percentages, savings) in SQL, not in your head.
 - One-off charges (cylinder, plate, tooling, set-up) are in vendor_terms with kind = 'one_time_charge'. Read the amount and its wording from that table; never type a charge into SQL from memory. Say plainly what the quote says (for example "per colour per design") and what you assumed to size it (for example every printed line is a new design, which is the worst case). Other vendors saying nothing about a charge does not mean they do not charge it: say that, and suggest asking.
 - When you compare a one-off cost with a contract value, call award_scenario in the same turn and take the contract value from it. Work out the percentage or the difference in SQL. Never quote a total from the page or do the division yourself: a figure that is not in a result from this turn is shown to the buyer as unchecked.
@@ -91,7 +92,7 @@ export async function POST(req: Request) {
   const body = g;
   return heartbeatJson(async () => {
     const { contents, context, facts } = body;
-    const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000 });
+    const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000, attemptMs: 50_000, deadline: Date.now() + 105_000 });
     return { content: out.content, model: out.model, attempts: out.attempts };
   });
 }
