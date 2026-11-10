@@ -2,7 +2,7 @@
 import { markSent, useStore } from "./store";
 import type { VendorResponse } from "./types";
 import { fileToB64, mimeFor } from "@/components/ui";
-import { postJson } from "./api";
+import { postJson, STOPPED } from "./api";
 import savedRaw from "@/data/saved_reading.json";
 
 const saved = savedRaw as unknown as { recorded_at: string | null; extractions: Record<string, { extraction: any; model?: string; ms?: number }> };
@@ -59,6 +59,7 @@ export function useReader() {
       return { ok: true, retry: false };
     } catch (e: any) {
       const raw: string = e?.message || "";
+      if (raw === STOPPED) return { ok: false, retry: false }; // cancelled (Start over, Sign out): leave the state alone
       const lost = /failed to fetch|network|load failed/i.test(raw);
       patch(r.vendor.id, { status: "error", error: lost ? "Lost the connection while loading this quote. Press Read again." : raw || "Couldn't reach the reader. Try again." });
       return { ok: false, retry: !uploaded && transient(raw) };
