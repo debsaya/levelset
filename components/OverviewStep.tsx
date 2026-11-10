@@ -152,7 +152,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <Attention key={"w" + v.vendor_id} tone="warn" title={`${v.name}: could beat this award once they quote the rest`} body={`They quoted ${lv[v.vendor_id].quoted} of ${nLines} items. If the other ${lv[v.vendor_id].filled} ${lv[v.vendor_id].filled === 1 ? "comes" : "come"} in at the median of other vendors, their full cost is about ${crore(lv[v.vendor_id].total!)}, ${crore(best!.total - lv[v.vendor_id].total!)} less than this award. Ask for the missing prices before you award.`} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
                     {totalOff.map((v) => (
-                      <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body="We use their line prices, not the total they wrote. Check which one they meant." action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
+                      <Attention key={"t" + v.vendor_id} tone="warn" title={`${v.name}: their total doesn't match their prices`} body={v.flags.find((f) => f.code === "TOTAL_MISMATCH")?.msg ?? "We use their line prices, not the total they wrote. Check which one they meant."} action={askedOn(v.vendor_id) ? "Email again" : "Email vendor"} done={askedOn(v.vendor_id)} onClick={() => setClarify(v.vendor_id)} />
                     ))}
               </div>
             </Panel>
