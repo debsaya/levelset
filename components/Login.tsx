@@ -17,7 +17,7 @@ const PILE = [
 export default function Login({ onEnter }: { onEnter: (email: string) => void }) {
   const email = "ananya.rao@saffronleaf.example";
   return (
-    <div className="relative min-h-screen overflow-hidden bg-panel">
+    <main className="relative min-h-screen overflow-hidden bg-panel">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="lv-orb absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[#f3e6d2] opacity-70 blur-3xl" />
         <div className="lv-orb absolute -bottom-32 right-0 h-[460px] w-[460px] rounded-full bg-[#dfe6f1] opacity-70 blur-3xl" style={{ animationDelay: "-9s" }} />
@@ -77,6 +77,6 @@ export default function Login({ onEnter }: { onEnter: (email: string) => void })
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
