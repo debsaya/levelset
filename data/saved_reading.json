@@ -1,1 +1,4517 @@
-{"recorded_at": null, "extractions": {}}
+{
+ "recorded_at": "2026-11-10T02:09:23.223Z",
+ "extractions": {
+  "V1": {
+   "extraction": {
+    "vendor_name": "Kaveri Packwell Pvt Ltd",
+    "quote_ref": "KPW/SFPL/2026/311",
+    "quote_date": "2026-11-13",
+    "currency": "INR",
+    "fx_rate_stated": null,
+    "tax": {
+     "basis": "exclusive",
+     "gst_rate_pct": 5,
+     "note": "GST @ 5% extra as applicable",
+     "source": {
+      "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+      "location": "Terms & Compliance!B2",
+      "quote": "Ex-GST. GST @ 5% extra as applicable."
+     }
+    },
+    "freight": {
+     "included": true,
+     "note": "Door delivery to Bidadi plant included in rates.",
+     "source": {
+      "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+      "location": "Terms & Compliance!B3",
+      "quote": "Door delivery to Bidadi plant included in rates."
+     }
+    },
+    "payment_terms_days": 60,
+    "lead_time_days": 10,
+    "validity_days": 90,
+    "adjustments": [
+     {
+      "kind": "one_time_charge",
+      "pct": null,
+      "amount": 4500,
+      "conditional": false,
+      "condition": null,
+      "description": "One-time cylinder & plate charge per colour per design",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B6",
+       "quote": "One-time cylinder & plate charge Rs. 4,500 per colour per design, extra."
+      }
+     }
+    ],
+    "lines": [
+     {
+      "rfx_line_id": "L08",
+      "vendor_item_text": "3 Ply Box (RSC) - Plain",
+      "price": 269.44,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 180,
+       "W": 120,
+       "H": 90,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F16",
+       "quote": "269.44"
+      }
+     },
+     {
+      "rfx_line_id": "L01",
+      "vendor_item_text": "3 Ply Box (RSC) - Plain",
+      "price": 371.47,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 200,
+       "W": 150,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F13",
+       "quote": "371.47"
+      }
+     },
+     {
+      "rfx_line_id": "L06",
+      "vendor_item_text": "3 Ply Box (RSC) - 2 colour",
+      "price": 481.14,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 220,
+       "W": 160,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F17",
+       "quote": "481.14"
+      }
+     },
+     {
+      "rfx_line_id": "L07",
+      "vendor_item_text": "3 Ply Box (RSC) - 2 colour",
+      "price": 505.92,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 180,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F10",
+       "quote": "505.92"
+      }
+     },
+     {
+      "rfx_line_id": "L02",
+      "vendor_item_text": "3 Ply Box (RSC) - Plain",
+      "price": 602.94,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F15",
+       "quote": "602.94"
+      }
+     },
+     {
+      "rfx_line_id": "L03",
+      "vendor_item_text": "3 Ply Box (RSC) - 1 colour",
+      "price": 802.92,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F18",
+       "quote": "802.92"
+      }
+     },
+     {
+      "rfx_line_id": "L04",
+      "vendor_item_text": "3 Ply Box (RSC) - 1 colour",
+      "price": 873.07,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 250,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F21",
+       "quote": "873.07"
+      }
+     },
+     {
+      "rfx_line_id": "L05",
+      "vendor_item_text": "3 Ply Box (RSC) - Plain",
+      "price": 1045.68,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 100,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 250,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F14",
+       "quote": "1045.68"
+      }
+     },
+     {
+      "rfx_line_id": "L26",
+      "vendor_item_text": "3 Ply Die-Cut Tray - 2 colour",
+      "price": 5.21,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 60,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F8",
+       "quote": "5.21"
+      }
+     },
+     {
+      "rfx_line_id": "L28",
+      "vendor_item_text": "3 Ply Crash Lock Box - 2 colour",
+      "price": 7.36,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F9",
+       "quote": "7.36"
+      }
+     },
+     {
+      "rfx_line_id": "L25",
+      "vendor_item_text": "3 Ply Layer Pad - Plain",
+      "price": 21.77,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 1200,
+       "W": 1000,
+       "H": 0,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F11",
+       "quote": "21.77"
+      }
+     },
+     {
+      "rfx_line_id": "L29",
+      "vendor_item_text": "3 Ply Sleeve E-Flute - 4 colour",
+      "price": 4.45,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F12",
+       "quote": "4.45"
+      }
+     },
+     {
+      "rfx_line_id": "L23",
+      "vendor_item_text": "3 Ply Partition Set - Plain",
+      "price": 7.8,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F19",
+       "quote": "7.8"
+      }
+     },
+     {
+      "rfx_line_id": "L24",
+      "vendor_item_text": "3 Ply Partition Set - Plain",
+      "price": 9.64,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F20",
+       "quote": "9.64"
+      }
+     },
+     {
+      "rfx_line_id": "L17",
+      "vendor_item_text": "5 Ply Box (RSC) - 1 colour",
+      "price": 22.75,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F30",
+       "quote": "22.75"
+      }
+     },
+     {
+      "rfx_line_id": "L13",
+      "vendor_item_text": "5 Ply Box (RSC) - 2 colour",
+      "price": 24.01,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 240,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F26",
+       "quote": "24.01"
+      }
+     },
+     {
+      "rfx_line_id": "L15",
+      "vendor_item_text": "5 Ply Box (RSC) - Plain",
+      "price": 26.28,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F28",
+       "quote": "26.28"
+      }
+     },
+     {
+      "rfx_line_id": "L10",
+      "vendor_item_text": "5 Ply Box (RSC) - 1 colour",
+      "price": 27.74,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 450,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F23",
+       "quote": "27.74"
+      }
+     },
+     {
+      "rfx_line_id": "L09",
+      "vendor_item_text": "5 Ply Box (RSC) - Plain",
+      "price": 27.76,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F22",
+       "quote": "27.76"
+      }
+     },
+     {
+      "rfx_line_id": "L14",
+      "vendor_item_text": "5 Ply Box (RSC) - 1 colour",
+      "price": 30.21,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 420,
+       "W": 320,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F27",
+       "quote": "30.21"
+      }
+     },
+     {
+      "rfx_line_id": "L11",
+      "vendor_item_text": "5 Ply Box (RSC) - 1 colour",
+      "price": 30.65,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 350,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F24",
+       "quote": "30.65"
+      }
+     },
+     {
+      "rfx_line_id": "L12",
+      "vendor_item_text": "5 Ply Box (RSC) - Plain",
+      "price": 36.42,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 500,
+       "W": 350,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F25",
+       "quote": "36.42"
+      }
+     },
+     {
+      "rfx_line_id": "L16",
+      "vendor_item_text": "5 Ply Box (RSC) - 2 colour",
+      "price": 36.78,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 480,
+       "W": 320,
+       "H": 320,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F29",
+       "quote": "36.78"
+      }
+     },
+     {
+      "rfx_line_id": "L18",
+      "vendor_item_text": "5 Ply Box (RSC) - Plain",
+      "price": 43.93,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 550,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F31",
+       "quote": "43.93"
+      }
+     },
+     {
+      "rfx_line_id": "L30",
+      "vendor_item_text": "5 Ply Box (RSC) - 1 colour - MR coated",
+      "price": 55.13,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Moisture-resistant coating added",
+      "match_confidence": 0.9,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F33",
+       "quote": "55.13"
+      }
+     },
+     {
+      "rfx_line_id": "L27",
+      "vendor_item_text": "5 Ply Die-Cut Tray - 1 colour",
+      "price": 10.66,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F32",
+       "quote": "10.66"
+      }
+     },
+     {
+      "rfx_line_id": "L19",
+      "vendor_item_text": "7 Ply Box (RSC) - Plain",
+      "price": 80.17,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F34",
+       "quote": "80.17"
+      }
+     },
+     {
+      "rfx_line_id": "L20",
+      "vendor_item_text": "7 Ply Box (RSC) - 1 colour",
+      "price": 84.13,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 550,
+       "W": 450,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F35",
+       "quote": "84.13"
+      }
+     },
+     {
+      "rfx_line_id": "L22",
+      "vendor_item_text": "7 Ply Box (RSC) - Plain",
+      "price": 94.39,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 500,
+       "W": 500,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F37",
+       "quote": "94.39"
+      }
+     },
+     {
+      "rfx_line_id": "L21",
+      "vendor_item_text": "7 Ply Box (RSC) - Plain",
+      "price": 98.9,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 650,
+       "W": 450,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Quotation!F36",
+       "quote": "98.9"
+      }
+     }
+    ],
+    "not_quoted": [],
+    "questionnaire": [
+     {
+      "question_id": "Q1",
+      "answer": "Yes - certificate attached (valid till 31-Mar-2028).",
+      "assessment": "pass",
+      "reasoning": "ISO 9001:2015 certificate attached and valid.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B10",
+       "quote": "Yes - certificate attached (valid till 31-Mar-2028)."
+      }
+     },
+     {
+      "question_id": "Q2",
+      "answer": "Yes. Water-based low-migration inks, starch adhesive.",
+      "assessment": "pass",
+      "reasoning": "Confirmed food-safe inks and adhesives.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B11",
+       "quote": "Yes. Water-based low-migration inks, starch adhesive."
+      }
+     },
+     {
+      "question_id": "Q3",
+      "answer": "Yes - in-house BCT, ECT, burst & moisture (GSM / Cobb).",
+      "assessment": "pass",
+      "reasoning": "In-house lab capabilities confirmed.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B12",
+       "quote": "Yes - in-house BCT, ECT, burst & moisture (GSM / Cobb)."
+      }
+     },
+     {
+      "question_id": "Q4",
+      "answer": "1,200 MT per month (2 corrugators).",
+      "assessment": "pass",
+      "reasoning": "Capacity provided.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B13",
+       "quote": "1,200 MT per month (2 corrugators)."
+      }
+     },
+     {
+      "question_id": "Q5",
+      "answer": "10 working days from PO / schedule.",
+      "assessment": "pass",
+      "reasoning": "Lead time provided.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B7",
+       "quote": "10 working days from PO / schedule."
+      }
+     },
+     {
+      "question_id": "Q6",
+      "answer": "60 days from date of invoice - accepted.",
+      "assessment": "pass",
+      "reasoning": "Accepted terms.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B4",
+       "quote": "60 days from date of invoice - accepted."
+      }
+     },
+     {
+      "question_id": "Q7",
+      "answer": "FSC Mix certified (COC available).",
+      "assessment": "pass",
+      "reasoning": "FSC certification confirmed.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B14",
+       "quote": "FSC Mix certified (COC available)."
+      }
+     },
+     {
+      "question_id": "Q8",
+      "answer": "90 days. Kraft price variation beyond +/-5% to be reviewed quarterly.",
+      "assessment": "pass",
+      "reasoning": "Validity and escalation clause provided.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B5",
+       "quote": "90 days. Kraft price variation beyond +/-5% to be reviewed quarterly."
+      }
+     },
+     {
+      "question_id": "Q9",
+      "answer": "2 minor (print registration), both closed with CAPA.",
+      "assessment": "pass",
+      "reasoning": "Details provided.",
+      "source": {
+       "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+       "location": "Terms & Compliance!B15",
+       "quote": "2 minor (print registration), both closed with CAPA."
+      }
+     }
+    ],
+    "documents": [
+     {
+      "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+      "kind": "quotation",
+      "summary": "Commercial offer and terms",
+      "valid_until": null
+     },
+     {
+      "file": "Kaveri_ISO9001_Certificate.pdf",
+      "kind": "iso_9001_certificate",
+      "summary": "ISO 9001:2015 Certificate of Registration",
+      "valid_until": "2028-03-31"
+     }
+    ],
+    "stated_total": {
+     "amount": 43173883,
+     "currency": "INR",
+     "note": "TOTAL (excl. GST)",
+     "source": {
+      "file": "Kaveri_Quotation_SFPL_FY27.xlsx",
+      "location": "Quotation!I39",
+      "quote": "TOTAL (excl. GST)"
+     }
+    },
+    "unresolved": []
+   },
+   "model": "gemini-3.5-flash-lite",
+   "ms": 22518
+  },
+  "V2": {
+   "extraction": {
+    "vendor_name": "Deccan Corrugated Industries",
+    "quote_ref": "DCI/Q/2026-27/0418",
+    "quote_date": "2026-11-14",
+    "currency": "INR",
+    "fx_rate_stated": null,
+    "tax": {
+     "basis": "exclusive",
+     "gst_rate_pct": 5,
+     "note": "GST @ 5% extra",
+     "source": {
+      "file": "DCI_Quotation_0418.pdf",
+      "location": "p1 Terms & Conditions 2",
+      "quote": "GST @ 5% extra."
+     }
+    },
+    "freight": {
+     "included": false,
+     "note": "Ex-works Medchal, Hyderabad. Freight & transit insurance extra at actuals.",
+     "source": {
+      "file": "DCI_Quotation_0418.pdf",
+      "location": "p1 Terms & Conditions 1",
+      "quote": "Prices: Ex-works Medchal, Hyderabad. Freight & transit insurance extra at actuals."
+     }
+    },
+    "payment_terms_days": 45,
+    "lead_time_days": 14,
+    "validity_days": 60,
+    "adjustments": [
+     {
+      "kind": "rebate",
+      "pct": 5,
+      "amount": null,
+      "conditional": true,
+      "condition": "annual offtake exceeding ₹1,00,00,000 across all items",
+      "description": "Volume rebate of 5% applicable on annual offtake exceeding ₹1,00,00,000",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p2 footnote",
+       "quote": "* All rates are before a volume rebate of 5% applicable on annual offtake exceeding ₹1,00,00,000"
+      }
+     }
+    ],
+    "lines": [
+     {
+      "rfx_line_id": "L01",
+      "vendor_item_text": "RSC Plain",
+      "price": 3.51,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 200,
+       "W": 150,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 1",
+       "quote": "L01 | RSC Plain | 200×150×100 | 3 | ₹ 3.51"
+      }
+     },
+     {
+      "rfx_line_id": "L02",
+      "vendor_item_text": "RSC Plain",
+      "price": 5.91,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 2",
+       "quote": "L02 | RSC Plain | 250×200×150 | 3 | ₹ 5.91"
+      }
+     },
+     {
+      "rfx_line_id": "L03",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 7.65,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 3",
+       "quote": "L03 | RSC 1 colour | 300×200×200 | 3 | ₹ 7.65"
+      }
+     },
+     {
+      "rfx_line_id": "L04",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 8.57,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 250,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 4",
+       "quote": "L04 | RSC 1 colour | 300×250×150 | 3 | ₹ 8.57"
+      }
+     },
+     {
+      "rfx_line_id": "L05",
+      "vendor_item_text": "RSC Plain",
+      "price": 9.54,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 250,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 5",
+       "quote": "L05 | RSC Plain | 350×250×200 | 3 | ₹ 9.54"
+      }
+     },
+     {
+      "rfx_line_id": "L06",
+      "vendor_item_text": "RSC 2 colour",
+      "price": 4.47,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 220,
+       "W": 160,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 6",
+       "quote": "L06 | RSC 2 colour | 220×160×120 | 3 | ₹ 4.47"
+      }
+     },
+     {
+      "rfx_line_id": "L07",
+      "vendor_item_text": "RSC 2 colour",
+      "price": 4.71,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 180,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 7",
+       "quote": "L07 | RSC 2 colour | 250×180×80 | 3 | ₹ 4.71"
+      }
+     },
+     {
+      "rfx_line_id": "L08",
+      "vendor_item_text": "RSC Plain",
+      "price": 2.62,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 180,
+       "W": 120,
+       "H": 90,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 8",
+       "quote": "L08 | RSC Plain | 180×120×90 | 3 | ₹ 2.62"
+      }
+     },
+     {
+      "rfx_line_id": "L09",
+      "vendor_item_text": "RSC Plain",
+      "price": 26.69,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 9",
+       "quote": "L09 | RSC Plain | 400×300×300 | 5 | ₹ 26.69"
+      }
+     },
+     {
+      "rfx_line_id": "L10",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 26.99,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 450,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 10",
+       "quote": "L10 | RSC 1 colour | 450×300×250 | 5 | ₹ 26.99"
+      }
+     },
+     {
+      "rfx_line_id": "L11",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 29.64,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 350,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 11",
+       "quote": "L11 | RSC 1 colour | 400×350×250 | 5 | ₹ 29.64"
+      }
+     },
+     {
+      "rfx_line_id": "L12",
+      "vendor_item_text": "RSC Plain",
+      "price": 33.13,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 500,
+       "W": 350,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 12",
+       "quote": "L12 | RSC Plain | 500×350×300 | 5 | ₹ 33.13"
+      }
+     },
+     {
+      "rfx_line_id": "L13",
+      "vendor_item_text": "RSC 2 colour",
+      "price": 22.89,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 240,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 13",
+       "quote": "L13 | RSC 2 colour | 380×280×240 | 5 | ₹ 22.89"
+      }
+     },
+     {
+      "rfx_line_id": "L14",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 28.54,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 420,
+       "W": 320,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 14",
+       "quote": "L14 | RSC 1 colour | 420×320×280 | 5 | ₹ 28.54"
+      }
+     },
+     {
+      "rfx_line_id": "L15",
+      "vendor_item_text": "RSC Plain",
+      "price": 23.72,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 15",
+       "quote": "L15 | RSC Plain | 350×300×300 | 5 | ₹ 23.72"
+      }
+     },
+     {
+      "rfx_line_id": "L16",
+      "vendor_item_text": "RSC 2 colour",
+      "price": 33.82,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 480,
+       "W": 320,
+       "H": 320,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 16",
+       "quote": "L16 | RSC 2 colour | 480×320×320 | 5 | ₹ 33.82"
+      }
+     },
+     {
+      "rfx_line_id": "L17",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 21.22,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 17",
+       "quote": "L17 | RSC 1 colour | 300×300×250 | 5 | ₹ 21.22"
+      }
+     },
+     {
+      "rfx_line_id": "L18",
+      "vendor_item_text": "RSC Plain",
+      "price": 40.31,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 550,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 18",
+       "quote": "L18 | RSC Plain | 550×400×300 | 5 | ₹ 40.31"
+      }
+     },
+     {
+      "rfx_line_id": "L19",
+      "vendor_item_text": "RSC Plain",
+      "price": 74.13,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 19",
+       "quote": "L19 | RSC Plain | 600×400×400 | 7 | ₹ 74.13"
+      }
+     },
+     {
+      "rfx_line_id": "L20",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 81.04,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 550,
+       "W": 450,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 20",
+       "quote": "L20 | RSC 1 colour | 550×450×400 | 7 | ₹ 81.04"
+      }
+     },
+     {
+      "rfx_line_id": "L21",
+      "vendor_item_text": "RSC Plain",
+      "price": 90.02,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 650,
+       "W": 450,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 21",
+       "quote": "L21 | RSC Plain | 650×450×450 | 7 | ₹ 90.02"
+      }
+     },
+     {
+      "rfx_line_id": "L22",
+      "vendor_item_text": "RSC Plain",
+      "price": 85.71,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 500,
+       "W": 500,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 22",
+       "quote": "L22 | RSC Plain | 500×500×450 | 7 | ₹ 85.71"
+      }
+     },
+     {
+      "rfx_line_id": "L23",
+      "vendor_item_text": "Partition Plain",
+      "price": 7.28,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 23",
+       "quote": "L23 | Partition Plain | 400×300×280 | 3 | ₹ 7.28"
+      }
+     },
+     {
+      "rfx_line_id": "L24",
+      "vendor_item_text": "Partition Plain",
+      "price": 9.49,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 24",
+       "quote": "L24 | Partition Plain | 350×300×300 | 3 | ₹ 9.49"
+      }
+     },
+     {
+      "rfx_line_id": "L25",
+      "vendor_item_text": "Layer pad Plain",
+      "price": 19.87,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 1200,
+       "W": 1000,
+       "H": 0,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 25",
+       "quote": "L25 | Layer pad Plain | 1200×1000 | 3 | ₹ 19.87"
+      }
+     },
+     {
+      "rfx_line_id": "L29",
+      "vendor_item_text": "Printed sleeve 4 colour",
+      "price": 4.12,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 26",
+       "quote": "L29 | Printed sleeve 4 colour | 300×200×100 | 3 | ₹ 4.12"
+      }
+     },
+     {
+      "rfx_line_id": "L30",
+      "vendor_item_text": "RSC 1 colour",
+      "price": 50.38,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 table row 27",
+       "quote": "L30 | RSC 1 colour | 600×400×300 | 5 | ₹ 50.38"
+      }
+     }
+    ],
+    "not_quoted": [
+     {
+      "rfx_line_id": "L26",
+      "reason": "Regret - not in our present tooling capability."
+     },
+     {
+      "rfx_line_id": "L27",
+      "reason": "Regret - not in our present tooling capability."
+     },
+     {
+      "rfx_line_id": "L28",
+      "reason": "Regret - not in our present tooling capability."
+     }
+    ],
+    "questionnaire": [
+     {
+      "question_id": "Q1",
+      "answer": "ISO 9001:2015 certified unit (certificate enclosed).",
+      "assessment": "pass",
+      "reasoning": "Certified and certificate provided.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 6",
+       "quote": "ISO 9001:2015 certified unit (certificate enclosed)."
+      }
+     },
+     {
+      "question_id": "Q2",
+      "answer": "Food-grade water-based inks and starch adhesive used.",
+      "assessment": "pass",
+      "reasoning": "Confirmed food-safe materials are used.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 6",
+       "quote": "Food-grade water-based inks and starch adhesive used."
+      }
+     },
+     {
+      "question_id": "Q3",
+      "answer": "In-house lab with BCT, ECT, burst and Cobb testing.",
+      "assessment": "pass",
+      "reasoning": "Has in-house lab with requested testing capabilities.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 6",
+       "quote": "In-house lab with BCT, ECT, burst and Cobb testing."
+      }
+     },
+     {
+      "question_id": "Q4",
+      "answer": "2,000 MT/month",
+      "assessment": "pass",
+      "reasoning": "Stated capacity is 2,000 MT/month.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 7",
+       "quote": "Capacity: 2,000 MT/month."
+      }
+     },
+     {
+      "question_id": "Q5",
+      "answer": "14 days from receipt of confirmed PO.",
+      "assessment": "pass",
+      "reasoning": "Stated lead time is 14 days.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 4",
+       "quote": "Delivery: 14 days from receipt of confirmed PO."
+      }
+     },
+     {
+      "question_id": "Q6",
+      "answer": "45 days from date of invoice. (We are unable to accept 60 days.)",
+      "assessment": "fail",
+      "reasoning": "Vendor offers 45 days and explicitly rejects 60 days.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 3",
+       "quote": "Payment: 45 days from date of invoice. (We are unable to accept 60 days.)"
+      }
+     },
+     {
+      "question_id": "Q7",
+      "answer": "No FSC certification at present.",
+      "assessment": "fail",
+      "reasoning": "Vendor does not hold FSC certification.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 7",
+       "quote": "No FSC certification at present."
+      }
+     },
+     {
+      "question_id": "Q8",
+      "answer": "Validity: 60 days. Prices subject to revision if kraft paper rates move by more than 5%.",
+      "assessment": "pass",
+      "reasoning": "Provided validity and price escalation terms.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 5",
+       "quote": "Validity: 60 days. Prices subject to revision if kraft paper rates move by more than 5%."
+      }
+     },
+     {
+      "question_id": "Q9",
+      "answer": "No customer quality complaints in the last 12 months.",
+      "assessment": "pass",
+      "reasoning": "Confirmed zero quality complaints.",
+      "source": {
+       "file": "DCI_Quotation_0418.pdf",
+       "location": "p1 Terms & Conditions 8",
+       "quote": "No customer quality complaints in the last 12 months."
+      }
+     }
+    ],
+    "documents": [
+     {
+      "file": "DCI_Quotation_0418.pdf",
+      "kind": "quotation",
+      "summary": "Commercial quotation for corrugated packaging items with terms and conditions.",
+      "valid_until": null
+     },
+     {
+      "file": "DCI_ISO9001_Certificate.pdf",
+      "kind": "iso_9001_certificate",
+      "summary": "ISO 9001:2015 Certificate of Registration for Deccan Corrugated Industries.",
+      "valid_until": "2026-08-14"
+     }
+    ],
+    "stated_total": null,
+    "unresolved": [
+     "Vendor rejected 60-day payment terms, offering 45 days instead.",
+     "Vendor does not hold FSC certification.",
+     "ISO certificate validity expired on 14 August 2026."
+    ]
+   },
+   "model": "gemini-3.5-flash-lite",
+   "ms": 18564
+  },
+  "V3": {
+   "extraction": {
+    "vendor_name": "Coastal Packaging Solutions LLP",
+    "quote_ref": "RFX-2026-PKG-014",
+    "quote_date": "2026-11-17",
+    "currency": "USD",
+    "fx_rate_stated": 88.2,
+    "tax": {
+     "basis": "exclusive",
+     "gst_rate_pct": 5,
+     "note": "Prices are exclusive of GST at 5%, with one exception: our 7-ply prices are quoted inclusive of GST at 5%",
+     "source": {
+      "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+      "location": "para 5",
+      "quote": "exclusive of GST at 5%, with one exception: our 7-ply prices are quoted inclusive of GST at 5%"
+     }
+    },
+    "freight": {
+     "included": true,
+     "note": "Prices include delivery to your Bidadi plant (CIP Bidadi)",
+     "source": {
+      "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+      "location": "para 5",
+      "quote": "Prices include delivery to your Bidadi plant (CIP Bidadi)"
+     }
+    },
+    "payment_terms_days": 60,
+    "lead_time_days": 21,
+    "validity_days": 30,
+    "adjustments": [],
+    "lines": [
+     {
+      "rfx_line_id": "L01",
+      "vendor_item_text": "3-ply RSC, Plain",
+      "price": 0.0433,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 200,
+       "W": 150,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 12-15",
+       "quote": "L01 | 3-ply RSC, Plain | 200 x 150 x 100 | 0.0433"
+      }
+     },
+     {
+      "rfx_line_id": "L02",
+      "vendor_item_text": "3-ply RSC, Plain",
+      "price": 0.0709,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 16-19",
+       "quote": "L02 | 3-ply RSC, Plain | 250 x 200 x 150 | 0.0709"
+      }
+     },
+     {
+      "rfx_line_id": "L03",
+      "vendor_item_text": "3-ply RSC, 1 colour",
+      "price": 0.094,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 20-23",
+       "quote": "L03 | 3-ply RSC, 1 colour | 300 x 200 x 200 | 0.094"
+      }
+     },
+     {
+      "rfx_line_id": "L04",
+      "vendor_item_text": "3-ply RSC, 1 colour",
+      "price": 0.1064,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 250,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 24-27",
+       "quote": "L04 | 3-ply RSC, 1 colour | 300 x 250 x 150 | 0.1064"
+      }
+     },
+     {
+      "rfx_line_id": "L05",
+      "vendor_item_text": "3-ply RSC, Plain",
+      "price": 0.1204,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 250,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 28-31",
+       "quote": "L05 | 3-ply RSC, Plain | 350 x 250 x 200 | 0.1204"
+      }
+     },
+     {
+      "rfx_line_id": "L06",
+      "vendor_item_text": "3-ply RSC, 2 colour",
+      "price": 0.0554,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 220,
+       "W": 160,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 32-35",
+       "quote": "L06 | 3-ply RSC, 2 colour | 220 x 160 x 120 | 0.0554"
+      }
+     },
+     {
+      "rfx_line_id": "L07",
+      "vendor_item_text": "3-ply RSC, 2 colour",
+      "price": 0.0578,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 180,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 36-39",
+       "quote": "L07 | 3-ply RSC, 2 colour | 250 x 180 x 80 | 0.0578"
+      }
+     },
+     {
+      "rfx_line_id": "L08",
+      "vendor_item_text": "3-ply RSC, Plain",
+      "price": 0.0329,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 180,
+       "W": 120,
+       "H": 90,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 40-43",
+       "quote": "L08 | 3-ply RSC, Plain | 180 x 120 x 90 | 0.0329"
+      }
+     },
+     {
+      "rfx_line_id": "L09",
+      "vendor_item_text": "5-ply RSC, Plain",
+      "price": 0.3295,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 44-47",
+       "quote": "L09 | 5-ply RSC, Plain | 400 x 300 x 300 | 0.3295"
+      }
+     },
+     {
+      "rfx_line_id": "L10",
+      "vendor_item_text": "5-ply RSC, 1 colour",
+      "price": 0.3275,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 450,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 48-51",
+       "quote": "L10 | 5-ply RSC, 1 colour | 450 x 300 x 250 | 0.3275"
+      }
+     },
+     {
+      "rfx_line_id": "L11",
+      "vendor_item_text": "5-ply RSC, 1 colour",
+      "price": 0.3527,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 350,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 52-55",
+       "quote": "L11 | 5-ply RSC, 1 colour | 400 x 350 x 250 | 0.3527"
+      }
+     },
+     {
+      "rfx_line_id": "L13",
+      "vendor_item_text": "5-ply RSC, 2 colour",
+      "price": 0.2851,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 240,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 56-59",
+       "quote": "L13 | 5-ply RSC, 2 colour | 380 x 280 x 240 | 0.2851"
+      }
+     },
+     {
+      "rfx_line_id": "L14",
+      "vendor_item_text": "5-ply RSC, 1 colour",
+      "price": 0.3533,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 420,
+       "W": 320,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 60-63",
+       "quote": "L14 | 5-ply RSC, 1 colour | 420 x 320 x 280 | 0.3533"
+      }
+     },
+     {
+      "rfx_line_id": "L15",
+      "vendor_item_text": "5-ply RSC, Plain",
+      "price": 0.2967,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 64-67",
+       "quote": "L15 | 5-ply RSC, Plain | 350 x 300 x 300 | 0.2967"
+      }
+     },
+     {
+      "rfx_line_id": "L16",
+      "vendor_item_text": "5-ply RSC, 2 colour",
+      "price": 0.437,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 480,
+       "W": 320,
+       "H": 320,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 68-71",
+       "quote": "L16 | 5-ply RSC, 2 colour | 480 x 320 x 320 | 0.437"
+      }
+     },
+     {
+      "rfx_line_id": "L17",
+      "vendor_item_text": "5-ply RSC, 1 colour",
+      "price": 0.2755,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 72-75",
+       "quote": "L17 | 5-ply RSC, 1 colour | 300 x 300 x 250 | 0.2755"
+      }
+     },
+     {
+      "rfx_line_id": "L18",
+      "vendor_item_text": "5-ply RSC, Plain",
+      "price": 0.5013,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 550,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 76-79",
+       "quote": "L18 | 5-ply RSC, Plain | 550 x 400 x 300 | 0.5013"
+      }
+     },
+     {
+      "rfx_line_id": "L19",
+      "vendor_item_text": "7-ply RSC, Plain",
+      "price": 0.9656,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": true,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Quoted inclusive of GST at 5%",
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 80-83",
+       "quote": "L19 | 7-ply RSC, Plain | 600 x 400 x 400 | 0.9656"
+      }
+     },
+     {
+      "rfx_line_id": "L20",
+      "vendor_item_text": "7-ply RSC, 1 colour",
+      "price": 1.055,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": true,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Quoted inclusive of GST at 5%",
+      "vendor_size": {
+       "L": 550,
+       "W": 450,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 84-87",
+       "quote": "L20 | 7-ply RSC, 1 colour | 550 x 450 x 400 | 1.055"
+      }
+     },
+     {
+      "rfx_line_id": "L21",
+      "vendor_item_text": "ALTERNATE OFFERED: 5-ply heavy-duty RSC (180/150/150/150/180 GSM, 26 BF) in place of 7-ply; BCT equivalent ~680 kgf",
+      "price": 0.8987,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": true,
+      "derived_from": "explicit",
+      "spec_deviation": "Offered as 5-ply heavy-duty instead of 7-ply",
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Quoted inclusive of GST at 5%",
+      "vendor_size": {
+       "L": 650,
+       "W": 450,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 88-91",
+       "quote": "L21 | ALTERNATE OFFERED: 5-ply heavy-duty RSC [...] | 650 x 450 x 450 | 0.8987"
+      }
+     },
+     {
+      "rfx_line_id": "L22",
+      "vendor_item_text": "7-ply RSC, Plain",
+      "price": 1.132,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": true,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Quoted inclusive of GST at 5%",
+      "vendor_size": {
+       "L": 500,
+       "W": 500,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 92-95",
+       "quote": "L22 | 7-ply RSC, Plain | 500 x 500 x 450 | 1.132"
+      }
+     },
+     {
+      "rfx_line_id": "L23",
+      "vendor_item_text": "9-cell partition set",
+      "price": 0.0902,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 7",
+       "quote": "9-cell partition set (your item 23) is offered at USD 0.0902 per set"
+      }
+     },
+     {
+      "rfx_line_id": "L24",
+      "vendor_item_text": "12-cell set",
+      "price": 0.1129,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 7",
+       "quote": "12-cell set (your item 24) at USD 0.1129 per set"
+      }
+     },
+     {
+      "rfx_line_id": "L25",
+      "vendor_item_text": "pallet layer pad",
+      "price": 0.2458,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 1200,
+       "W": 1000,
+       "H": 0,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 7",
+       "quote": "pallet layer pad (item 25) is USD 0.2458 each"
+      }
+     },
+     {
+      "rfx_line_id": "L26",
+      "vendor_item_text": "3-ply Die-cut tray, 2 colour",
+      "price": 0.0603,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 60,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 96-99",
+       "quote": "L26 | 3-ply Die-cut tray, 2 colour | 380 x 280 x 60 | 0.0603"
+      }
+     },
+     {
+      "rfx_line_id": "L27",
+      "vendor_item_text": "5-ply Die-cut tray, 1 colour",
+      "price": 0.128,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 100-103",
+       "quote": "L27 | 5-ply Die-cut tray, 1 colour | 400 x 300 x 80 | 0.128"
+      }
+     },
+     {
+      "rfx_line_id": "L28",
+      "vendor_item_text": "3-ply Die-cut crash-lock, 2 colour",
+      "price": 0.09,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 104-107",
+       "quote": "L28 | 3-ply Die-cut crash-lock, 2 colour | 250 x 200 x 120 | 0.09"
+      }
+     },
+     {
+      "rfx_line_id": "L29",
+      "vendor_item_text": "3-ply Printed sleeve, 4 colour",
+      "price": 0.0502,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 108-111",
+       "quote": "L29 | 3-ply Printed sleeve, 4 colour | 300 x 200 x 100 | 0.0502"
+      }
+     },
+     {
+      "rfx_line_id": "L30",
+      "vendor_item_text": "5-ply RSC, 1 colour",
+      "price": 0.6248,
+      "currency": "USD",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": null,
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 112-115",
+       "quote": "L30 | 5-ply RSC, 1 colour | 600 x 400 x 300 | 0.6248"
+      }
+     }
+    ],
+    "not_quoted": [
+     {
+      "rfx_line_id": "L12",
+      "reason": "We regret our inability to quote for item L12 (500 x 350 x 300 mm, 5-ply) as the blank exceeds our corrugator deckle at the required grain direction."
+     }
+    ],
+    "questionnaire": [
+     {
+      "question_id": "Q1",
+      "answer": "Coastal is ISO 9001:2015 certified (certificate CRS-QMS-25-2290, valid until 30 November 2027)",
+      "assessment": "pass",
+      "reasoning": "Certified with valid attached certificate.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "Coastal is ISO 9001:2015 certified (certificate CRS-QMS-25-2290, valid until 30 November 2027)"
+      }
+     },
+     {
+      "question_id": "Q2",
+      "answer": "All inks are water-based and low-migration, suitable for secondary food packaging, and we use corn-starch adhesive.",
+      "assessment": "pass",
+      "reasoning": "Confirmed food-safe, low-migration inks and adhesives.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "All inks are water-based and low-migration, suitable for secondary food packaging, and we use corn-starch adhesive."
+      }
+     },
+     {
+      "question_id": "Q3",
+      "answer": "Our in-house laboratory carries out BCT, ECT, burst, GSM and Cobb tests on every lot.",
+      "assessment": "pass",
+      "reasoning": "Has in-house lab covering required tests.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "Our in-house laboratory carries out BCT, ECT, burst, GSM and Cobb tests on every lot."
+      }
+     },
+     {
+      "question_id": "Q4",
+      "answer": "Monthly converting capacity is about 800 tonnes.",
+      "assessment": "pass",
+      "reasoning": "State capacity provided.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "Monthly converting capacity is about 800 tonnes."
+      }
+     },
+     {
+      "question_id": "Q5",
+      "answer": "Lead time is 21 days from PO for printed items and 15 days for plain items.",
+      "assessment": "pass",
+      "reasoning": "Lead time stated.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 6",
+       "quote": "Lead time is 21 days from PO for printed items and 15 days for plain items."
+      }
+     },
+     {
+      "question_id": "Q6",
+      "answer": "Our payment expectation is 60 days from invoice, which we are pleased to accept in line with your terms.",
+      "assessment": "pass",
+      "reasoning": "Accepts 60-day payment terms.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 6",
+       "quote": "Our payment expectation is 60 days from invoice, which we are pleased to accept in line with your terms."
+      }
+     },
+     {
+      "question_id": "Q7",
+      "answer": "FSC certified.",
+      "assessment": "pass",
+      "reasoning": "Holds FSC certification.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "Coastal is ISO 9001:2015 certified [...] and FSC certified."
+      }
+     },
+     {
+      "question_id": "Q8",
+      "answer": "Prices are firm for 30 days only given USD exposure, after which they move with our monthly kraft index.",
+      "assessment": "pass",
+      "reasoning": "Validity and escalation clause stated.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 6",
+       "quote": "Prices are firm for 30 days only given USD exposure, after which they move with our monthly kraft index."
+      }
+     },
+     {
+      "question_id": "Q9",
+      "answer": "In March 2026 we had one major rejection from an FMCG customer relating to wet strength on export cartons; root cause was addressed and the CAPA was closed in May 2026.",
+      "assessment": "pass",
+      "reasoning": "Disclosed issue and corrective action.",
+      "source": {
+       "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+       "location": "para 117",
+       "quote": "In March 2026 we had one major rejection from an FMCG customer relating to wet strength on export cartons; root cause was addressed and the CAPA was closed in May 2026."
+      }
+     }
+    ],
+    "documents": [
+     {
+      "file": "Coastal_Offer_Saffronleaf_FY27.docx",
+      "kind": "quotation",
+      "summary": "Techno-commercial offer against RFX-2026-PKG-014",
+      "valid_until": null
+     },
+     {
+      "file": "Coastal_ISO9001_Certificate.pdf",
+      "kind": "iso_9001_certificate",
+      "summary": "ISO 9001:2015 Certificate of Registration",
+      "valid_until": "2027-11-30"
+     }
+    ],
+    "stated_total": null,
+    "unresolved": [
+     "Prices are quoted in USD while RFx requested INR. Evaluation uses stated reference exchange rate of 88.20 INR/USD.",
+     "Price validity is 30 days instead of the requested 90 days."
+    ]
+   },
+   "model": "gemini-3.5-flash-lite",
+   "ms": 19735
+  },
+  "V4": {
+   "extraction": {
+    "vendor_name": "Nandi Box Works",
+    "quote_ref": null,
+    "quote_date": "2026-10-01",
+    "currency": "INR",
+    "fx_rate_stated": null,
+    "tax": {
+     "basis": "exclusive",
+     "gst_rate_pct": 5,
+     "note": "GST 5% extra",
+     "source": {
+      "file": "IMG_20261112_194512.jpg",
+      "location": "p1 footnote",
+      "quote": "GST 5% extra."
+     }
+    },
+    "freight": {
+     "included": false,
+     "note": "Transport extra (Peenya godown pickup or our tempo at actuals)",
+     "source": {
+      "file": "IMG_20261112_194512.jpg",
+      "location": "p1 footnote",
+      "quote": "Transport extra (Peenya godown pickup or our tempo at actuals)."
+     }
+    },
+    "payment_terms_days": 30,
+    "lead_time_days": null,
+    "validity_days": null,
+    "adjustments": [],
+    "lines": [
+     {
+      "rfx_line_id": "L01",
+      "vendor_item_text": "Box",
+      "price": 3.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 2 (8 x 6 x 4 inches)",
+      "vendor_size": {
+       "L": 8,
+       "W": 6,
+       "H": 4,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 2",
+       "quote": "8 x 6 x 4 | Box | 3 ply | 3.5"
+      }
+     },
+     {
+      "rfx_line_id": "L02",
+      "vendor_item_text": "Box",
+      "price": 5.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 4 (10 x 8 x 6 inches)",
+      "vendor_size": {
+       "L": 10,
+       "W": 8,
+       "H": 6,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 4",
+       "quote": "10 x 8 x 6 | Box | 3 ply | 5.5"
+      }
+     },
+     {
+      "rfx_line_id": "L03",
+      "vendor_item_text": "Box (print)",
+      "price": 7,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 6 (12 x 8 x 8 inches)",
+      "vendor_size": {
+       "L": 12,
+       "W": 8,
+       "H": 8,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 6",
+       "quote": "12 x 8 x 8 | Box (print) | 3 ply | 7"
+      }
+     },
+     {
+      "rfx_line_id": "L04",
+      "vendor_item_text": "Box",
+      "price": 8.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Plain instead of 1 colour",
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 8 (14 x 10 x 8 inches)",
+      "vendor_size": {
+       "L": 14,
+       "W": 10,
+       "H": 8,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 8",
+       "quote": "14 x 10 x 8 | Box | 3 ply | 8.5"
+      }
+     },
+     {
+      "rfx_line_id": "L05",
+      "vendor_item_text": "Box",
+      "price": 11,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 9 (14 x 10 x 10 inches)",
+      "vendor_size": {
+       "L": 14,
+       "W": 10,
+       "H": 10,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 9",
+       "quote": "14 x 10 x 10 | Box | 3 ply | 11"
+      }
+     },
+     {
+      "rfx_line_id": "L06",
+      "vendor_item_text": "Box",
+      "price": 8.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Plain instead of 2 colour",
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 7 (12 x 10 x 8 inches)",
+      "vendor_size": {
+       "L": 12,
+       "W": 10,
+       "H": 8,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 7",
+       "quote": "12 x 10 x 8 | Box | 3 ply | 8.50"
+      }
+     },
+     {
+      "rfx_line_id": "L07",
+      "vendor_item_text": "Box",
+      "price": 6.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Plain instead of 2 colour",
+      "match_confidence": 0.6,
+      "read_confidence": 1,
+      "note": "Matched to row 5 (11 x 9 x 7 inches)",
+      "vendor_size": {
+       "L": 11,
+       "W": 9,
+       "H": 7,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 5",
+       "quote": "11 x 9 x 7 | Box | 3 ply | 6.50"
+      }
+     },
+     {
+      "rfx_line_id": "L08",
+      "vendor_item_text": "Box",
+      "price": 2.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 1 (7 x 4.5 x 3.5 inches)",
+      "vendor_size": {
+       "L": 7,
+       "W": 4.5,
+       "H": 3.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 1",
+       "quote": "7 x 4.5 x 3.5 | Box | 3 ply | 2.5"
+      }
+     },
+     {
+      "rfx_line_id": "L09",
+      "vendor_item_text": "Box",
+      "price": 31,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 17 (19.5 x 14 x 12 inches)",
+      "vendor_size": {
+       "L": 19.5,
+       "W": 14,
+       "H": 12,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 17",
+       "quote": "19.5 x 14 x 12 | Box | 5 ply | 31"
+      }
+     },
+     {
+      "rfx_line_id": "L10",
+      "vendor_item_text": "Box (print)",
+      "price": 27.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 14 (16.5 x 12.5 x 11 inches)",
+      "vendor_size": {
+       "L": 16.5,
+       "W": 12.5,
+       "H": 11,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 14",
+       "quote": "16.5 x 12.5 x 11 | Box (print) | 5 ply | 27.5"
+      }
+     },
+     {
+      "rfx_line_id": "L11",
+      "vendor_item_text": "Box (print)",
+      "price": 27.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 14",
+      "vendor_size": {
+       "L": 16.5,
+       "W": 12.5,
+       "H": 11,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 14",
+       "quote": "16.5 x 12.5 x 11 | Box (print) | 5 ply | 27.5"
+      }
+     },
+     {
+      "rfx_line_id": "L12",
+      "vendor_item_text": "Box",
+      "price": 49.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 18 (20 x 16 x 14 inches)",
+      "vendor_size": {
+       "L": 20,
+       "W": 16,
+       "H": 14,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 18",
+       "quote": "20 x 16 x 14 | Box | 5 ply | 49.50"
+      }
+     },
+     {
+      "rfx_line_id": "L13",
+      "vendor_item_text": "Box (print)",
+      "price": 21.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 12 (15 x 11 x 9.5 inches)",
+      "vendor_size": {
+       "L": 15,
+       "W": 11,
+       "H": 9.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 12",
+       "quote": "15 x 11 x 9.5 | Box (print) | 5 ply | 21.5"
+      }
+     },
+     {
+      "rfx_line_id": "L14",
+      "vendor_item_text": "Box (print)",
+      "price": 27.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 14",
+      "vendor_size": {
+       "L": 16.5,
+       "W": 12.5,
+       "H": 11,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 14",
+       "quote": "16.5 x 12.5 x 11 | Box (print) | 5 ply | 27.5"
+      }
+     },
+     {
+      "rfx_line_id": "L15",
+      "vendor_item_text": "Box (print)",
+      "price": 25,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 15 (17.5 x 12 x 10 inches)",
+      "vendor_size": {
+       "L": 17.5,
+       "W": 12,
+       "H": 10,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 15",
+       "quote": "17.5 x 12 x 10 | Box (print) | 5 ply | 25"
+      }
+     },
+     {
+      "rfx_line_id": "L16",
+      "vendor_item_text": "Box",
+      "price": 30,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Plain instead of 2 colour",
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 16 (18 x 12 x 12 inches)",
+      "vendor_size": {
+       "L": 18,
+       "W": 12,
+       "H": 12,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 16",
+       "quote": "18 x 12 x 12 | Box | 5 ply | 30"
+      }
+     },
+     {
+      "rfx_line_id": "L17",
+      "vendor_item_text": "Box (print)",
+      "price": 21.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 12",
+      "vendor_size": {
+       "L": 15,
+       "W": 11,
+       "H": 9.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 12",
+       "quote": "15 x 11 x 9.5 | Box (print) | 5 ply | 21.5"
+      }
+     },
+     {
+      "rfx_line_id": "L18",
+      "vendor_item_text": "Box",
+      "price": 49.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 18",
+      "vendor_size": {
+       "L": 20,
+       "W": 16,
+       "H": 14,
+       "unit": "inch"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 18",
+       "quote": "20 x 16 x 14 | Box | 5 ply | 49.50"
+      }
+     },
+     {
+      "rfx_line_id": "L19",
+      "vendor_item_text": "Box",
+      "price": 118,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 22 (24 x 18 x 18 inches)",
+      "vendor_size": {
+       "L": 24,
+       "W": 18,
+       "H": 18,
+       "unit": "inch"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 22",
+       "quote": "24 x 18 x 18 | Box | 7 ply | 118"
+      }
+     },
+     {
+      "rfx_line_id": "L20",
+      "vendor_item_text": "Box",
+      "price": 66,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": "Plain instead of 1 colour",
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 21 (23.5 x 15.5 x 15.5 inches)",
+      "vendor_size": {
+       "L": 23.5,
+       "W": 15.5,
+       "H": 15.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 21",
+       "quote": "23.5 x 15.5 x 15.5 | Box | 7 ply | 66"
+      }
+     },
+     {
+      "rfx_line_id": "L21",
+      "vendor_item_text": "Box",
+      "price": 118,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 22",
+      "vendor_size": {
+       "L": 24,
+       "W": 18,
+       "H": 18,
+       "unit": "inch"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 22",
+       "quote": "24 x 18 x 18 | Box | 7 ply | 118"
+      }
+     },
+     {
+      "rfx_line_id": "L22",
+      "vendor_item_text": "Box",
+      "price": 82,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Matched to row 20 (19.5 x 19.5 x 17.5 inches)",
+      "vendor_size": {
+       "L": 19.5,
+       "W": 19.5,
+       "H": 17.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 20",
+       "quote": "19.5 x 19.5 x 17.5 | Box | 7 ply | 82"
+      }
+     },
+     {
+      "rfx_line_id": "L23",
+      "vendor_item_text": "Partition 9 cell",
+      "price": 173,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 25,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 23",
+      "vendor_size": {
+       "L": 15.5,
+       "W": 12,
+       "H": null,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 23",
+       "quote": "15.5 x 12 | Partition 9 cell | 3 ply | 173 / bundle (25)"
+      }
+     },
+     {
+      "rfx_line_id": "L24",
+      "vendor_item_text": "Partition 12 cell",
+      "price": 215,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 25,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 24",
+      "vendor_size": {
+       "L": 14,
+       "W": 12,
+       "H": null,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 24",
+       "quote": "14 x 12 | Partition 12 cell | 3 ply | 215 / bundle (25)"
+      }
+     },
+     {
+      "rfx_line_id": "L25",
+      "vendor_item_text": "Pallet pad",
+      "price": 18,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0.8,
+      "read_confidence": 1,
+      "note": "Matched to row 25",
+      "vendor_size": {
+       "L": 47,
+       "W": 39.5,
+       "H": null,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 25",
+       "quote": "47 x 39.5 | Pallet pad | 3 ply | 18"
+      }
+     },
+     {
+      "rfx_line_id": null,
+      "vendor_item_text": "Box",
+      "price": 3.5,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "explicit",
+      "spec_deviation": null,
+      "match_confidence": 0,
+      "read_confidence": 1,
+      "note": "Extra item on rate card (row 3: 8.5 x 6.5 x 4.5)",
+      "vendor_size": {
+       "L": 8.5,
+       "W": 6.5,
+       "H": 4.5,
+       "unit": "inch"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "row 3",
+       "quote": "8.5 x 6.5 x 4.5 | Box (print) | 3 ply | 4"
+      }
+     }
+    ],
+    "not_quoted": [
+     {
+      "rfx_line_id": "L26",
+      "reason": "Not on rate card"
+     },
+     {
+      "rfx_line_id": "L27",
+      "reason": "Not on rate card"
+     },
+     {
+      "rfx_line_id": "L28",
+      "reason": "Not on rate card"
+     },
+     {
+      "rfx_line_id": "L29",
+      "reason": "Not on rate card"
+     },
+     {
+      "rfx_line_id": "L30",
+      "reason": "Not on rate card"
+     }
+    ],
+    "questionnaire": [
+     {
+      "question_id": "Q1",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed in the submission.",
+      "source": null
+     },
+     {
+      "question_id": "Q2",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed in the submission.",
+      "source": null
+     },
+     {
+      "question_id": "Q3",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed in the submission.",
+      "source": null
+     },
+     {
+      "question_id": "Q4",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed.",
+      "source": null
+     },
+     {
+      "question_id": "Q5",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed.",
+      "source": null
+     },
+     {
+      "question_id": "Q6",
+      "answer": "30 days",
+      "assessment": "fail",
+      "reasoning": "Vendor states payment 30 days against requested 60 days.",
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "p1 footnote",
+       "quote": "Payment 30 days."
+      }
+     },
+     {
+      "question_id": "Q7",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed.",
+      "source": null
+     },
+     {
+      "question_id": "Q8",
+      "answer": "Rates subject to change with paper price.",
+      "assessment": "partial",
+      "reasoning": "Mentions paper price escalation but no validity days stated.",
+      "source": {
+       "file": "IMG_20261112_194512.jpg",
+       "location": "p1 footnote",
+       "quote": "Rates subject to change with paper price."
+      }
+     },
+     {
+      "question_id": "Q9",
+      "answer": "Not answered",
+      "assessment": "unanswered",
+      "reasoning": "Not addressed.",
+      "source": null
+     }
+    ],
+    "documents": [
+     {
+      "file": "IMG_20261112_194512.jpg",
+      "kind": "rate_card",
+      "summary": "Nandi Box Works rate card effective 01-10-2026",
+      "valid_until": null
+     }
+    ],
+    "stated_total": null,
+    "unresolved": [
+     "Vendor dimensions are in inches and have been mapped approximately to metric RFx lines.",
+     "Payment terms stated as 30 days against buyer requirement of 60 days.",
+     "Minimum order quantity of 500 boxes per size applies."
+    ]
+   },
+   "model": "gemini-3.5-flash-lite",
+   "ms": 30252
+  },
+  "V5": {
+   "extraction": {
+    "vendor_name": "Tungabhadra Packaging Co.",
+    "quote_ref": "SFPL/RC/FY26/PKG-007",
+    "quote_date": "2026-11-18",
+    "currency": "INR",
+    "fx_rate_stated": null,
+    "tax": {
+     "basis": "exclusive",
+     "gst_rate_pct": null,
+     "note": "Not stated in quote",
+     "source": {
+      "file": "email body",
+      "location": "email body",
+      "quote": "₹42/kg for the 5-ply, 38 for the 3-ply, rest same as last year, freight extra."
+     }
+    },
+    "freight": {
+     "included": false,
+     "note": "Freight extra",
+     "source": {
+      "file": "email body",
+      "location": "email body",
+      "quote": "freight extra"
+     }
+    },
+    "payment_terms_days": 60,
+    "lead_time_days": 7,
+    "validity_days": null,
+    "adjustments": [],
+    "lines": [
+     {
+      "rfx_line_id": "L01",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 200,
+       "W": 150,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L02",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L03",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L04",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 300,
+       "W": 250,
+       "H": 150,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L05",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 350,
+       "W": 250,
+       "H": 200,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L06",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 220,
+       "W": 160,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L07",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 250,
+       "W": 180,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L08",
+      "vendor_item_text": "3-ply RSC",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 3-ply kg rule",
+      "vendor_size": {
+       "L": 180,
+       "W": 120,
+       "H": 90,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L09",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L10",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 450,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L11",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 400,
+       "W": 350,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L12",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 500,
+       "W": 350,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L13",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 240,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L14",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 420,
+       "W": 320,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L15",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L16",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 480,
+       "W": 320,
+       "H": 320,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L17",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 300,
+       "W": 300,
+       "H": 250,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L18",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.75,
+      "read_confidence": 1,
+      "note": "Derived from general 5-ply kg rule",
+      "vendor_size": {
+       "L": 550,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L19",
+      "vendor_item_text": "7-ply RSC",
+      "price": null,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "prior_contract",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Rest same as last year",
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "rest same as last year"
+      }
+     },
+     {
+      "rfx_line_id": "L20",
+      "vendor_item_text": "7-ply RSC",
+      "price": null,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "prior_contract",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Rest same as last year",
+      "vendor_size": {
+       "L": 550,
+       "W": 450,
+       "H": 400,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "rest same as last year"
+      }
+     },
+     {
+      "rfx_line_id": "L21",
+      "vendor_item_text": "7-ply RSC",
+      "price": null,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "prior_contract",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Rest same as last year",
+      "vendor_size": {
+       "L": 650,
+       "W": 450,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "rest same as last year"
+      }
+     },
+     {
+      "rfx_line_id": "L22",
+      "vendor_item_text": "7-ply RSC",
+      "price": null,
+      "currency": "INR",
+      "basis_unit": "piece",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "prior_contract",
+      "spec_deviation": null,
+      "match_confidence": 1,
+      "read_confidence": 1,
+      "note": "Rest same as last year",
+      "vendor_size": {
+       "L": 500,
+       "W": 500,
+       "H": 450,
+       "unit": "mm"
+      },
+      "vendor_ply": 7,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "rest same as last year"
+      }
+     },
+     {
+      "rfx_line_id": "L23",
+      "vendor_item_text": "3-ply Partition",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 3-ply rule",
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 280,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L24",
+      "vendor_item_text": "3-ply Partition",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 3-ply rule",
+      "vendor_size": {
+       "L": 350,
+       "W": 300,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L25",
+      "vendor_item_text": "3-ply Layer pad",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 3-ply rule",
+      "vendor_size": {
+       "L": 1200,
+       "W": 1000,
+       "H": 0,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L26",
+      "vendor_item_text": "3-ply Die-cut tray",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 3-ply rule",
+      "vendor_size": {
+       "L": 380,
+       "W": 280,
+       "H": 60,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L27",
+      "vendor_item_text": "5-ply Die-cut tray",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 5-ply rule",
+      "vendor_size": {
+       "L": 400,
+       "W": 300,
+       "H": 80,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L28",
+      "vendor_item_text": "3-ply Die-cut crash-lock",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.7,
+      "read_confidence": 1,
+      "note": "Covered under 3-ply rule",
+      "vendor_size": {
+       "L": 250,
+       "W": 200,
+       "H": 120,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L29",
+      "vendor_item_text": "3-ply Printed sleeve",
+      "price": 38,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.6,
+      "read_confidence": 1,
+      "note": "New item, covered under general 3-ply rule",
+      "vendor_size": {
+       "L": 300,
+       "W": 200,
+       "H": 100,
+       "unit": "mm"
+      },
+      "vendor_ply": 3,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "38 for the 3-ply"
+      }
+     },
+     {
+      "rfx_line_id": "L30",
+      "vendor_item_text": "5-ply RSC",
+      "price": 42,
+      "currency": "INR",
+      "basis_unit": "kg",
+      "basis_qty": 1,
+      "tax_included": false,
+      "derived_from": "rule",
+      "spec_deviation": null,
+      "match_confidence": 0.6,
+      "read_confidence": 1,
+      "note": "New item, covered under general 5-ply rule",
+      "vendor_size": {
+       "L": 600,
+       "W": 400,
+       "H": 300,
+       "unit": "mm"
+      },
+      "vendor_ply": 5,
+      "source": {
+       "file": "email body",
+       "location": "email body",
+       "quote": "₹42/kg for the 5-ply"
+      }
+     }
+    ],
+    "not_quoted": [],
+    "questionnaire": [
+     {
+      "question_id": "Q1",
+      "answer": "Yes. Cert no. CRS-QMS-24-0932, valid till 30-06-2027.",
+      "assessment": "pass",
+      "reasoning": "Valid certificate provided.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "Yes. Cert no. CRS-QMS-24-0932, valid till 30-06-2027."
+      }
+     },
+     {
+      "question_id": "Q2",
+      "answer": "Yes, water based inks, starch gum.",
+      "assessment": "pass",
+      "reasoning": "Food-safe inks and adhesives confirmed.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "Yes, water based inks, starch gum."
+      }
+     },
+     {
+      "question_id": "Q3",
+      "answer": "Burst, BCT and moisture tested in-house. ECT done externally.",
+      "assessment": "pass",
+      "reasoning": "In-house lab capabilities confirmed.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "Burst, BCT and moisture tested in-house."
+      }
+     },
+     {
+      "question_id": "Q4",
+      "answer": "650 MT per month",
+      "assessment": "pass",
+      "reasoning": "Capacity stated.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "650 MT per month"
+      }
+     },
+     {
+      "question_id": "Q5",
+      "answer": "7 days (local, Tumakuru)",
+      "assessment": "pass",
+      "reasoning": "Lead time stated.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "7 days (local, Tumakuru)"
+      }
+     },
+     {
+      "question_id": "Q6",
+      "answer": "Yes, same as current contract",
+      "assessment": "pass",
+      "reasoning": "Accepted 60-day terms.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "Yes, same as current contract"
+      }
+     },
+     {
+      "question_id": "Q7",
+      "answer": "No",
+      "assessment": "fail",
+      "reasoning": "Does not hold FSC or recycled certification.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "No"
+      }
+     },
+     {
+      "question_id": "Q8",
+      "answer": "Same as current contract. Kraft linked, monthly.",
+      "assessment": "pass",
+      "reasoning": "Escalation clause stated.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "Same as current contract. Kraft linked, monthly."
+      }
+     },
+     {
+      "question_id": "Q9",
+      "answer": "One complaint on L26 trays (glue failure) in Aug 2026. Resolved.",
+      "assessment": "pass",
+      "reasoning": "Complaint disclosed and resolved.",
+      "source": {
+       "file": "TP_Supplier_Questionnaire_2026.pdf",
+       "location": "page 1",
+       "quote": "One complaint on L26 trays (glue failure) in Aug 2026. Resolved."
+      }
+     }
+    ],
+    "documents": [
+     {
+      "file": "TP_Supplier_Questionnaire_2026.pdf",
+      "kind": "questionnaire",
+      "summary": "Supplier questionnaire response with ISO certification details.",
+      "valid_until": "2027-06-30"
+     }
+    ],
+    "stated_total": null,
+    "unresolved": [
+     "Pricing is quoted per kg whereas RFx requested per piece. System will need to convert based on box weight.",
+     "Freight is stated as extra, conflicting with buyer's DAP requirement."
+    ]
+   },
+   "model": "gemini-3.5-flash-lite",
+   "ms": 18008
+  }
+ }
+}

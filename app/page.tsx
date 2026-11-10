@@ -76,6 +76,11 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
     setPage(p);
   };
 
+  // Each step opens at its top, not wherever the previous one was scrolled to.
+  useEffect(() => {
+    document.getElementById("main")?.scrollTo(0, 0);
+  }, [page]);
+
   // The drawer is for the other steps; leaving it open behind Collect would bring it back uninvited on the next step.
   useEffect(() => {
     if (page === "rfx") setAskUi((a) => (a.open ? { ...a, open: false } : a));
@@ -176,7 +181,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
         </div>
       </header>
       <EventBar next={(() => { const nx = nextStep(s, review); /* The Collect and Decision steps already have their own main button for these moves; don't say the same thing twice. */ if (nx.to === page || (page === "rfx" && (nx.to === "send" || nx.to === "quotes")) || (page === "overview" && nx.to === "compare")) return undefined; return { text: nx.text, cta: nx.cta, onClick: () => go(nx.to) }; })()} id={s.rfx.id} title={s.rfx.title} due={s.rfx.due_date} revision={s.revision || 1} blank={s.mode === "blank"} sent={!!s.sentAt} />
-      <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
+      <main id="main" tabIndex={-1} className="relative flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
         <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
         {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} suggested={ASK_BY_STEP.rfx} askSignal={askSig} />}

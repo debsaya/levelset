@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import type { VendorMsg, VendorResponse } from "@/lib/types";
-import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor } from "./ui";
+import { Badge, Blocked, Button, Card, Disclosure, MoreMenu, Spinner, cx, fileToB64, mimeFor, OnEscape } from "./ui";
 import { prepFile } from "@/lib/image";
 import { blocker } from "@/lib/flow";
 import { MASTER } from "@/lib/vendorpool";
@@ -149,7 +149,8 @@ export default function InboxStep({ n, onNext, go, initialAdd = false }: { n: No
         )}
       </Card>
       {deleting && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setDeleting(null)}>
+        <div role="dialog" aria-modal="true" aria-label="Delete this response" className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-6" onClick={() => setDeleting(null)}>
+          <OnEscape onClose={() => setDeleting(null)} />
           <div className="w-[420px] rounded-2xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
             <div className="text-[15px] font-semibold">Delete the response from {s.responses.find((r) => r.vendor.id === deleting)?.vendor.name}?</div>
             <p className="mt-1.5 text-[13px] text-muted">This vendor leaves the comparison, along with its prices and any accept / override choices you made on them. You can add the response again later.</p>

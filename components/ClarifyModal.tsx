@@ -4,7 +4,7 @@ import { useStore } from "@/lib/store";
 import { postJson } from "@/lib/api";
 import { buildEmail, type Point } from "@/lib/clarify";
 import type { VendorSummary } from "@/lib/normalize";
-import { Badge, Button, Card, CopyButton, Spinner, cx } from "./ui";
+import { Badge, Button, Card, CopyButton, Spinner, cx, useEscape } from "./ui";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
@@ -16,6 +16,7 @@ export function ClarifyModal({ v, points, onClose }: { v: VendorSummary; points:
   const [picked, setPicked] = useState<Set<string>>(() => new Set(points.map((p) => p.id)));
   const chosen = useMemo(() => points.filter((p) => picked.has(p.id)), [points, picked]);
   const fresh = useMemo(() => buildEmail({ points: chosen, vendorName: v.name, contact: vendor?.contact, buyer: s.rfx.buyer, rfxTitle: s.rfx.title }), [chosen, v.name, vendor?.contact, s.rfx.buyer, s.rfx.title]);
+  useEscape(onClose);
   const [subject, setSubject] = useState(fresh.subject);
   const [body, setBody] = useState(fresh.body);
   const [edited, setEdited] = useState(false);
@@ -94,7 +95,7 @@ export function ClarifyModal({ v, points, onClose }: { v: VendorSummary; points:
   const long = body.length > 1800;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 sm:p-6" onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-label="Email the vendor" className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 sm:p-6" onClick={onClose}>
       <Card className="flex max-h-full w-[980px] max-w-full flex-col overflow-hidden" >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-3" onClick={(e) => e.stopPropagation()}>
           <div>

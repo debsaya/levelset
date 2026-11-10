@@ -1,7 +1,7 @@
 "use client";
 import { vendorPoints } from "@/lib/clarify";
 import { ClarifyModal } from "./ClarifyModal";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { crore, inr, key, type Cell, type Normalized, type QCell, type VendorSummary } from "@/lib/normalize";
 import { exportWorkbook } from "@/lib/export";
@@ -24,6 +24,18 @@ export default function CompareStep({ n, onNext, go, initialReview }: { n: Norma
   const [selQ, setSelQ] = useState<{ v: string; q: string } | null>(null);
   const [clarify, setClarify] = useState<string | null>(null);
   const [showBasis, setShowBasis] = useState(false);
+  // Escape closes the open price or question detail first.
+  useEffect(() => {
+    if (!sel && !selQ) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopImmediatePropagation();
+      setSel(null);
+      setSelQ(null);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [sel, selQ]);
   const a = s.assumptions;
   const vs = n.vendors;
   const reviewCount = n.cells.filter((c) => c.status === "review").length;
