@@ -98,7 +98,7 @@ function thinkingConfig(model: string, level: "low" | "high") {
 export async function generate(req: Req): Promise<{ model: string; content: GeminiContent; text: string; raw: any; attempts: string[] }> {
   const attempts: string[] = [];
   const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new GeminiError("GEMINI_API_KEY is not set on the server.", 500);
+  if (!key) throw new GeminiError("The AI reader is not set up on this server (no API key).", 500);
   let lastErr: GeminiError | null = null;
   const chain = modelChain();
   const order = req.fast ? [...chain.filter((m) => /lite/.test(m)), ...chain.filter((m) => !/lite/.test(m))] : chain;
