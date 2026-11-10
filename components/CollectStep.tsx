@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { markSent, useStore } from "@/lib/store";
 import { applyOps } from "@/lib/rfxOps";
-import { postJson } from "@/lib/api";
+import { postJson, STOPPED } from "@/lib/api";
 import { fileName, useReader } from "@/lib/reader";
 import { isoDate, type Normalized } from "@/lib/normalize";
 import type { Rfx, VendorResponse } from "@/lib/types";
@@ -167,6 +167,7 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
       set((x) => ({ ...x, ...(locked ? (notes.length ? { rfxDraft: rfx } : {}) : { rfx }), copilot: [...msgs, reply] }));
       if (notes.length) log(locked ? `Co-pilot drafted an amendment: ${notes.length} change(s), not yet sent to vendors` : `Co-pilot edited the request: ${notes.length} change(s)`);
     } catch (e: any) {
+      if (e.message === STOPPED) return;
       set((x) => ({ ...x, copilot: [...msgs, { role: "assistant", text: `⚠️ ${e.message}` }] }));
     } finally {
       setBusy(false);
