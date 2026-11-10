@@ -1,16 +1,17 @@
 "use client";
 import { useState } from "react";
-import { Button, Card, CopyButton } from "./ui";
+import { Button, Card, CopyButton, useEscape } from "./ui";
 
 /** An email the buyer checks, edits, copies or opens in their own mail app, then marks as sent. Nothing is sent from here. */
 export function EmailDraftModal({ title, hint, to, initial, sentLabel, onSent, onClose }: { title: string; hint?: string; to: string; initial: { subject: string; body: string }; sentLabel: string; onSent: () => void; onClose: () => void }) {
+  useEscape(onClose);
   const [subject, setSubject] = useState(initial.subject);
   const [body, setBody] = useState(initial.body);
   const openMail = () => {
     window.location.href = `mailto:${to ? encodeURIComponent(to).replace(/%2C/g, ",") : ""}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 sm:p-6" onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 sm:p-6" onClick={onClose}>
       <Card className="flex max-h-full w-[720px] max-w-full flex-col overflow-hidden">
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-3" onClick={(e) => e.stopPropagation()}>
           <div>
