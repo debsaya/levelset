@@ -14,6 +14,7 @@ import { downloadBidSheet } from "@/lib/bidsheet";
 import { greeting, requestSummary } from "@/lib/greeting";
 import { buildAmendmentEmail, buildReminderEmail } from "@/lib/clarify";
 import { EmailDraftModal } from "./EmailDraftModal";
+import AskStep, { type Suggestion } from "./AskStep";
 
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
@@ -81,7 +82,7 @@ function requirements(r: VendorResponse, n: Normalized, rfx: Rfx): Req[] {
   return [{ label: "Prices", state: quoted === total ? "ok" : quoted > 0 ? "warn" : "bad", text: `${quoted}/${total} lines` }, tax, freight, terms, cert, qn];
 }
 
-export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void }) {
+export default function CollectStep({ n, onSend, onRead, onNext, suggested }: { n: Normalized; onSend: () => void; onRead: (add?: boolean) => void; onNext: () => void; suggested?: Suggestion[] }) {
   const { s, set, log, reset, loadExample } = useStore();
   const { readAll } = useReader();
   const r = s.rfx;
@@ -119,6 +120,10 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
   else primary = { label: "Continue to compare →", run: onNext };
 
   // ---------- request co-pilot (side panel) ----------
+  // One assistant, two jobs: change the request (it edits what you send) or ask about the quotes (it only reads).
+  const [mode, setMode] = useState<"change" | "ask">(readN > 0 ? "ask" : "change");
+  const canAsk = readN > 0;
+  const asking = canAsk && mode === "ask";
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState<string[]>([]);
@@ -336,10 +341,26 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
       {/* ---------- side: request co-pilot ---------- */}
       <Card className="flex min-h-0 flex-col">
         <div className="border-b border-line px-4 py-3">
-          <div className="font-semibold">Request co-pilot</div>
-          <div className="text-xs text-muted">{locked ? "Changes you ask for here become an amendment. Vendors are told only when you send it." : "Talk the request into shape. It updates as you talk."}</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-semibold">Ask AI</div>
+            {canAsk && (
+              <div role="tablist" aria-label="What to ask AI" className="inline-flex rounded-lg border border-line bg-panel p-0.5 text-[12px]">
+                {([["ask", "About quotes"], ["change", "Change request"]] as const).map(([m, label]) => (
+                  <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)} className={cx("rounded-md px-2.5 py-1 font-medium transition", mode === m ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="mt-0.5 text-xs text-muted">{asking ? "Questions about the quotes you have read. It only reads, nothing here changes your request." : locked ? "Changes you ask for here become an amendment. Vendors are told only when you send it." : "Talk the request into shape. It updates as you talk."}</div>
         </div>
-        <div className="flex-1 space-y-3 overflow-y-auto p-3">
+        {asking && (
+          <div className="min-h-[460px] flex-1 lg:min-h-0">
+            <AskStep n={n} compact suggested={suggested} />
+          </div>
+        )}
+        <div className={cx("flex-1 space-y-3 overflow-y-auto p-3", asking && "hidden")}>
           <div className="mr-2 rounded-lg bg-panel px-3 py-2 text-[12.5px] leading-relaxed">
             <Md text={greeting(shown, { sentAt: s.sentAt, vendors: vendorsInvited, hasDraft: !!(amend && amend.parts.length), chosen: invitees.length, replied: replies.length, read: readN, flagged: n.cells.filter((c) => c.status === "review").length, noReply, pastDue })} />
           </div>
@@ -365,7 +386,7 @@ export default function CollectStep({ n, onSend, onRead, onNext }: { n: Normaliz
           )}
           <div ref={endRef} />
         </div>
-        <div className="border-t border-line p-3">
+        <div className={cx("border-t border-line p-3", asking && "hidden")}>
           <div className="mb-2 flex flex-wrap gap-1.5">
             {(shown.lines.length ? SUGGESTIONS : BLANK_SUGGESTIONS).map((q) => (
               <button key={q} onClick={() => send(q)} disabled={busy} className="rounded-full border border-line px-2 py-0.5 text-left text-[11.5px] text-muted hover:bg-panel">
@@ -420,7 +441,7 @@ function GetStarted({ onSample, onExample, onAdd }: { onSample: () => void; onEx
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-line p-4 sm:col-span-2">
           <div className="text-[13.5px] font-semibold">Describe it to the co-pilot</div>
-          <div className="mt-0.5 text-[12px] text-muted">Type what you need in the box on the right, or attach a spec sheet or last year&apos;s order with the paperclip. The items it adds show up here, and then you choose which vendors get the request.</div>
+          <div className="mt-0.5 text-[12px] text-muted">Type what you need in Ask AI on the right, or attach a spec sheet or last year&apos;s order with the paperclip. The items it adds show up here, and then you choose which vendors get the request.</div>
         </div>
         <button onClick={onSample} className="rounded-xl border border-line p-4 text-left hover:bg-panel">
           <div className="text-[13.5px] font-semibold">Load the sample event</div>

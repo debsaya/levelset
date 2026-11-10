@@ -120,7 +120,7 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
           ))}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
-          <button onClick={() => setAskUi((a) => ({ ...a, open: !a.open, q: undefined }))} title="Ask questions about your quotes in plain English. Opens beside the step you are on." aria-expanded={askUi.open} className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", askUi.open ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
+          <button hidden={page === "rfx"} onClick={() => setAskUi((a) => ({ ...a, open: !a.open, q: undefined }))} title="Ask questions about your quotes in plain English. Opens beside the step you are on." aria-expanded={askUi.open} className={cx("rounded-lg border px-3 py-1.5 text-[13px] font-medium transition", askUi.open ? "border-ink bg-ink text-white" : "border-line bg-white hover:bg-panel")}>
             Ask AI
           </button>
           <span className="hidden rounded-full border border-line px-2.5 py-0.5 text-[11.5px] text-muted lg:inline" title="Demo with made-up companies. The AI reads and answers for real; only the sending of emails to vendors is simulated.">
@@ -172,12 +172,12 @@ function App({ email, onSignOut }: { email: string; onSignOut: () => void }) {
       <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto outline-none lg:flex-row lg:overflow-hidden">
         <div className="min-w-0 lg:flex-1 lg:overflow-hidden">
         {page === "overview" && <OverviewStep n={n} go={go} />}
-        {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} />}
+        {page === "rfx" && <CollectStep n={n} onSend={() => go("send")} onRead={(add) => go("quotes", add ? { add: true } : undefined)} onNext={() => go("compare")} suggested={ASK_BY_STEP.rfx} />}
         {page === "send" && <SendStep onNext={() => go("rfx")} />}
         {page === "quotes" && <InboxStep key={opts.nonce} n={n} onNext={() => go("compare")} go={(p) => go(p)} initialAdd={!!opts.add} />}
         {page === "compare" && <CompareStep key={opts.nonce} n={n} onNext={() => go("overview")} go={(p) => go(p)} initialReview={!!opts.review} />}
         </div>
-        {askUi.open && (
+        {askUi.open && page !== "rfx" && (
           <aside className="fixed bottom-0 right-0 top-[6.4rem] z-40 flex w-[440px] max-w-full flex-col border-l border-line bg-white shadow-xl min-[1700px]:static min-[1700px]:z-auto min-[1700px]:shrink-0 min-[1700px]:shadow-none" aria-label="Ask AI">
             <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
               <div>
