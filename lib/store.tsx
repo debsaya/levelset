@@ -86,8 +86,15 @@ export function demoState(): State {
 /** The demo event with the request sent and the five quotes already read, from the recorded reading. Without a recording the quotes arrive unread. */
 export function exampleState(): State {
   const s = demoState();
+  const who = s.rfx.buyer.name;
+  // The trail a real run leaves: the send, then one line per quote read (newest first).
+  const reads = (seedVendors as VendorMsg[]).filter((v) => savedReading.extractions[v.id]).map((v, i) => {
+    const e = savedReading.extractions[v.id];
+    return { at: new Date(Date.parse("2026-11-12T10:30:00+05:30") + i * 60_000).toISOString(), who, what: `Read quote from ${v.name} (${(e.extraction.lines || []).filter((l: any) => l.price != null).length} prices, ${Math.round((e.ms || 0) / 1000)}s)` };
+  });
   return {
     ...s,
+    audit: [...reads.reverse(), { at: new Date("2026-11-12T10:00:00+05:30").toISOString(), who, what: `Sent ${s.rfx.id} to ${s.sentTo.length} vendors (email, simulated)` }],
     sentAt: "2026-11-12T10:00:00+05:30",
     responses: s.responses.map((r) => {
       const e = savedReading.extractions[r.vendor.id];
