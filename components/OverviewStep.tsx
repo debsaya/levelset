@@ -14,9 +14,9 @@ import { blocker } from "@/lib/flow";
 type Go = (page: "compare" | "ask" | "quotes" | "rfx", opts?: { review?: boolean; ask?: string }) => void;
 
 const QUAL = {
-  qualified: { tone: "good" as const, label: "Approved" },
+  qualified: { tone: "good" as const, label: "Eligible" },
   conditional: { tone: "warn" as const, label: "Needs proof" },
-  not_qualified: { tone: "bad" as const, label: "Not approved" },
+  not_qualified: { tone: "bad" as const, label: "Not eligible" },
 };
 
 /** Step 4: the decision. One answer up front; everything that supports it is one click away. */
@@ -58,20 +58,20 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
 
   const names = best ? best.vendorsUsed.map((v) => `${v.name.split(" ")[0]} (${v.lines} ${v.lines === 1 ? "item" : "items"})`) : [];
   const headline = !best
-    ? "No approved vendor has cleared the must-have questions yet"
+    ? "No vendor has cleared the must-have questions yet"
     : best.vendorsUsed.length === 1
       ? `Award all ${best.linesCovered} items to ${best.vendorsUsed[0].name}`
       : `Split the award: ${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
   const lyUp = !!ly && ly.delta > 0;
-  // The four questions an approver asks before signing: is everything priced, are the prices checked, are the winners approved, what does it do to last year's spend.
+  // The four questions an approver asks before signing: is everything priced, are the prices checked, are the winners eligible, what does it do to last year's spend.
   const winners = best ? best.vendorsUsed.map((w) => n.vendors.find((v) => v.vendor_id === w.vendor_id)).filter(Boolean) as Normalized["vendors"] : [];
   const notApproved = winners.filter((v) => v.qualification !== "qualified");
   const tiles: { label: string; value: string; note: string; tone: "good" | "warn" | "plain" }[] = best
     ? [
-        { label: "Coverage", value: `${best.linesCovered} of ${nLines}`, note: best.linesMissing.length ? `No approved price for ${best.linesMissing.join(", ")}` : "every item has a price", tone: best.linesMissing.length ? "warn" : "good" },
+        { label: "Coverage", value: `${best.linesCovered} of ${nLines}`, note: best.linesMissing.length ? `No eligible price for ${best.linesMissing.join(", ")}` : "every item has a price", tone: best.linesMissing.length ? "warn" : "good" },
         { label: "Prices checked", value: best.unverified === 0 ? "Yes" : `${best.unverified} to check`, note: best.unverified === 0 ? (review > 0 ? `${review} flagged elsewhere, none behind this award` : "nothing flagged") : "behind this award, can change the total", tone: best.unverified === 0 ? "good" : "warn" },
-        { label: best.vendorsUsed.length > 1 ? "Winning vendors" : "Winning vendor", value: notApproved.length === 0 ? "Approved" : `${notApproved.length} needs proof`, note: notApproved.length === 0 ? "must-have questions answered" : notApproved.map((v) => v.name.split(" ")[0]).join(", ") + " owes proof", tone: notApproved.length === 0 ? "good" : "warn" },
+        { label: best.vendorsUsed.length > 1 ? "Winning vendors" : "Winning vendor", value: notApproved.length === 0 ? "Eligible" : `${notApproved.length} need${notApproved.length === 1 ? "s" : ""} proof`, note: notApproved.length === 0 ? "must-haves answered" : notApproved.map((v) => v.name.split(" ")[0]).join(", ") + " owes proof", tone: notApproved.length === 0 ? "good" : "warn" },
         { label: "Against last year", value: ly ? (Math.abs((ly.delta / ly.fy26) * 100) < 0.05 ? "Flat" : `${lyUp ? "+" : "−"}${Math.abs((ly.delta / ly.fy26) * 100).toFixed(1)}%`) : "n/a", note: ly ? `${crore(Math.abs(ly.delta))} ${lyUp ? "higher" : "lower"}, on the ${ly.lines} items priced then` : "no last-year price to compare with", tone: "plain" },
       ]
     : [];
@@ -363,7 +363,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                                         <td className={cx("hidden py-2 pl-3 pr-5 text-right tabular md:table-cell", r.nextGap !== null && r.nextGap < 2 ? "text-warn" : "text-muted")}>{r.nextGap === null ? "only quote" : `+${r.nextGap.toFixed(1)}%`}</td>
                                       </>
                                     ) : (
-                                      <td colSpan={5} className="px-3 py-2 text-warn">No approved price under this option</td>
+                                      <td colSpan={5} className="px-3 py-2 text-warn">No eligible price under this option</td>
                                     )}
                                   </tr>
                                 ))}
@@ -390,14 +390,14 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                     <dd>The winning price against last year&apos;s contract price for that item. Only items that had a price then.</dd>
                     <dt className="font-medium text-ink">Next best is</dt>
                     <dd>How much higher the runner-up&apos;s price is. A small gap means the choice of vendor on that item barely matters, so it is a good one to trade for a better term.</dd>
-                    <dt className="font-medium text-ink">Approved</dt>
-                    <dd>A vendor who answered all your must-have questions. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
+                    <dt className="font-medium text-ink">Eligible</dt>
+                    <dd>A vendor who answered all your must-have questions, so can be awarded. &ldquo;Needs proof&rdquo; vendors answered but still owe evidence.</dd>
                   </dl>
                 </div>
               </details>
             </Panel>
 
-            <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} approved`}>
+            <Panel title="Vendors" summary={`${n.vendors.length} vendors · ${approved} eligible`}>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left text-[13px]">
                   <caption className="sr-only">Vendors ranked by yearly cost of the full scope</caption>
@@ -406,7 +406,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       <th scope="col" className="py-2 pl-5 pr-3 font-medium">Vendor</th>
                       <th scope="col" className="hidden px-3 py-2 font-medium sm:table-cell">Status</th>
                       <th scope="col" className="py-2 pl-3 pr-5 text-right font-medium sm:px-3">A year, all {nLines} items</th>
-                      <th scope="col" className="hidden px-3 py-2 text-right font-medium sm:table-cell">Compared with lowest approved</th>
+                      <th scope="col" className="hidden px-3 py-2 text-right font-medium sm:table-cell">Compared with lowest eligible</th>
                       <th scope="col" className="hidden py-2 pl-3 pr-5 text-right font-medium md:table-cell">Quoted</th>
                     </tr>
                   </thead>
@@ -494,7 +494,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
                 <summary className="cursor-pointer font-medium text-ink">How these costs are worked out</summary>
                 <p className="mt-1.5">
-                  Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other approved vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. Payment terms are valued separately, using the cost of money you set in Compare. The award itself uses real quotes.
+                  Every vendor is costed on the same {nLines} items at your yearly volumes. An item a vendor hasn't quoted, or quoted on a different spec, is filled in at the median of the other eligible vendors' prices. That keeps a partial quote from looking cheaper than it is. Those fills are estimates for comparison only. Payment terms are valued separately, using the cost of money you set in Compare. The award itself uses real quotes.
                 </p>
               </details>
             </Panel>
