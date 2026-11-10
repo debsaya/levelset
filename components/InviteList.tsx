@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { useStore } from "@/lib/store";
-import { MASTER, certificate, isCategory, parseVendorLines, type PoolVendor } from "@/lib/vendorpool";
+import { MASTER, isCategory, parseVendorLines, type PoolVendor } from "@/lib/vendorpool";
 import { Badge, Button, Card, cx } from "./ui";
 
 type Channel = "list" | "lastyear" | "upload" | "paste" | "email";
@@ -21,7 +21,6 @@ const SOURCE: Record<PoolVendor["source"], string> = { master: "Vendor list", up
 export default function InviteList() {
   const { s, set, log } = useStore();
   const pool = s.pool ?? MASTER;
-  const due = s.rfx.due_date;
   const invitees = s.sentTo.map((id) => pool.find((v) => v.id === id)).filter(Boolean) as PoolVendor[];
   const [ch, setCh] = useState<Channel | null>(invitees.length ? null : "list");
   const [q, setQ] = useState("");
@@ -59,13 +58,6 @@ export default function InviteList() {
     }
   }
 
-  const cert = { valid: 0, expired: 0, missing: 0 };
-  for (const v of invitees) {
-    const t = certificate(v, due).tone;
-    if (t === "bad") cert.expired++;
-    else if (t === "warn") cert.missing++;
-    else cert.valid++;
-  }
   const lastYear = pool.filter((v) => v.incumbent || s.prior[v.id]);
   const available = pool.filter((v) => !s.sentTo.includes(v.id) && (!q || `${v.name} ${v.city}`.toLowerCase().includes(q.toLowerCase())));
 
@@ -76,28 +68,10 @@ export default function InviteList() {
           <div className="text-[15px] font-semibold">{invitees.length ? `Request quotations from ${invitees.length === 1 ? "1 onboarded vendor" : `${invitees.length} onboarded vendors`}` : "No vendors selected yet"}</div>
           <div className="mt-0.5 text-[12.5px] text-white/65">{invitees.length ? "Remove any vendor you don't want to invite, or add more below." : "Pick one of the options below to add vendors."}</div>
         </div>
-        {invitees.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 text-[12px]" title="ISO 9001 certificate on file, checked against the quote due date">
-            <span className="mr-0.5 text-white/65">Compliance · ISO 9001</span>
-            {[
-              { n: cert.valid, label: "valid", dot: "bg-[#4ade80]" },
-              { n: cert.expired, label: "expired", dot: "bg-[#f87171]" },
-              { n: cert.missing, label: "missing", dot: "bg-[#fbbf24]" },
-            ]
-              .filter((c) => c.n > 0)
-              .map((c) => (
-                <span key={c.label} className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 font-medium">
-                  <span aria-hidden className={cx("h-1.5 w-1.5 rounded-full", c.dot)} />
-                  {c.n} {c.label}
-                </span>
-              ))}
-          </div>
-        )}
       </div>
 
       <div className="divide-y divide-line">
         {invitees.map((v, i) => {
-          const fit = certificate(v, due);
           return (
             <div key={v.id} className="flex items-center gap-4 px-5 py-2.5">
               <div className="min-w-0 flex-1">
@@ -111,11 +85,6 @@ export default function InviteList() {
                   {`${v.city || "City not given"}${v.km != null ? ` · ${v.km} km from the plant` : ""} · ${v.history}`}
                 </div>
               </div>
-              {v.source === "master" && (
-                <span title="From your vendor records, before any quote arrives. You can still send to this vendor." className={cx("hidden shrink-0 text-[12px] md:block", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>
-                  {fit.text}
-                </span>
-              )}
               <button onClick={() => remove(v.id)} aria-label={`Remove ${v.name}`} title="Leave this vendor out" className="shrink-0 rounded-md px-2 py-1 text-[12px] text-muted hover:bg-panel hover:text-ink">
                 Remove
               </button>
@@ -146,7 +115,6 @@ export default function InviteList() {
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search your vendors by name or city" className="mb-2 w-full rounded-md border border-line bg-white px-3 py-1.5 text-[13px] outline-none focus:border-kraft" />
               <div className="max-h-52 divide-y divide-line overflow-y-auto rounded-md border border-line bg-white">
                 {available.map((v) => {
-                  const fit = certificate(v, due);
                   const off = !isCategory(v);
                   return (
                     <div key={v.id} className="flex items-center gap-3 px-3 py-2">
@@ -157,7 +125,7 @@ export default function InviteList() {
                           {v.km != null ? ` · ${v.km} km` : ""} · {v.history}
                         </div>
                       </div>
-                      <span className={cx("hidden text-[11.5px] sm:inline", fit.tone === "bad" ? "text-bad" : fit.tone === "warn" ? "text-warn" : "text-muted")}>{off ? "Not a corrugated maker" : fit.text}</span>
+                      {off && <span className="hidden text-[11.5px] text-muted sm:inline">Not a corrugated maker</span>}
                       <Button onClick={() => invite([v.id])}>Add</Button>
                     </div>
                   );
