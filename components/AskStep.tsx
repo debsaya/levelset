@@ -1,4 +1,5 @@
 "use client";
+import { setAskLive, useAskLive } from "@/lib/askLive";
 import React, { useEffect, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useStore, type AnalystMsg, type Block } from "@/lib/store";
@@ -43,11 +44,14 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
   const SUG = suggested && suggested.length ? suggested : SUGGESTED;
   const { s, set } = useStore();
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [live, setLive] = useState<string[]>([]);
-  // the answer as it is being written, and the tables and charts already built for it
-  const [draft, setDraft] = useState("");
-  const [liveBlocks, setLiveBlocks] = useState<Block[]>([]);
+  // Progress of the question in flight (the lookups so far, the answer as it is written, the tables built for it).
+  // It is kept outside this panel, so closing the panel does not lose it and the question keeps running.
+  const { busy, live, draft, blocks } = useAskLive();
+  const liveBlocks = blocks as Block[];
+  const setBusy = (b: boolean) => setAskLive({ busy: b });
+  const setLive = (f: string[] | ((l: string[]) => string[])) => setAskLive((x) => ({ live: typeof f === "function" ? f(x.live) : f }));
+  const setDraft = (f: string | ((t: string) => string)) => setAskLive((x) => ({ draft: typeof f === "function" ? f(x.draft) : f }));
+  const setLiveBlocks = (b: Block[]) => setAskLive({ blocks: b });
   const [showPrev, setShowPrev] = useState(false);
   const archive = s.analystArchive || [];
   const snapshot = (x: typeof s) => (x.analyst.length ? [{ id: String(Date.now()), at: new Date().toISOString(), title: (x.analyst.find((m) => m.role === "user") as any)?.text || "Chat", analyst: x.analyst, analystHistory: x.analystHistory }] : []);
