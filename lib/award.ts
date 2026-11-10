@@ -12,6 +12,10 @@ export type Scenario = {
   vendorsUsed: { vendor_id: string; name: string; lines: number; value: number }[];
   unverified: number;
   byLine: Record<string, number>;
+  /** line id → vendor that wins it under this rule */
+  winners: Record<string, string>;
+  /** vendors allowed to win under this rule */
+  pool: string[];
 };
 
 /** Saving of scenario b over scenario a, counted only on lines both cover. */
@@ -43,6 +47,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
     const missing: string[] = [];
     const used: Record<string, { lines: number; value: number }> = {};
     const byLine: Record<string, number> = {};
+    const winners: Record<string, string> = {};
     for (const l of rfx.lines) {
       const cs = n.cells.filter((c) => c.line_id === l.id && allowed.includes(c.vendor_id) && usable(c));
       if (!cs.length) {
@@ -52,6 +57,7 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
       const best = cs.sort((a, b) => a.unit_inr! - b.unit_inr!)[0];
       total += best.annual_inr || 0;
       byLine[l.id] = best.annual_inr || 0;
+      winners[l.id] = best.vendor_id;
       if (needsCheck(best)) unverified++;
       used[best.vendor_id] ||= { lines: 0, value: 0 };
       used[best.vendor_id].lines++;
@@ -69,6 +75,8 @@ export function scenarios(rfx: Rfx, n: Normalized): Scenario[] {
         .sort((a, b) => b.value - a.value),
       unverified,
       byLine,
+      winners,
+      pool: allowed,
     });
   };
   const q = n.vendors.filter((v) => v.qualification === "qualified").map((v) => v.vendor_id);

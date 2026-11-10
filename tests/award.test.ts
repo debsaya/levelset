@@ -76,6 +76,13 @@ describe("Award scenarios", () => {
     const s = scenarios(RFX, market());
     for (const sc of s.filter((x) => x.key !== "split_qc")) assert.ok(sc.vendorsUsed.every((v) => v.vendor_id !== "V3"));
   });
+
+  it("every scenario says who wins each priced item, and only from its own pool", () => {
+    for (const sc of scenarios(RFX, market())) {
+      assert.deepEqual(Object.keys(sc.winners).sort(), Object.keys(sc.byLine).sort());
+      assert.ok(Object.values(sc.winners).every((id) => sc.pool.includes(id)));
+    }
+  });
 });
 
 describe("Answer checker: every figure in the AI's prose must trace to a query result from the same turn", () => {
