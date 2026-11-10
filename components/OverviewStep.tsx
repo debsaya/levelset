@@ -126,7 +126,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1040px] space-y-4 px-5 py-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1720px] space-y-4 px-5 py-6 lg:px-8">
         {done === 0 ? (
           null
         ) : (
@@ -184,6 +184,7 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             </section>
 
+            <div className={cx("grid items-start gap-4", sc.length > 0 && "xl:grid-cols-2")}>
             <Panel title="Before you approve" summary={attention ? `${attention} ${attention === 1 ? "item" : "items"}` : "none"}>
               <div className="space-y-0.5 p-2">
                     {attention === 0 && <div className="p-3 text-[13px] text-muted">Nothing is open. You can approve this award.</div>}
@@ -218,12 +219,9 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
               </div>
             </Panel>
 
-            <Panel title={sc.length > 1 ? "Ways to award it" : "The award, item by item"} summary={sc.length > 1 ? "Pick one to see it item by item" : undefined}>
-              {sc.length === 0 ? (
-                <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>
-              ) : (
-                <>
-                  <div role="radiogroup" aria-label="Ways to award" className={cx("grid gap-3 p-4", sc.length === 1 && "hidden", sc.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
+            {sc.length > 0 && (
+            <Panel title="Ways to award it" summary={sc.length > 1 ? "Pick one to see it item by item" : "Only one way to award"}>
+              <div role="radiogroup" aria-label="Ways to award" className={cx("grid gap-3 p-4 xl:grid-cols-1", sc.length === 2 && "md:grid-cols-2", sc.length > 2 && "md:grid-cols-3")}>
                     {sc.map((x) => {
                       const isBest = !!best && x.key === best.key;
                       const on = !!cur && x.key === cur.key;
@@ -255,9 +253,16 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                         </button>
                       );
                     })}
-                  </div>
+              </div>
+              {sc.length === 1 && cur && <p className="px-5 pb-4 text-[12.5px] leading-snug text-muted">{cur.detail}</p>}
+            </Panel>
+            )}
+            </div>
+
+            <Panel title="The award, item by item">
+              {sc.length === 0 && <div className="p-5 text-muted">No vendor has cleared the must-have questions yet.</div>}
                   {cur && (
-                    <div className="border-t border-line">
+                    <div>
                       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                         <div className="min-w-0">
                           <div className="text-[13.5px] font-semibold">{cur.label}</div>
@@ -379,8 +384,6 @@ export default function OverviewStep({ n, go }: { n: Normalized; go: Go }) {
                       )}
                     </div>
                   )}
-                </>
-              )}
               <details className="border-t border-line px-5 py-2.5 text-[12.5px] leading-relaxed text-muted">
                 <summary className="cursor-pointer font-medium text-ink">How to read these numbers</summary>
                 <div className="mt-2 space-y-1.5">
