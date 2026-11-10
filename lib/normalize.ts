@@ -476,8 +476,9 @@ export function normalize(
       let assessment = ans?.assessment || "unanswered";
       let auto_note: string | undefined;
       if (/certif/i.test(qq.text) && /\biso\b|9001/i.test(qq.text)) {
-        // look only at ISO documents (an expired FSC certificate must not fail ISO), and if there are several take the newest
-        const docs = (ex.documents || []).filter((d) => d.valid_until).map((d) => ({ ...d, on: isoDate(d.valid_until) }));
+        // look only at ISO documents (an expired FSC certificate must not fail ISO), and if there are several take the newest.
+        // The questionnaire itself is not a certificate: a vendor writing "valid till …" in it has claimed one, not shown one.
+        const docs = (ex.documents || []).filter((d) => d.valid_until && d.kind !== "questionnaire").map((d) => ({ ...d, on: isoDate(d.valid_until) }));
         const tag = (d: { kind: string; summary: string }) => `${d.kind} ${d.summary}`;
         const isoDocs = docs.filter((d) => /\biso\b|9001/i.test(tag(d)));
         const generic = docs.filter((d) => /certif/i.test(tag(d)) && !/fsc|pefc|brc|fssc|haccp|msme|gst|\bbis\b|udyam/i.test(tag(d)));
