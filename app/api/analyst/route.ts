@@ -1,5 +1,5 @@
 import { guard, need } from "@/lib/guard";
-import { heartbeatJson } from "@/lib/stream";
+import { heartbeatJson, ndjsonStream } from "@/lib/stream";
 import { generate } from "@/lib/gemini";
 
 export const runtime = "nodejs";
@@ -90,9 +90,17 @@ export async function POST(req: Request) {
   const g = await guard(req, "ai", (b) => (Array.isArray(b.contents) && b.contents.length ? null : "Missing contents."), 80);
   if (g instanceof Response) return g;
   const body = g;
+  const { contents, context, facts, stream } = body;
+  const opts = { system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low" as const, maxOutputTokens: 8000, attemptMs: 50_000, deadline: Date.now() + 105_000 };
+  // The page asks for a stream so the buyer reads the answer as it is written instead of after the last word.
+  if (stream) {
+    return ndjsonStream(async (emit) => {
+      const out = await generate({ ...opts, onText: (d) => emit(d === null ? { t: "r" } : { t: "d", x: d }) });
+      return { content: out.content, model: out.model, attempts: out.attempts };
+    });
+  }
   return heartbeatJson(async () => {
-    const { contents, context, facts } = body;
-    const out = await generate({ system: SYSTEM(context, facts || ""), contents, tools: TOOLS, thinking: "low", maxOutputTokens: 8000, attemptMs: 50_000, deadline: Date.now() + 105_000 });
+    const out = await generate(opts);
     return { content: out.content, model: out.model, attempts: out.attempts };
   });
 }
