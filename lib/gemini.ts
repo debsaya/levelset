@@ -30,6 +30,8 @@ type Req = {
   attemptMs?: number;
   /** small, simple input: try the lightest model first (it answers in seconds) and fall back to the stronger ones */
   fast?: boolean;
+  /** stream the answer: called with each new piece of text, and with null when what was shown must be thrown away (a retry or another model starts) */
+  onText?: (delta: string | null) => void;
 };
 
 export class GeminiError extends Error {
@@ -38,6 +40,49 @@ export class GeminiError extends Error {
     super(msg);
     this.status = status;
   }
+}
+
+/** Read a streamed (SSE) Gemini reply into the same shape generateContent returns. Parts are kept exactly as sent so thought signatures survive. */
+export async function readSse(res: Response, onText: (d: string) => void) {
+  const reader = res.body!.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  let finishReason: string | undefined;
+  const parts: any[] = [];
+  const add = (p: any) => {
+    const last = parts[parts.length - 1];
+    if (typeof p.text === "string" && !p.functionCall) {
+      if (last && typeof last.text === "string" && !last.functionCall && !!last.thought === !!p.thought) {
+        last.text += p.text;
+        if (p.thoughtSignature) last.thoughtSignature = p.thoughtSignature;
+      } else parts.push({ ...p });
+      if (!p.thought && p.text) onText(p.text);
+    } else parts.push(p);
+  };
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let i: number;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i).trim();
+      buf = buf.slice(i + 1);
+      if (!line.startsWith("data:")) continue;
+      const d = line.slice(5).trim();
+      if (!d || d === "[DONE]") continue;
+      let j: any;
+      try {
+        j = JSON.parse(d);
+      } catch {
+        continue;
+      }
+      if (j.error) throw new GeminiError(`${j.error.message || "stream error"}`, j.error.code || 502);
+      const c = j.candidates?.[0];
+      for (const p of c?.content?.parts || []) add(p);
+      if (c?.finishReason) finishReason = c.finishReason;
+    }
+  }
+  return { candidates: [{ content: { role: "model", parts }, finishReason }] };
 }
 
 function sleep(ms: number) {
@@ -75,7 +120,7 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       const left = (req.deadline ?? Date.now() + 280_000) - Date.now();
       if (left < 5000) throw lastErr || new GeminiError("Ran out of time waiting for the AI service. Try again.", 504);
       try {
-        res = await fetch(`${BASE}/${model}:generateContent`, {
+        res = await fetch(req.onText ? `${BASE}/${model}:streamGenerateContent?alt=sse` : `${BASE}/${model}:generateContent`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "x-goog-api-key": key },
           body: JSON.stringify(body),
@@ -96,13 +141,30 @@ export async function generate(req: Req): Promise<{ model: string; content: Gemi
       }
       attempts.push(`${model}:${res.status}:${Date.now() - tStart}ms`);
       if (res.ok) {
-        const raw = await res.json();
+        let raw: any;
+        let shown = false;
+        try {
+          raw = req.onText ? await readSse(res, (d) => ((shown = true), req.onText!(d))) : await res.json();
+        } catch (e: any) {
+          if (shown) req.onText?.(null);
+          if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+            if (req.attemptMs && left > req.attemptMs) {
+              attempts.push(`${model}:stream-timeout:${Date.now() - tStart}ms`);
+              lastErr = new GeminiError(`${model} did not answer in time`, 504);
+              break;
+            }
+            throw new GeminiError("The AI service took too long. Try again.", 504);
+          }
+          lastErr = e instanceof GeminiError ? e : new GeminiError(`Stream from ${model} broke: ${e?.message}`, 502);
+          continue;
+        }
         const cand = raw?.candidates?.[0];
         const content: GeminiContent = cand?.content || { role: "model", parts: [] };
         if (!content.parts) content.parts = [];
         const text = content.parts.filter((p: any) => typeof p.text === "string" && !p.thought).map((p: any) => p.text).join("");
         if (!content.parts.length) {
           lastErr = new GeminiError(`Empty response from ${model} (finishReason: ${cand?.finishReason || "unknown"})`, 502);
+          if (shown) req.onText?.(null);
           continue;
         }
         return { model, content, text, raw, attempts };

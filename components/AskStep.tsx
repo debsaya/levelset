@@ -6,7 +6,7 @@ import { buildDb, contextDoc, runQuery, vendorFacts } from "@/lib/db";
 import type { Normalized } from "@/lib/normalize";
 import { checkGrounding } from "@/lib/grounding";
 import { runScenario } from "@/lib/award";
-import { postJson } from "@/lib/api";
+import { postStream } from "@/lib/api";
 import { endJob, startJob } from "@/lib/aiActivity";
 import { Badge, Button, Card, CopyButton, Dots, Md, cx } from "./ui";
 
@@ -45,6 +45,9 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [live, setLive] = useState<string[]>([]);
+  // the answer as it is being written, and the tables and charts already built for it
+  const [draft, setDraft] = useState("");
+  const [liveBlocks, setLiveBlocks] = useState<Block[]>([]);
   const [showPrev, setShowPrev] = useState(false);
   const archive = s.analystArchive || [];
   const snapshot = (x: typeof s) => (x.analyst.length ? [{ id: String(Date.now()), at: new Date().toISOString(), title: (x.analyst.find((m) => m.role === "user") as any)?.text || "Chat", analyst: x.analyst, analystHistory: x.analystHistory }] : []);
@@ -85,7 +88,7 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
   }, [initialAsk]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [s.analyst.length, live.length]);
+  }, [s.analyst.length, live.length, liveBlocks.length, draft.length > 0]);
 
   async function ask(q: string) {
     if (!q.trim() || busy) return;
@@ -108,11 +111,13 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     const job = startJob("analyst", "Ask AI"); // one job for the whole question, however many lookups it takes
     try {
       for (let step = 0; step < 10; step++) {
-        const j = await postJson("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions) });
+        setDraft("");
+        const j = await postStream("/api/analyst", { contents: history, context: contextDoc(s.assumptions, n), facts: vendorFacts(n, s.assumptions), stream: true }, (d) => setDraft((t) => t + d), () => setDraft(""));
         if (j.error) throw new Error(j.error);
         model = j.model;
         history.push(j.content);
         const calls = (j.content.parts || []).filter((p: any) => p.functionCall);
+        if (calls.length) setDraft(""); // a lookup is next: whatever was said before it is not the answer
         if (!calls.length) {
           finalText = (j.content.parts || []).filter((p: any) => p.text && !p.thought).map((p: any) => p.text).join("");
           break;
@@ -155,6 +160,7 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
           });
         }
         history.push({ role: "user", parts: responses });
+        setLiveBlocks([...blocks]);
       }
       if (!finalText) finalText = "I ran out of steps before finishing. Try narrowing the question.";
     } catch (e: any) {
@@ -173,6 +179,8 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
     set((x) => ({ ...x, analyst: [...x.analyst, msg], analystHistory: error ? x.analystHistory : h }));
     setBusy(false);
     setLive([]);
+    setDraft("");
+    setLiveBlocks([]);
   }
 
   return (
@@ -222,10 +230,20 @@ export default function AskStep({ n, initialAsk, compact = false, suggested }: {
             </div>
           )}
           {s.analyst.map((m, i) => (m.role === "user" ? <div key={i} className="lv-rise ml-auto max-w-2xl rounded-lg bg-brand px-4 py-2 text-[13.5px] text-white">{m.text}</div> : <Answer key={i} m={m} />))}
+          {busy && liveBlocks.length > 0 && (
+            <div className="max-w-4xl space-y-3">
+              {liveBlocks.map((b, i) => (b.kind === "table" ? <TableBlock key={i} b={b} /> : <ChartBlock key={i} b={b} />))}
+            </div>
+          )}
+          {busy && draft && (
+            <div className="max-w-4xl text-[13.5px] leading-relaxed">
+              <Md text={plain(draft)} />
+            </div>
+          )}
           {busy && (
             <div className="space-y-1 text-[12.5px] text-muted">
               <div className="flex items-center gap-2">
-                <Dots /> Thinking…
+                <Dots /> {draft ? "Checking the numbers…" : "Thinking…"}
               </div>
               {live.map((l, i) => (
                 <div key={i} className="pl-6">
