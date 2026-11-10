@@ -15,6 +15,7 @@ import { greeting, requestSummary } from "@/lib/greeting";
 import { buildAmendmentEmail, buildReminderEmail } from "@/lib/clarify";
 import { EmailDraftModal } from "./EmailDraftModal";
 import AskStep, { type Suggestion } from "./AskStep";
+import { setCopilotBusy, useCopilotBusy } from "@/lib/askLive";
 
 const COLS = "grid-cols-[minmax(190px,1.5fr)_repeat(6,minmax(96px,1fr))]";
 const HEADS = [
@@ -128,7 +129,8 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
     if (askSignal) setMode("ask");
   }, [askSignal]);
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
+  const busy = useCopilotBusy();
+  const setBusy = setCopilotBusy;
   const [flash, setFlash] = useState<string[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
