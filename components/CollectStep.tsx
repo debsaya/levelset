@@ -197,7 +197,7 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
       : !replies.length
         ? `Sent to ${invitees.length} ${invitees.length === 1 ? "vendor" : "vendors"}. Waiting for their replies.`
         : `${replies.length} of ${vendorsInvited} vendors replied`;
-  const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [{ text: `${readN} read`, tone: "plain" }, ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : []), ...(noReply ? [{ text: pastDue ? `${noReply} no reply by the due date` : `${noReply} no reply yet`, tone: pastDue ? ("warn" as const) : ("plain" as const) }] : [])] : [];
+  const chips: { text: string; tone: "plain" | "warn" }[] = repliesIn && replies.length ? [...(readN ? [{ text: `${readN} read`, tone: "plain" as const }] : []), ...(followUp ? [{ text: `${followUp} need a follow-up`, tone: "warn" as const }] : []), ...(noReply ? [{ text: pastDue ? `${noReply} no reply by the due date` : `${noReply} no reply yet`, tone: pastDue ? ("warn" as const) : ("plain" as const) }] : [])] : [];
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 p-4 lg:h-full lg:grid-cols-[1fr_minmax(300px,340px)]">
@@ -266,7 +266,7 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
         ) : (
           /* one table: the column headings are what every quote needs; the colours say whether each vendor gave it */
           <Card className="overflow-hidden">
-            {replies.length > 0 && (
+            {readN > 0 && (
               <div className={cx("grid items-center gap-x-3 border-b border-line bg-panel px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted", COLS)}>
                 <span>Vendor</span>
                 {HEADS.map((h) => (
@@ -304,11 +304,12 @@ export default function CollectStep({ n, onSend, onRead, onNext, suggested, askS
                   <div className="min-w-0">
                     <div className="truncate text-[13.5px] font-medium">{resp.vendor.name}</div>
                     <div className="mt-0.5 truncate text-[11.5px] text-muted" title={files.join(", ") || "Email text only"}>
-                      {resp.status === "reading" ? "Reading… · " : resp.status === "error" ? "Couldn't read · " : ""}
                       {resp.vendor.format} · {new Date(resp.vendor.received_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · {files.length ? `${files.length} ${files.length === 1 ? "file" : "files"}` : "email text"}
                     </div>
                   </div>
-                  {reqs.map((q) => (
+                  {resp.status !== "done" || !resp.extraction ? (
+                    <span className="col-span-6 text-[12px] text-muted">{resp.status === "reading" ? "Reading…" : resp.status === "error" ? "Couldn't read this one" : readN > 0 ? "Not read yet" : ""}</span>
+                  ) : reqs.map((q) => (
                     <div key={q.label} className="flex min-w-0 items-start gap-1.5" title={q.text}>
                       <span className={cx("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[10px] text-white", q.state === "ok" && "bg-good", q.state === "warn" && "bg-warn", q.state === "bad" && "bg-bad", q.state === "none" && "bg-line text-muted")}>{q.state === "ok" ? "✓" : q.state === "none" ? "–" : q.state === "bad" ? "✕" : "!"}</span>
                       <span className={cx("min-w-0 text-[12px] leading-snug", q.state === "bad" ? "text-bad" : q.state === "warn" ? "text-warn" : "text-muted")}>{q.text}</span>
